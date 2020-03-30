@@ -8,7 +8,7 @@ defmodule Csv2sql.SchemaMaker do
   # Delete output schema file
 
   @varchar_limit Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
-  @database Application.get_env(:csv2sql, Csv2sql.DB)[:database]
+  @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database]
 
   def make_schema(file_path) do
     [drop, create] =

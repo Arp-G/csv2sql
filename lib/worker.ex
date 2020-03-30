@@ -52,12 +52,13 @@ defmodule Csv2sql.Worker do
   def handle_cast({:insert_schema, {file, queries}}, _) do
     Csv2sql.DB.make_db_schema(queries)
 
-    # GenServer.cast(__MODULE__, {:insert_data, file})
+    GenServer.cast(self(), {:insert_data, file})
 
     {:noreply, nil}
   end
 
-  def handle_cast(:insert_data, _data) do
+  def handle_cast({:insert_data, file}, _) do
+    Csv2sql.DataTransfer.process_file(file)
     {:noreply, nil}
   end
 

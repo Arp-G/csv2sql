@@ -7,11 +7,7 @@ defmodule Csv2sql.Application do
 
   def start(_type, _args) do
     children = [
-      {MyXQL,
-       name: :myxql,
-       username: Application.get_env(:csv2sql, Csv2sql.DB)[:username],
-       password: Application.get_env(:csv2sql, Csv2sql.DB)[:password],
-       socket: Application.get_env(:csv2sql, Csv2sql.DB)[:socket]},
+      Csv2sql.Repo,
       Csv2sql.WorkerSupervisor,
       Csv2sql.Server
     ]
