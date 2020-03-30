@@ -5,7 +5,8 @@ measure = fn function ->
     |> elem(0)
     |> Kernel./(1_000_000)
 
-  "#{IO.ANSI.bright()} Operation took: #{time} seconds #{IO.ANSI.bright()}"
+  IO.ANSI.green()
+  |> Kernel.<>("#{IO.ANSI.bright()} Operation took: #{time} seconds #{IO.ANSI.bright()}")
   |> IO.ANSI.format()
   |> IO.puts()
 end

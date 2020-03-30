@@ -1,7 +1,43 @@
 defmodule Csv2sql.SchemaMaker do
   alias NimbleCSV.RFC4180, as: CSV
 
-  def get_schema(path) do
+  def make_schema(file_path) do
+    file_path
+    |> get_types()
+    |> query_maker(file_path)
+  end
+
+  def parallel_make_schemas(path) do
+    me = self()
+
+    Path.wildcard("#{path}/*.csv")
+    |> Enum.map(fn file ->
+      fun = fn file -> {file, make_schema(file)} end
+
+      spawn_link(fn -> send(me, {self(), fun.(file)}) end)
+    end)
+    |> Enum.map(fn pid ->
+      receive do
+        {^pid, result} -> result
+      end
+    end)
+  end
+
+  defp query_maker(types, file_path) do
+    table_name =
+      file_path
+      |> Path.basename()
+      |> String.trim_trailing(".csv")
+
+    types
+    |> Enum.reduce("CREATE TABLE #{table_name} (", fn {column_name, type}, query ->
+      query <> "#{column_name} #{type}, "
+    end)
+    |> String.trim_trailing(", ")
+    |> Kernel.<>(");")
+  end
+
+  defp get_types(path) do
     headers = get_headers(path)
 
     headers_type_list =
@@ -28,7 +64,8 @@ defmodule Csv2sql.SchemaMaker do
 
       type =
         cond do
-          type[:is_empty] -> :empty
+          # empty
+          type[:is_empty] -> :varchar
           type[:is_date] -> :date
           type[:is_timestamp] -> :timestamp
           type[:is_boolean] -> :bit
