@@ -7,8 +7,13 @@ defmodule Csv2sql.Application do
 
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: Csv2sql.Worker.start_link(arg)
-      # {Csv2sql.Worker, arg}
+      {MyXQL,
+       name: :myxql,
+       username: Application.get_env(:csv2sql, Csv2sql.DB)[:username],
+       password: Application.get_env(:csv2sql, Csv2sql.DB)[:password],
+       socket: Application.get_env(:csv2sql, Csv2sql.DB)[:socket]},
+      Csv2sql.WorkerSupervisor,
+      Csv2sql.Server
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

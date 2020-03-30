@@ -1,18 +1,34 @@
 defmodule Csv2sql do
-  @moduledoc """
-  Documentation for `Csv2sql`.
-  """
+  require Logger
 
-  @doc """
-  Hello world.
+  # def parallel_make_schemas(path) do
+  #   me = self()
 
-  ## Examples
+  #   Path.wildcard("#{path}/*.csv")
+  #   |> Enum.map(fn file ->
+  #     fun = fn file -> {file, Csv2sql.SchemaMaker.make_schema(file)} end
 
-      iex> Csv2sql.hello()
-      :world
+  #     spawn_link(fn -> send(me, {self(), fun.(file)}) end)
+  #   end)
+  #   |> Enum.map(fn pid ->
+  #     receive do
+  #       {^pid, {file, [drop, create]}} ->
+  #         Logger.debug("Infer Schema for: #{Path.basename(file)}")
 
-  """
-  def hello do
-    :world
-  end
+  #         db_schema_maker = fn [drop, create] -> Csv2sql.DB.make_db_schema([drop, create]) end
+
+  #         spawn_link(fn -> send(me, {self(), db_schema_maker.([drop, create])}) end)
+
+  #         query = """
+
+  #         #{drop}
+
+  #         #{create}
+
+  #         """
+
+  #         File.write("schema.sql", query, [:append])
+  #     end
+  #   end)
+  # end
 end
