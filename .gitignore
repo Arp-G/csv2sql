@@ -24,5 +24,3 @@ csv2sql-*.tar
 
 # linter
 /.elixir_ls/
-
-
