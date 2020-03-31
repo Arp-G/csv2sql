@@ -9,7 +9,7 @@ defmodule Csv2sql.DataTransfer do
     file
     |> File.stream!()
     |> CSV.parse_stream()
-    |> Enum.chunk_every(100)
+    |> Stream.chunk_every(100)
     |> Enum.each(fn rows ->
       Csv2sql.DB.prepare_insert_query(file, rows)
     end)
