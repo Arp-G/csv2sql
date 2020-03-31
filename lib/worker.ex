@@ -14,24 +14,18 @@ defmodule Csv2sql.Worker do
     file = Csv2sql.FileServer.next_file()
 
     if file do
-      IO.puts(file)
-
       file
       |> make_schema()
       |> insert_schema()
       |> insert_data()
 
-
-
       send(self(), :start_new_work)
-      IO.puts "here1"
 
       {:noreply, nil}
     else
-      IO.puts "here"
-      #Csv2sql.Server.work_done()
+      Csv2sql.Server.work_done()
       {:noreply, nil}
-      #{:stop, :normal, nil}
+      # {:stop, :normal, nil}
     end
   end
 

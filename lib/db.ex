@@ -1,24 +1,16 @@
 defmodule Csv2sql.DB do
-  require Logger
   alias NimbleCSV.RFC4180, as: CSV
   alias Csv2sql.Repo
 
-  @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database]
+  @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
   def make_db_schema([drop_query, create_query]) do
-    # tobe be moved
-    Ecto.Adapters.SQL.query!(
-      Repo,
-      "set global sql_mode=\"NO_BACKSLASH_ESCAPES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION,NO_ZERO_IN_DATE\";",
-      []
-    )
-
     table_name =
       String.trim_leading(drop_query, "DROP TABLE IF EXISTS #{@database}.")
       |> String.trim_trailing(";")
 
     execute_query(drop_query)
     execute_query(create_query)
-    Logger.debug("Create Schema for: #{table_name}")
+    Csv2sql.Helper.print_msg("Create Schema for: #{table_name}")
   end
 
   defp execute_query(query) do
@@ -44,30 +36,21 @@ defmodule Csv2sql.DB do
         end)
       end)
 
-    Repo.insert_all(table_name, data_chunk)
+    Repo.insert_all(table_name, data_chunk, prefix: @database)
+  end
 
+  def prepare_db() do
+    Ecto.Adapters.SQL.query!(
+      Repo,
+      "CREATE DATABASE IF NOT EXISTS #{@database} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;",
+      []
+    )
 
-    # cols =
-    #   headers
-    #   |> Enum.reduce("(", fn header, str -> str <> "`" <> header <> "`" <> ", " end)
-    #   |> String.trim_trailing(", ")
-    #   |> Kernel.<>(")")
-
-    # values =
-    #   1..Enum.count(row)
-    #   |> Enum.reduce("(", fn _, str -> str <> "?, " end)
-    #   |> String.trim_trailing(", ")
-    #   |> Kernel.<>(")")
-
-    # # row = row |> Enum.map(&String.trim/1)
-
-    # IO.inspect("INSERT INTO #{@database}.#{table_name} VALUES " <> values <> ";")
-
-    # MyXQL.query!(
-    #   :myxql,
-    #   "INSERT INTO #{@database}.#{table_name} " <> cols <> " VALUES " <> values <> ";",
-    #   row
-    # )
+    Ecto.Adapters.SQL.query!(
+      Repo,
+      "SET GLOBAL SQL_MODE=\"NO_BACKSLASH_ESCAPES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION,NO_ZERO_IN_DATE\";",
+      []
+    )
   end
 
   defp get_headers(file) do

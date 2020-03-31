@@ -1,8 +1,11 @@
 defmodule Csv2sql.DataTransfer do
   alias NimbleCSV.RFC4180, as: CSV
-  require Logger
 
+  @imported_csv_directory Application.get_env(:csv2sql, Csv2sql.Server)[:imported_csv_directory]
   def process_file(file) do
+
+    Csv2sql.Helper.print_msg("Begin data tranfer for file: " <> Path.basename(file))
+
     file
     |> File.stream!()
     |> CSV.parse_stream()
@@ -11,6 +14,7 @@ defmodule Csv2sql.DataTransfer do
       Csv2sql.DB.prepare_insert_query(file, rows)
     end)
 
-    #File.rm(file)
+    File.rename!(file, @imported_csv_directory <> "/" <> Path.basename(file))
+    Csv2sql.Helper.print_msg("Finished processing file: " <> Path.basename(file), :green)
   end
 end

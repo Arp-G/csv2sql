@@ -1,14 +1,17 @@
 defmodule Csv2sql.SchemaMaker do
   alias NimbleCSV.RFC4180, as: CSV
-  require Logger
-
-  # CREATE DATABASE test_csv CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-  # set sql_mode='NO_ZERO_IN_DATE'
-  # Delete output schema file
 
   @varchar_limit Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
-  @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database]
+  @schema_file_path Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_file_path]
+  @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
 
+  @spec make_schema(
+          binary
+          | maybe_improper_list(
+              binary | maybe_improper_list(any, binary | []) | char,
+              binary | []
+            )
+        ) :: [binary, ...]
   def make_schema(file_path) do
     [drop, create] =
       file_path
@@ -23,9 +26,9 @@ defmodule Csv2sql.SchemaMaker do
 
     """
 
-    File.write("schema.sql", query, [:append])
+    File.write("#{@schema_file_path}/schema.sql", query, [:append])
 
-    Logger.debug("Infer Schema for: #{Path.basename(file_path)}")
+    Csv2sql.Helper.print_msg("Infer Schema for: #{Path.basename(file_path)}")
 
     [drop, create]
   end

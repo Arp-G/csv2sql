@@ -1,6 +1,7 @@
 defmodule Csv2sql.Server do
   use GenServer
 
+  @schema_file_path Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_file_path]
   def start_link(worker_count) do
     GenServer.start_link(__MODULE__, worker_count, name: __MODULE__)
   end
@@ -20,14 +21,20 @@ defmodule Csv2sql.Server do
   end
 
   def handle_info(:kickoff, worker_count) do
+    Csv2sql.DB.prepare_db()
+
+    File.rm(@schema_file_path <> "/" <> "schema.sql")
+
     1..worker_count
     |> Enum.each(fn _ -> Csv2sql.WorkerSupervisor.add_worker() end)
 
     {:noreply, worker_count}
   end
 
-  def handle_cast(:done, _worker_count = 1) do
-    IO.puts "FINISHED !!!"
+  def handle_cast(:done, 1) do
+    :timer.sleep(100)
+    Csv2sql.TimerServer.get_time_spend()
+    :timer.sleep(100)
     # validate_results()
     System.halt(0)
   end

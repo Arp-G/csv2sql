@@ -9,10 +9,11 @@ defmodule Csv2sql.Application do
   @worker_count Application.get_env(:csv2sql, Csv2sql.Server)[:worker_count]
   def start(_type, _args) do
     children = [
-      Csv2sql.Repo,
-      {Csv2sql.FileServer, @source_csv_directory},
-      Csv2sql.WorkerSupervisor,
-      {Csv2sql.Server, @worker_count}
+      {Csv2sql.TimerServer, Time.utc_now()},
+       Csv2sql.Repo,
+       {Csv2sql.FileServer, @source_csv_directory},
+       Csv2sql.WorkerSupervisor,
+       {Csv2sql.Server, @worker_count}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
