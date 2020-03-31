@@ -17,7 +17,8 @@ defmodule Csv2sql.TimerServer do
     time_taken =
       Time.utc_now()
       |> Time.diff(start_time, :millisecond)
-      |> Kernel./(1000)
+
+    time_taken = (time_taken - 6) / 1000
 
     """
 
@@ -31,7 +32,7 @@ defmodule Csv2sql.TimerServer do
     ----------------------------------------
 
     """
-    |> Csv2sql.Helper.print_msg(:green)
+    |> Csv2sql.Helpers.print_msg(:green)
 
     {:noreply, start_time}
   end

@@ -2,6 +2,7 @@ defmodule Csv2sql.Server do
   use GenServer
 
   @schema_file_path Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_file_path]
+  @imported_csv_directory Application.get_env(:csv2sql, Csv2sql.Server)[:imported_csv_directory]
   def start_link(worker_count) do
     GenServer.start_link(__MODULE__, worker_count, name: __MODULE__)
   end
@@ -21,6 +22,8 @@ defmodule Csv2sql.Server do
   end
 
   def handle_info(:kickoff, worker_count) do
+    Csv2sql.Helpers.greet()
+
     Csv2sql.DB.prepare_db()
 
     File.rm(@schema_file_path <> "/" <> "schema.sql")
@@ -33,10 +36,30 @@ defmodule Csv2sql.Server do
 
   def handle_cast(:done, 1) do
     :timer.sleep(100)
+
+    # Add line break
+    IO.puts("----------------------------------------")
+    IO.puts("")
+
+    CliSpinners.spin_fun(
+      [
+        frames: :arrow2,
+        text: "Finished importing CSVs...",
+        done: ""
+      ],
+      fn ->
+        CliSpinners.spin(frames: :clock, text: "Staring Validation Process...", done: "Validation Process Started...")
+        :timer.sleep(3000)
+      end
+    )
+
+    Csv2sql.ImportValidator.validate_import(@imported_csv_directory)
+
     Csv2sql.TimerServer.get_time_spend()
     :timer.sleep(100)
-    # validate_results()
+
     System.halt(0)
+    {:noreply, 0}
   end
 
   def handle_cast(:done, worker_count) do

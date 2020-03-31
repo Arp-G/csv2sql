@@ -4,7 +4,7 @@ defmodule Csv2sql.DataTransfer do
   @imported_csv_directory Application.get_env(:csv2sql, Csv2sql.Server)[:imported_csv_directory]
   def process_file(file) do
 
-    Csv2sql.Helper.print_msg("Begin data tranfer for file: " <> Path.basename(file))
+    Csv2sql.Helpers.print_msg("Begin data tranfer for file: " <> Path.basename(file))
 
     file
     |> File.stream!()
@@ -15,6 +15,6 @@ defmodule Csv2sql.DataTransfer do
     end)
 
     File.rename!(file, @imported_csv_directory <> "/" <> Path.basename(file))
-    Csv2sql.Helper.print_msg("Finished processing file: " <> Path.basename(file), :green)
+    Csv2sql.Helpers.print_msg("Finished processing file: " <> Path.basename(file), :green)
   end
 end

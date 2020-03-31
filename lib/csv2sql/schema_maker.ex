@@ -28,7 +28,7 @@ defmodule Csv2sql.SchemaMaker do
 
     File.write("#{@schema_file_path}/schema.sql", query, [:append])
 
-    Csv2sql.Helper.print_msg("Infer Schema for: #{Path.basename(file_path)}")
+    Csv2sql.Helpers.print_msg("Infer Schema for: #{Path.basename(file_path)}")
 
     [drop, create]
   end

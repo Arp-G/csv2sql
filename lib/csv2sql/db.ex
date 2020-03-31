@@ -10,7 +10,7 @@ defmodule Csv2sql.DB do
 
     execute_query(drop_query)
     execute_query(create_query)
-    Csv2sql.Helper.print_msg("Create Schema for: #{table_name}")
+    Csv2sql.Helpers.print_msg("Create Schema for: #{table_name}")
   end
 
   defp execute_query(query) do

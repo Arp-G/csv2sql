@@ -10,13 +10,3 @@ measure = fn function ->
   |> IO.ANSI.format()
   |> IO.puts()
 end
-
-formatting = "#{IO.ANSI.underline()}  #{IO.ANSI.italic()}"
-
-[
-  :yellow_background,
-  :black,
-  "\n #{formatting} Welcome to IEX shell ! #{formatting} \n"
-]
-|> IO.ANSI.format()
-|> IO.puts()

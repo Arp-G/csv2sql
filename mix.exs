@@ -26,7 +26,8 @@ defmodule Csv2sql.MixProject do
       {:myxql, "~> 0.3.4"},
       {:ecto, "~> 3.4"},
       {:ecto_sql, "~> 3.1"},
-      {:dir_walker, "~> 0.0.8"}
+      {:dir_walker, "~> 0.0.8"},
+      {:cli_spinners, "~> 0.1.0"}
     ]
   end
 end

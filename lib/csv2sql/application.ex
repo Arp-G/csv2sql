@@ -10,14 +10,12 @@ defmodule Csv2sql.Application do
   def start(_type, _args) do
     children = [
       {Csv2sql.TimerServer, Time.utc_now()},
-       Csv2sql.Repo,
-       {Csv2sql.FileServer, @source_csv_directory},
-       Csv2sql.WorkerSupervisor,
-       {Csv2sql.Server, @worker_count}
+      Csv2sql.Repo,
+      {Csv2sql.FileServer, @source_csv_directory},
+      Csv2sql.WorkerSupervisor,
+      {Csv2sql.Server, @worker_count}
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Csv2sql.Supervisor]
     Supervisor.start_link(children, opts)
   end
