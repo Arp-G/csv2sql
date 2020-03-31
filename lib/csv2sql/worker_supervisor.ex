@@ -9,7 +9,7 @@ defmodule Csv2sql.WorkerSupervisor do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
-  def add_worker(file) do
-    {:ok, _pid} = DynamicSupervisor.start_child(__MODULE__, {Csv2sql.Worker, file})
+  def add_worker() do
+    {:ok, _pid} = DynamicSupervisor.start_child(__MODULE__, Csv2sql.Worker)
   end
 end

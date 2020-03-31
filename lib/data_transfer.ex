@@ -11,6 +11,6 @@ defmodule Csv2sql.DataTransfer do
       Csv2sql.DB.prepare_insert_query(file, rows)
     end)
 
-    File.rm(file)
+    #File.rm(file)
   end
 end

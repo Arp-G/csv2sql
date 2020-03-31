@@ -25,7 +25,8 @@ defmodule Csv2sql.MixProject do
       {:nimble_csv, "~> 0.7.0"},
       {:myxql, "~> 0.3.4"},
       {:ecto, "~> 3.4"},
-      {:ecto_sql, "~> 3.1"}
+      {:ecto_sql, "~> 3.1"},
+      {:dir_walker, "~> 0.0.8"}
     ]
   end
 end

@@ -2,7 +2,6 @@ defmodule Csv2sql.SchemaMaker do
   alias NimbleCSV.RFC4180, as: CSV
   require Logger
 
-
   # CREATE DATABASE test_csv CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
   # set sql_mode='NO_ZERO_IN_DATE'
   # Delete output schema file
