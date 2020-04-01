@@ -1,7 +1,7 @@
 defmodule Csv2sql.DataTransfer do
   alias NimbleCSV.RFC4180, as: CSV
 
-  @imported_csv_directory Application.get_env(:csv2sql, Csv2sql.Server)[:imported_csv_directory]
+  @imported_csv_directory Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]
   def process_file(file) do
 
     Csv2sql.Helpers.print_msg("Begin data tranfer for file: " <> Path.basename(file))

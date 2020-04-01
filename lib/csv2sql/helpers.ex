@@ -9,10 +9,16 @@ defmodule Csv2sql.Helpers do
         _ -> IO.ANSI.white()
       end
 
-    color
-    |> Kernel.<>("#{IO.ANSI.bright()}" <> msg <> "#{IO.ANSI.bright()}")
-    |> IO.ANSI.format()
-    |> IO.puts()
+    #text =
+      color
+      |> Kernel.<>("#{IO.ANSI.bright()}" <> msg <> "#{IO.ANSI.bright()}")
+      |> IO.ANSI.format()
+      |> IO.puts
+
+    # CliSpinners.spin_fun(
+    #   [frames: :clock, spinnner_color: [238, 130, 238], text: text, done: text, interval: 20],
+    #   fn -> :timer.sleep(1000) end
+    # )
   end
 
   def animation_wrapper(args, mod, func, start_text \\ "Processing...", end_text \\ "Done !") do
@@ -56,8 +62,7 @@ defmodule Csv2sql.Helpers do
        """)
     |> IO.puts()
 
-    start_text =
-      [:yellow_background, :black, " Starting... !" ]|> IO.ANSI.format()
+    start_text = [:yellow_background, :black, " Starting... !"] |> IO.ANSI.format()
 
     CliSpinners.spin_fun(
       [

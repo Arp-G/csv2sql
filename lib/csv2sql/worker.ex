@@ -23,7 +23,7 @@ defmodule Csv2sql.Worker do
 
       {:noreply, nil}
     else
-      Csv2sql.Server.work_done()
+      Csv2sql.MainServer.work_done()
       {:noreply, nil}
       # {:stop, :normal, nil}
     end
@@ -40,7 +40,7 @@ defmodule Csv2sql.Worker do
   end
 
   def insert_data(file) do
-    Csv2sql.DataTransfer.process_file(file)
+    Csv2sql.FileStreamServer.add_file_stream(file)
     file
   end
 end

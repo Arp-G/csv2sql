@@ -3,7 +3,7 @@ defmodule Csv2sql.ImportValidator do
   alias Csv2sql.Helpers
 
   @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
-  @validated_csv_directory Application.get_env(:csv2sql, Csv2sql.Server)[:validated_csv_directory]
+  @validated_csv_directory Application.get_env(:csv2sql, Csv2sql.MainServer)[:validated_csv_directory]
   def validate_import(path) do
     %{stats: {total, correct, incorrect}, incorrect_files: incorrect_files} =
       Path.wildcard("#{path}/*.csv")
