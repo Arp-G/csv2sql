@@ -18,7 +18,7 @@ defmodule Csv2sql.TimerServer do
       Time.utc_now()
       |> Time.diff(start_time, :millisecond)
 
-    time_taken = (time_taken - 6) / 1000
+    time_taken = time_taken / 1000
 
     """
 

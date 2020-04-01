@@ -1,11 +1,8 @@
-defmodule Csv2sql.DB do
+defmodule Csv2sql.Database do
   alias NimbleCSV.RFC4180, as: CSV
   alias Csv2sql.Repo
 
   @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
-  @imported_csv_directory Application.get_env(:csv2sql, Csv2sql.MainServer)[
-                            :imported_csv_directory
-                          ]
   def make_db_schema([drop_query, create_query]) do
     table_name =
       String.trim_leading(drop_query, "DROP TABLE IF EXISTS #{@database}.")
@@ -20,10 +17,7 @@ defmodule Csv2sql.DB do
     Ecto.Adapters.SQL.query!(Repo, query, [])
   end
 
-  def prepare_insert_query(file, rows, is_last_chunk) do
-
-    IO.puts is_last_chunk
-
+  def insert_data_chunk(file, data_chunk) do
     table_name =
       file
       |> Path.basename()
@@ -32,7 +26,7 @@ defmodule Csv2sql.DB do
     headers = get_headers(file)
 
     data_chunk =
-      Enum.map(rows, fn row ->
+      Enum.map(data_chunk, fn row ->
         row
         |> Enum.with_index()
         |> Enum.reduce(%{}, fn {col, index}, map ->
@@ -43,12 +37,6 @@ defmodule Csv2sql.DB do
       end)
 
     Repo.insert_all(table_name, data_chunk, prefix: @database)
-
-    if is_last_chunk do
-      File.rename!(file, @imported_csv_directory <> "/" <> Path.basename(file))
-      Csv2sql.Helpers.print_msg("Finished processing file: " <> Path.basename(file), :green)
-      Csv2sql.TimerServer.get_time_spend()
-    end
   end
 
   def prepare_db() do

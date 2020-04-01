@@ -9,16 +9,10 @@ defmodule Csv2sql.Helpers do
         _ -> IO.ANSI.white()
       end
 
-    #text =
-      color
-      |> Kernel.<>("#{IO.ANSI.bright()}" <> msg <> "#{IO.ANSI.bright()}")
-      |> IO.ANSI.format()
-      |> IO.puts
-
-    # CliSpinners.spin_fun(
-    #   [frames: :clock, spinnner_color: [238, 130, 238], text: text, done: text, interval: 20],
-    #   fn -> :timer.sleep(1000) end
-    # )
+    color
+    |> Kernel.<>("#{IO.ANSI.bright()}" <> msg <> "#{IO.ANSI.bright()}")
+    |> IO.ANSI.format()
+    |> IO.puts()
   end
 
   def animation_wrapper(args, mod, func, start_text \\ "Processing...", end_text \\ "Done !") do

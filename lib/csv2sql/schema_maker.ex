@@ -5,13 +5,6 @@ defmodule Csv2sql.SchemaMaker do
   @schema_file_path Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_file_path]
   @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
 
-  @spec make_schema(
-          binary
-          | maybe_improper_list(
-              binary | maybe_improper_list(any, binary | []) | char,
-              binary | []
-            )
-        ) :: [binary, ...]
   def make_schema(file_path) do
     [drop, create] =
       file_path
@@ -31,6 +24,29 @@ defmodule Csv2sql.SchemaMaker do
     Csv2sql.Helpers.print_msg("Infer Schema for: #{Path.basename(file_path)}")
 
     [drop, create]
+  end
+
+  def check_type(item, type) do
+    item = String.trim(item)
+
+    empty = is_empty?(item)
+
+    if(empty) do
+      Map.put(type, :is_empty, type.is_empty && empty)
+    else
+      is_date = type.is_date && is_date?(item)
+      is_timestamp = type.is_timestamp && is_timestamp?(item)
+      is_boolean = type.is_boolean && is_boolean?(item)
+      is_text = type.is_text || is_text?(item)
+
+      %{
+        is_empty: type.is_empty && empty,
+        is_date: is_date,
+        is_timestamp: is_timestamp,
+        is_boolean: is_boolean,
+        is_text: is_text
+      }
+    end
   end
 
   defp query_maker(types, file_path) do
@@ -109,29 +125,6 @@ defmodule Csv2sql.SchemaMaker do
       is_boolean: true,
       is_text: false
     }
-  end
-
-  def check_type(item, type) do
-    item = String.trim(item)
-
-    empty = is_empty?(item)
-
-    if(empty) do
-      Map.put(type, :is_empty, type.is_empty && empty)
-    else
-      is_date = type.is_date && is_date?(item)
-      is_timestamp = type.is_timestamp && is_timestamp?(item)
-      is_boolean = type.is_boolean && is_boolean?(item)
-      is_text = type.is_text || is_text?(item)
-
-      %{
-        is_empty: type.is_empty && empty,
-        is_date: is_date,
-        is_timestamp: is_timestamp,
-        is_boolean: is_boolean,
-        is_text: is_text
-      }
-    end
   end
 
   defp is_empty?(item) do

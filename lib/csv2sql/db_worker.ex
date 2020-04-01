@@ -1,7 +1,7 @@
 defmodule Csv2sql.DbWorker do
   use GenServer
 
-  alias Csv2sql.FileStreamServer, as: FS
+  alias Csv2sql.JobQueueServer, as: FS
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, :no_args)
@@ -15,9 +15,11 @@ defmodule Csv2sql.DbWorker do
   def handle_info(:start_new_db_work, _) do
     FS.get_work()
     |> case do
-      {file, data, is_last_chunk} -> Csv2sql.DB.prepare_insert_query(file, data, is_last_chunk)
-      :stream_expired -> IO.puts("DONE !")
-      msg -> msg
+      {file, data_chunk} ->
+        Csv2sql.Database.insert_data_chunk(file, data_chunk)
+
+      :no_work ->
+        nil
     end
 
     send(self(), :start_new_db_work)

@@ -1,55 +1,59 @@
-defmodule Csv2sql.FileStreamServer do
+defmodule Csv2sql.JobQueueServer do
   use GenServer
-  alias NimbleCSV.RFC4180, as: CSV
-
-  @insertion_chunk_size Application.get_env(:csv2sql, Csv2sql.Repo)[:insertion_chunk_size]
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, :no_args, name: __MODULE__)
   end
 
   def init(_) do
-    {:ok, %{}}
+    {:ok, []}
   end
 
-  def add_file_stream(file) do
-    stream =
-      file
-      |> File.stream!()
-      |> CSV.parse_stream()
-
-    GenServer.cast(__MODULE__, {:add_new_file_stream, file, stream})
+  def add_data_chunk(file, data_chunk) do
+    GenServer.cast(__MODULE__, {:add_new_data_chunk, file, data_chunk})
   end
 
   def get_work() do
     GenServer.call(__MODULE__, :get_work)
   end
 
-  def handle_cast({:add_new_file_stream, file, stream}, file_stream_map) do
-    new_state = Map.put(file_stream_map, file, stream)
+  def get_job_count() do
+    GenServer.call(__MODULE__, :get_job_count)
+  end
+
+  def job_for_file_present(file) do
+    GenServer.call(__MODULE__, {:job_for_file_present, file})
+  end
+
+  def handle_cast({:add_new_data_chunk, file, data_chunk}, state) do
+    new_state = state ++ [{file, data_chunk}]
     {:noreply, new_state}
   end
 
-  def handle_call(:get_work, _from, file_stream_map) do
-    file_stream_map
-    |> Enum.take(1)
+  def handle_call(:get_work, _from, state) do
+    state
     |> case do
-      [{file, stream}] ->
-        StreamSplit.take_and_drop(stream, @insertion_chunk_size)
-        |> case do
-          {[], []} ->
-            {:reply, :stream_expired, Map.delete(file_stream_map, file)}
-
-          {data, new_stream} ->
-            is_last_chunk = new_stream |> StreamSplit.take_and_drop(1) == {[], []}
-
-            new_file_stream_map = Map.put(file_stream_map, file, new_stream)
-
-            {:reply, {file, data, is_last_chunk}, new_file_stream_map}
-        end
+      [data | new_state] ->
+        {:reply, data, new_state}
 
       [] ->
-        {:reply, :no_work, file_stream_map}
+        {:reply, :no_work, state}
+
+      nil ->
+        {:reply, :no_work, state}
     end
+  end
+
+  def handle_call(:get_job_count, _from, state) do
+    {:reply, Enum.count(state), state}
+  end
+
+  def handle_call({:job_for_file_present, file}, _from, state) do
+    file_present? =
+      Enum.any?(state, fn {file_job, _data_chunk} ->
+        file == file_job
+      end)
+
+    {:reply, file_present?, state}
   end
 end

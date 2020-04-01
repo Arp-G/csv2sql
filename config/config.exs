@@ -11,7 +11,7 @@ config :csv2sql, Csv2sql.MainServer,
   # Increasing worker count may result in database connection error, since too many processes access the databases concurrently
   worker_count: 10,
   # The number of database workers
-  db_worker_count: 10,
+  db_worker_count: 15,
 
   # CAUTION:
   # Make each of the below directory configuration are in separate directories
@@ -35,10 +35,12 @@ config :csv2sql, Csv2sql.Repo,
   database_name: "test_csv",
   # Number of records to insert into the database at once
   insertion_chunk_size: 100,
+  # Number of chunks to keep in memory (Memory required = insertion_chunk_size * job_count_limit)
+  job_count_limit: 10,
   # The socket file location for mysql
   socket: "/var/run/mysqld/mysqld.sock",
   # Make false to disable ecto logs
-  #log: true,
+  log: false,
 
   # The below parameters can be changed to allow more database connections
 
@@ -54,11 +56,11 @@ config :csv2sql, Csv2sql.Repo,
   # A higher number is not necessarily better, as it implies in less re-use between connections and database overload.
   pool_size: 20,
 
-# Handling requests is done through a queue. When DBConnection is started,
-# there are two relevant options to control the queue:
-# Our goal is to wait at most :queue_target for a connection.
-# If all connections checked out during a :queue_interval takes more than :queue_target, then we double the :queue_target.
-# If checking out connections take longer than the new target, then we start dropping messages.
+  # Handling requests is done through a queue. When DBConnection is started,
+  # there are two relevant options to control the queue:
+  # Our goal is to wait at most :queue_target for a connection.
+  # If all connections checked out during a :queue_interval takes more than :queue_target, then we double the :queue_target.
+  # If checking out connections take longer than the new target, then we start dropping messages.
 
- queue_target: 5000,
- queue_interval: 1000
+  queue_target: 5000,
+  queue_interval: 1000

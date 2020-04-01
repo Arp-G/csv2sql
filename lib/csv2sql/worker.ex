@@ -35,12 +35,13 @@ defmodule Csv2sql.Worker do
   end
 
   def insert_schema({file, queries}) do
-    Csv2sql.DB.make_db_schema(queries)
+    Csv2sql.Database.make_db_schema(queries)
     file
   end
 
   def insert_data(file) do
-    Csv2sql.FileStreamServer.add_file_stream(file)
+    #Csv2sql.JobQueueServer.add_file_stream(file)
+    Csv2sql.DataTransfer.process_file(file)
     file
   end
 end
