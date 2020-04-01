@@ -22,10 +22,10 @@ defmodule Csv2sql.MainServer do
   # callback, and the workers get started
   def init(_) do
     Process.send_after(self(), :kickoff, 0)
-    {:ok, :no_args}
+    {:ok, @worker_count}
   end
 
-  def handle_info(:kickoff, _) do
+  def handle_info(:kickoff, worker_count) do
     Csv2sql.Helpers.greet()
 
     Csv2sql.Database.prepare_db()
@@ -38,7 +38,7 @@ defmodule Csv2sql.MainServer do
     1..@db_worker_count
     |> Enum.each(fn _ -> Csv2sql.DbWorkerSupervisor.add_worker() end)
 
-    {:noreply, :no_args}
+    {:noreply, worker_count}
   end
 
   def handle_cast(:done, 1) do
@@ -67,7 +67,7 @@ defmodule Csv2sql.MainServer do
       end
     )
 
-    Csv2sql.Helpers.print_msg("Validation Process Started...", :green)
+    Csv2sql.Helpers.print_msg("\nValidation Process Started...\n\n", :green)
 
     Csv2sql.ImportValidator.validate_import(@imported_csv_directory)
 
