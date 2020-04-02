@@ -13,8 +13,13 @@ defmodule Csv2sql.MixProject do
           include_executables_for: [:unix],
           applications: [runtime_tools: :permanent]
         ]
-      ]
+      ],
+      escript: [main_module: Csv2sql, app: nil]
     ]
+  end
+
+  def escript do
+    [main_module: Csv2sql]
   end
 
   # Run "mix help compile.app" to learn about applications.
