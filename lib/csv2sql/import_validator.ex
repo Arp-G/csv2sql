@@ -2,8 +2,6 @@ defmodule Csv2sql.ImportValidator do
   alias NimbleCSV.RFC4180, as: CSV
   alias Csv2sql.Helpers
 
-  @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
-  @validated_csv_directory Application.get_env(:csv2sql, Csv2sql.MainServer)[:validated_csv_directory]
   def validate_import(path) do
     %{stats: {total, correct, incorrect}, incorrect_files: incorrect_files} =
       Path.wildcard("#{path}/*.csv")
@@ -25,7 +23,10 @@ defmodule Csv2sql.ImportValidator do
               }
             end
 
-          File.rename!(file, @validated_csv_directory <> "/" <> Path.basename(file))
+          validated_csv_directory =
+            Application.get_env(:csv2sql, Csv2sql.MainServer)[:validated_csv_directory]
+
+          File.rename!(file, "#{validated_csv_directory}/#{Path.basename(file)}")
           result
         end
       )
@@ -94,6 +95,8 @@ defmodule Csv2sql.ImportValidator do
   end
 
   defp get_db_count(file) do
+    database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
+
     table_name =
       file
       |> Path.basename()
@@ -101,7 +104,13 @@ defmodule Csv2sql.ImportValidator do
 
     require Ecto.Query
 
-    Ecto.Query.from(p in table_name, select: count("*"))
-    |> Csv2sql.Repo.one(prefix: @database)
+    try do
+      Ecto.Query.from(p in table_name, select: count("*"))
+      |> Csv2sql.Repo.one(prefix: database_name)
+    rescue
+      MyXQL.Error ->
+        Helpers.print_msg("An exception occured !", :red)
+        "#{IO.ANSI.red()}✗#{IO.ANSI.reset()}"
+    end
   end
 end

@@ -1,10 +1,6 @@
 defmodule Csv2sql.SchemaMaker do
   alias NimbleCSV.RFC4180, as: CSV
 
-  @varchar_limit Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
-  @schema_file_path Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_file_path]
-  @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
-
   def make_schema(file_path) do
     [drop, create] =
       file_path
@@ -19,7 +15,9 @@ defmodule Csv2sql.SchemaMaker do
 
     """
 
-    File.write("#{@schema_file_path}/schema.sql", query, [:append])
+    schema_file_path = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_file_path]
+
+    File.write("#{schema_file_path}/schema.sql", query, [:append])
 
     Csv2sql.Helpers.print_msg("Infer Schema for: #{Path.basename(file_path)}")
 
@@ -50,6 +48,8 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp query_maker(types, file_path) do
+    database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
+
     table_name =
       file_path
       |> Path.basename()
@@ -57,17 +57,20 @@ defmodule Csv2sql.SchemaMaker do
 
     create_table =
       types
-      |> Enum.reduce("CREATE TABLE #{@database}.#{table_name} (", fn {column_name, type}, query ->
+      |> Enum.reduce("CREATE TABLE #{database_name}.#{table_name} (", fn {column_name, type},
+                                                                         query ->
         query <> "`#{column_name}` #{type}, "
       end)
       |> String.trim_trailing(", ")
       |> Kernel.<>(");")
 
-    ["DROP TABLE IF EXISTS #{@database}.#{table_name};", "#{create_table}"]
+    ["DROP TABLE IF EXISTS #{database_name}.#{table_name};", "#{create_table}"]
   end
 
   defp get_types(path) do
     headers = get_headers(path)
+
+    varchar_limit = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
 
     headers_type_list =
       headers
@@ -94,12 +97,12 @@ defmodule Csv2sql.SchemaMaker do
       type =
         cond do
           # empty
-          type[:is_empty] -> "VARCHAR(#{@varchar_limit})"
+          type[:is_empty] -> "VARCHAR(#{varchar_limit})"
           type[:is_date] -> "DATE"
           type[:is_timestamp] -> "TIMESTAMP"
           type[:is_boolean] -> "BIT"
           type[:is_text] -> "TEXT"
-          true -> "VARCHAR(#{@varchar_limit})"
+          true -> "VARCHAR(#{varchar_limit})"
         end
 
       Map.put(acc, header, type)
@@ -151,6 +154,7 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_text?(item) do
-    if String.length(item) > @varchar_limit, do: true, else: false
+    varchar_limit = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
+    if String.length(item) > varchar_limit, do: true, else: false
   end
 end

@@ -1,12 +1,6 @@
 defmodule Csv2sql.MainServer do
   use GenServer
 
-  @worker_count Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count]
-  @db_worker_count Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count]
-  @schema_file_path Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_file_path]
-  @imported_csv_directory Application.get_env(:csv2sql, Csv2sql.MainServer)[
-                            :imported_csv_directory
-                          ]
   def start_link(_) do
     GenServer.start_link(__MODULE__, :no_args, name: __MODULE__)
   end
@@ -22,7 +16,8 @@ defmodule Csv2sql.MainServer do
   # callback, and the workers get started
   def init(_) do
     Process.send_after(self(), :kickoff, 0)
-    {:ok, @worker_count}
+    worker_count = Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count]
+    {:ok, worker_count}
   end
 
   def handle_info(:kickoff, worker_count) do
@@ -30,12 +25,15 @@ defmodule Csv2sql.MainServer do
 
     Csv2sql.Database.prepare_db()
 
-    File.rm(@schema_file_path <> "/" <> "schema.sql")
+    schema_file_path = Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count]
+    db_worker_count = Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count]
 
-    1..@worker_count
+    File.rm("#{schema_file_path}/schema.sql")
+
+    1..worker_count
     |> Enum.each(fn _ -> Csv2sql.WorkerSupervisor.add_worker() end)
 
-    1..@db_worker_count
+    1..db_worker_count
     |> Enum.each(fn _ -> Csv2sql.DbWorkerSupervisor.add_worker() end)
 
     {:noreply, worker_count}
@@ -69,7 +67,10 @@ defmodule Csv2sql.MainServer do
 
     Csv2sql.Helpers.print_msg("\nValidation Process Started...\n\n", :green)
 
-    Csv2sql.ImportValidator.validate_import(@imported_csv_directory)
+    imported_csv_directory =
+      Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]
+
+    Csv2sql.ImportValidator.validate_import(imported_csv_directory)
 
     Csv2sql.TimerServer.get_time_spend()
 

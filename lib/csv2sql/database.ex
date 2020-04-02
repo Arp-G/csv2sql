@@ -2,10 +2,11 @@ defmodule Csv2sql.Database do
   alias NimbleCSV.RFC4180, as: CSV
   alias Csv2sql.Repo
 
-  @database Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
   def make_db_schema([drop_query, create_query]) do
+    database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
+
     table_name =
-      String.trim_leading(drop_query, "DROP TABLE IF EXISTS #{@database}.")
+      String.trim_leading(drop_query, "DROP TABLE IF EXISTS #{database_name}.")
       |> String.trim_trailing(";")
 
     execute_query(drop_query)
@@ -18,6 +19,8 @@ defmodule Csv2sql.Database do
   end
 
   def insert_data_chunk(file, data_chunk) do
+    database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
+
     table_name =
       file
       |> Path.basename()
@@ -36,13 +39,14 @@ defmodule Csv2sql.Database do
         end)
       end)
 
-    Repo.insert_all(table_name, data_chunk, prefix: @database)
+    Repo.insert_all(table_name, data_chunk, prefix: database_name)
   end
 
   def prepare_db() do
+    database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
     Ecto.Adapters.SQL.query!(
       Repo,
-      "CREATE DATABASE IF NOT EXISTS #{@database} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;",
+      "CREATE DATABASE IF NOT EXISTS #{database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;",
       []
     )
 

@@ -1,8 +1,6 @@
 defmodule Csv2sql.FileServer do
   use GenServer
 
-  @source_csv_directory Application.get_env(:csv2sql, Csv2sql.MainServer)[:source_csv_directory]
-
   def start_link(_) do
     GenServer.start_link(__MODULE__, :no_args, name: __MODULE__)
   end
@@ -12,7 +10,10 @@ defmodule Csv2sql.FileServer do
   end
 
   def init(_) do
-    DirWalker.start_link(@source_csv_directory)
+    source_csv_directory =
+      Application.get_env(:csv2sql, Csv2sql.MainServer)[:source_csv_directory]
+
+    DirWalker.start_link(source_csv_directory)
   end
 
   def handle_call(:next_file, _from, dir_walker_pid) do
