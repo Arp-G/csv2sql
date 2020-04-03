@@ -41,13 +41,13 @@ Csv2 sql automatically...
 
 ### From executable
 
-Download the csv2sql executable.
+Download the [csv2sql executable](https://github.com/Arpan-Kreeti/csv2sql/blob/master/executable/csv2sql.zip).
 
-Extract the zip and follow the instructions in thhe ```readme.md``` file
+Extract the zip and follow the instructions in the ```readme.md``` file
 
 ### From repository
 
-You must have elixir and mysql installed in your system to run Css2sql.
+You must have elixir and mysql installed in your system to run Csv2sql.
 
 To use the app just clone this repository then edit the ```config.env.sample``` file with correct configurations.
 
