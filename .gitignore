@@ -28,6 +28,11 @@ csv2sql-*.tar
 # schema file
 schema.sql
 
-
 # config file
 /config.env
+
+# Formatting file
+.formatter.exs
+
+# escipt binary
+csv2sql

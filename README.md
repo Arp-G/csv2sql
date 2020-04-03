@@ -43,7 +43,7 @@ Csv2 sql automatically...
 
 Download the [csv2sql executable](https://github.com/Arpan-Kreeti/csv2sql/blob/master/executable/csv2sql.zip).
 
-Extract the zip and follow the instructions in the ```readme.md``` file
+Extract the zip and follow the instructions in the ```read me.md``` file
 
 ### From repository
 
@@ -55,13 +55,21 @@ Once that is done, source the environment variables by ```source ./config.env.sa
 
 Then start the application by ```iex -S mix```
 
+Execute the followinf function to begin the process ```Csv2sql.main(nil)```
+
 Thats all !
 
+### Troubleshooting
 
-## Further improvements or features that might come...
+In case you face datatrucation errors or other issues when inserting data, delete the database in which
+csv2sql inserts data, so that it will be recreated with correct encoding and collation next time.
+By default csv2sql uses ```utf8mb4``` character set and ```utf8mb4_general_ci``` collation when
+creating a database.
 
-* Make a standalone executable of the application
+If you face database connection timeout errors try reducing the worker and db_worker count in the configurations
+or change the database timeout, pool size and other related database configurations.
+
+
+## Further improvements or features to expect...
 
 * Support other popular databases like postgres, mssql server, etc
-
-* Allow users to perform partial tasks only like creating schema, inserting data or validating data.
