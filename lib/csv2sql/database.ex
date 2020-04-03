@@ -52,7 +52,7 @@ defmodule Csv2sql.Database do
 
     Ecto.Adapters.SQL.query!(
       Repo,
-      "SET GLOBAL SQL_MODE=\"NO_BACKSLASH_ESCAPES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION,NO_ZERO_IN_DATE\";",
+      "SET GLOBAL SQL_MODE=\"NO_BACKSLASH_ESCAPES,NO_ENGINE_SUBSTITUTION,NO_ZERO_IN_DATE\";",
       []
     )
   end

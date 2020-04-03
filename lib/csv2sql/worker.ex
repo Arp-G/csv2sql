@@ -6,20 +6,46 @@ defmodule Csv2sql.Worker do
   end
 
   def init(_) do
-    Process.send_after(self(), :start_new_work, 0)
+    set_make_schema = Application.get_env(:csv2sql, Csv2sql.Worker)[:set_make_schema]
+    set_insert_schema = Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_schema]
+    set_insert_data = Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_data]
+
+    work_config = %{
+      set_make_schema: set_make_schema,
+      set_insert_schema: set_insert_schema,
+      set_insert_data: set_insert_data
+    }
+
+    Process.send_after(self(), {:start_new_work, work_config}, 0)
+
     {:ok, nil}
   end
 
-  def handle_info(:start_new_work, _) do
+  def handle_info(
+        {:start_new_work,
+         work_config = %{
+           set_make_schema: set_make_schema,
+           set_insert_schema: set_insert_schema,
+           set_insert_data: set_insert_data
+         }},
+        _
+      ) do
     file = Csv2sql.FileServer.next_file()
 
     if file do
-      file
-      |> make_schema()
-      |> insert_schema()
-      |> insert_data()
+      if(set_make_schema) do
+        result = make_schema(file)
 
-      send(self(), :start_new_work)
+        if(set_insert_schema) do
+          insert_schema(result)
+        end
+      end
+
+      if(set_insert_data) do
+        insert_data(file)
+      end
+
+      send(self(), {:start_new_work, work_config})
 
       {:noreply, nil}
     else

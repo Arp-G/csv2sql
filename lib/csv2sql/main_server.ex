@@ -21,14 +21,19 @@ defmodule Csv2sql.MainServer do
   end
 
   def handle_info(:kickoff, worker_count) do
-    Csv2sql.Helpers.greet()
+    set_insert_schema = Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_schema]
+    set_insert_data = Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_data]
 
-    Csv2sql.Database.prepare_db()
+    if set_insert_schema || set_insert_data do
+      Csv2sql.Database.prepare_db()
+    end
 
     schema_file_path = Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count]
     db_worker_count = Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count]
 
-    File.rm("#{schema_file_path}/schema.sql")
+    if Application.get_env(:csv2sql, Csv2sql.Worker)[:set_make_schema] do
+      File.rm("#{schema_file_path}/schema.sql")
+    end
 
     1..worker_count
     |> Enum.each(fn _ -> Csv2sql.WorkerSupervisor.add_worker() end)
@@ -40,6 +45,8 @@ defmodule Csv2sql.MainServer do
   end
 
   def handle_cast(:done, 1) do
+    set_validate = Application.get_env(:csv2sql, Csv2sql.MainServer)[:set_validate]
+
     wait_for_pending_jobs()
 
     :timer.sleep(2000)
@@ -65,12 +72,16 @@ defmodule Csv2sql.MainServer do
       end
     )
 
-    Csv2sql.Helpers.print_msg("\nValidation Process Started...\n\n", :green)
+    if(set_validate) do
+      Csv2sql.Helpers.print_msg("\nValidation Process Started...\n\n", :green)
 
-    imported_csv_directory =
-      Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]
+      imported_csv_directory =
+        Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]
 
-    Csv2sql.ImportValidator.validate_import(imported_csv_directory)
+      Csv2sql.ImportValidator.validate_import(imported_csv_directory)
+    else
+      Csv2sql.Helpers.print_msg("\nValidation Process Skipped...\n\n", :green)
+    end
 
     Csv2sql.TimerServer.get_time_spend()
 
