@@ -38,6 +38,15 @@ Csv2 sql automatically...
 
 ## Installation
 
+
+### From executable
+
+Download the csv2sql executable.
+
+Extract the zip and follow the instructions in thhe ```readme.md``` file
+
+### From repository
+
 You must have elixir and mysql installed in your system to run Css2sql.
 
 To use the app just clone this repository then edit the ```config.env.sample``` file with correct configurations.
@@ -56,4 +65,3 @@ Thats all !
 * Support other popular databases like postgres, mssql server, etc
 
 * Allow users to perform partial tasks only like creating schema, inserting data or validating data.
-

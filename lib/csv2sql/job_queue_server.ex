@@ -14,15 +14,15 @@ defmodule Csv2sql.JobQueueServer do
   end
 
   def get_work() do
-    GenServer.call(__MODULE__, :get_work)
+    GenServer.call(__MODULE__, :get_work, :infinity)
   end
 
   def get_job_count() do
-    GenServer.call(__MODULE__, :get_job_count)
+    GenServer.call(__MODULE__, :get_job_count, :infinity)
   end
 
   def job_for_file_present(file) do
-    GenServer.call(__MODULE__, {:job_for_file_present, file})
+    GenServer.call(__MODULE__, {:job_for_file_present, file}, :infinity)
   end
 
   def handle_cast({:add_new_data_chunk, file, data_chunk}, state) do

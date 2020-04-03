@@ -14,7 +14,7 @@ defmodule Csv2sql.MixProject do
           applications: [runtime_tools: :permanent]
         ]
       ],
-      escript: [main_module: Csv2sql, app: nil]
+      escript: [main_module: Csv2sql]
     ]
   end
 
@@ -26,6 +26,7 @@ defmodule Csv2sql.MixProject do
   def application do
     [
       extra_applications: [:logger],
+      # Comment this out whhen genrating escript to avoid application start before loading config when running from escript
       mod: {Csv2sql.Application, []}
     ]
   end
