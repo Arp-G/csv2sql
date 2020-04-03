@@ -59,6 +59,8 @@ defmodule Csv2sql.Helpers do
        """ <> reset())
     |> IO.puts()
 
+    take_input()
+
     start_text = [:yellow_background, :black, " Starting... !"] |> format()
 
     CliSpinners.spin_fun(

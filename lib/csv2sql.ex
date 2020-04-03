@@ -1,5 +1,6 @@
 defmodule Csv2sql do
   def main(args \\ []) do
+    Csv2sql.Helpers.greet()
     # Load configuration varaibles dynamically for escripts, this is required
     # since configuration variables are set to whatever they where when the
     # escript was build and cannot be changed later
@@ -29,7 +30,18 @@ defmodule Csv2sql do
            db_worker_count: System.get_env("csv2sql_db_worker_count") |> String.to_integer(),
            source_csv_directory: System.get_env("csv2sql_source_csv_directory"),
            imported_csv_directory: System.get_env("csv2sql_imported_csv_directory"),
-           validated_csv_directory: System.get_env("csv2sql_validated_csv_directory")
+           validated_csv_directory: System.get_env("csv2sql_validated_csv_directory"),
+           set_validate:
+             if(System.get_env("csv2sql_set_validate") == "true", do: true, else: false)
+         ]},
+        {Csv2sql.Worker,
+         [
+           set_make_schema:
+             if(System.get_env("csv2sql_set_make_schema") == "true", do: true, else: false),
+           set_insert_schema:
+             if(System.get_env("csv2sql_set_insert_schema") == "true", do: true, else: false),
+           set_insert_data:
+             if(System.get_env("csv2sql_set_insert_data") == "true", do: true, else: false)
          ]},
         {Csv2sql.Repo,
          [
