@@ -24,28 +24,83 @@ defmodule Csv2sql.SchemaMaker do
     [drop, create]
   end
 
+  # OPTIMIZATION: IF ONE TYPE MATCHES WHY CHECK OTHER TYPES?
   def check_type(item, type) do
     item = String.trim(item)
 
-    empty = is_empty?(item)
+    cond do
+      type.empty && is_empty?(item) ->
+        Map.put(type, :is_empty, type.is_empty && true)
 
-    if(empty) do
-      Map.put(type, :is_empty, type.is_empty && empty)
-    else
-      is_date = type.is_date && is_date?(item)
-      is_timestamp = type.is_timestamp && is_timestamp?(item)
-      is_boolean = type.is_boolean && is_boolean?(item)
-      is_text = type.is_text || is_text?(item)
+      type.boolean && is_boolean?(item) ->
+        %{
+          is_empty: false,
+          is_date: false,
+          is_timestamp: false,
+          is_boolean: type.boolean && true,
+          is_text: text
+        }
 
-      %{
-        is_empty: type.is_empty && empty,
-        is_date: is_date,
-        is_timestamp: is_timestamp,
-        is_boolean: is_boolean,
-        is_text: is_text
-      }
+      type.timestamp && is_timestamp?(item) ->
+        %{
+          is_empty: false,
+          is_date: false,
+          is_timestamp: type.timestamp && true,
+          is_boolen: false,
+          is_text: text
+        }
+
+      type.date && is_date?(item) ->
+        %{
+          is_empty: false,
+          is_date: type.date && true,
+          is_timestamp: false,
+          is_boolen: false,
+          is_text: text
+        }
+
+      is_text?(item) ->
+        %{
+          is_empty: false,
+          is_date: false,
+          is_timestamp: false,
+          is_boolen: false,
+          is_text: type.text || true
+        }
+
+      true ->
+        %{
+          is_empty: false,
+          is_date: false,
+          is_timestamp: false,
+          is_boolen: false,
+          is_text: type.text
+        }
     end
   end
+
+  # def check_type(item, type) do
+  #   item = String.trim(item)
+
+  #   empty = is_empty?(item)
+
+  #   if(empty) do
+  #     Map.put(type, :is_empty, type.is_empty && empty)
+  #   else
+  #     is_date = type.is_date && is_date?(item)
+  #     is_timestamp = type.is_timestamp && is_timestamp?(item)
+  #     is_boolean = type.is_boolean && is_boolean?(item)
+  #     is_text = type.is_text || is_text?(item)
+
+  #     %{
+  #       is_empty: type.is_empty && empty,
+  #       is_date: is_date,
+  #       is_timestamp: is_timestamp,
+  #       is_boolean: is_boolean,
+  #       is_text: is_text
+  #     }
+  #   end
+  # end
 
   defp query_maker(types, file_path) do
     database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
@@ -67,7 +122,7 @@ defmodule Csv2sql.SchemaMaker do
     ["DROP TABLE IF EXISTS #{database_name}.#{table_name};", "#{create_table}"]
   end
 
-  defp get_types(path) do
+  def get_types(path) do
     headers = get_headers(path)
 
     varchar_limit = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
@@ -89,6 +144,8 @@ defmodule Csv2sql.SchemaMaker do
 
         List.update_at(type_list, index, fn _ -> new_item_type_map end)
       end)
+
+      type_list
     end)
     |> Enum.with_index()
     |> Enum.reduce(%{}, fn {type, index}, acc ->
@@ -98,8 +155,8 @@ defmodule Csv2sql.SchemaMaker do
         cond do
           # empty
           type[:is_empty] -> "VARCHAR(#{varchar_limit})"
-          type[:is_date] -> "DATE"
           type[:is_timestamp] -> "TIMESTAMP"
+          type[:is_date] -> "DATE"
           type[:is_boolean] -> "BIT"
           type[:is_text] -> "TEXT"
           true -> "VARCHAR(#{varchar_limit})"
@@ -131,12 +188,11 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_empty?(item) do
-    item
-    |> String.length() == 0
+    item == ""
   end
 
   defp is_date?(item) do
-    String.length(item) == 10 && Regex.match?(~r/\d\d\d\d-\d\d-\d\d/, item)
+    Regex.match?(~r/\d\d\d\d-\d\d-\d\d/, item)
   end
 
   defp is_timestamp?(item) do
@@ -147,8 +203,8 @@ defmodule Csv2sql.SchemaMaker do
     item
     |> Integer.parse()
     |> case do
-      {1, ""} -> String.length(item) == 1
-      {0, ""} -> String.length(item) == 1
+      {1, ""} -> true
+      {0, ""} -> true
       _ -> false
     end
   end
