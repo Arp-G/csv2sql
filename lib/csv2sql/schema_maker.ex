@@ -24,83 +24,28 @@ defmodule Csv2sql.SchemaMaker do
     [drop, create]
   end
 
-  # OPTIMIZATION: IF ONE TYPE MATCHES WHY CHECK OTHER TYPES?
   def check_type(item, type) do
     item = String.trim(item)
 
-    cond do
-      type.empty && is_empty?(item) ->
-        Map.put(type, :is_empty, type.is_empty && true)
+    empty = is_empty?(item)
 
-      type.boolean && is_boolean?(item) ->
-        %{
-          is_empty: false,
-          is_date: false,
-          is_timestamp: false,
-          is_boolean: type.boolean && true,
-          is_text: text
-        }
+    if(empty) do
+      Map.put(type, :is_empty, type.is_empty && empty)
+    else
+      is_date = type.is_date && is_date?(item)
+      is_timestamp = type.is_timestamp && is_timestamp?(item)
+      is_boolean = type.is_boolean && is_boolean?(item)
+      is_text = type.is_text || is_text?(item)
 
-      type.timestamp && is_timestamp?(item) ->
-        %{
-          is_empty: false,
-          is_date: false,
-          is_timestamp: type.timestamp && true,
-          is_boolen: false,
-          is_text: text
-        }
-
-      type.date && is_date?(item) ->
-        %{
-          is_empty: false,
-          is_date: type.date && true,
-          is_timestamp: false,
-          is_boolen: false,
-          is_text: text
-        }
-
-      is_text?(item) ->
-        %{
-          is_empty: false,
-          is_date: false,
-          is_timestamp: false,
-          is_boolen: false,
-          is_text: type.text || true
-        }
-
-      true ->
-        %{
-          is_empty: false,
-          is_date: false,
-          is_timestamp: false,
-          is_boolen: false,
-          is_text: type.text
-        }
+      %{
+        is_empty: type.is_empty && empty,
+        is_date: is_date,
+        is_timestamp: is_timestamp,
+        is_boolean: is_boolean,
+        is_text: is_text
+      }
     end
   end
-
-  # def check_type(item, type) do
-  #   item = String.trim(item)
-
-  #   empty = is_empty?(item)
-
-  #   if(empty) do
-  #     Map.put(type, :is_empty, type.is_empty && empty)
-  #   else
-  #     is_date = type.is_date && is_date?(item)
-  #     is_timestamp = type.is_timestamp && is_timestamp?(item)
-  #     is_boolean = type.is_boolean && is_boolean?(item)
-  #     is_text = type.is_text || is_text?(item)
-
-  #     %{
-  #       is_empty: type.is_empty && empty,
-  #       is_date: is_date,
-  #       is_timestamp: is_timestamp,
-  #       is_boolean: is_boolean,
-  #       is_text: is_text
-  #     }
-  #   end
-  # end
 
   defp query_maker(types, file_path) do
     database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
@@ -134,18 +79,21 @@ defmodule Csv2sql.SchemaMaker do
     path
     |> File.stream!()
     |> CSV.parse_stream()
-    |> Enum.reduce(headers_type_list, fn cols, type_list ->
-      cols
-      |> Enum.with_index()
-      |> Enum.reduce(type_list, fn {item, index}, type_list ->
-        item_type_map = Enum.at(type_list, index)
+    |> Stream.chunk_every(100)
+    |> Task.async_stream(__MODULE__, :infer_type, [headers_type_list], timeout: :infinity)
+    |> Enum.reduce(List.duplicate(get_type_map(), Enum.count(headers)), fn {:ok, result}, acc ->
+      # Here we get a list of type maps for each chunk of data
+      # We need to merge theses type maps obtained from each chunk
 
-        new_item_type_map = check_type(item, item_type_map)
-
-        List.update_at(type_list, index, fn _ -> new_item_type_map end)
-      end)
-
-      type_list
+      for {acc_map, result_map} <- Enum.zip(acc, result) do
+        %{
+          is_empty: acc_map.is_empty && result_map.is_empty,
+          is_date: acc_map.is_date && result_map.is_date,
+          is_timestamp: acc_map.is_timestamp && result_map.is_timestamp,
+          is_boolean: acc_map.is_boolean && result_map.is_boolean,
+          is_text: acc_map.is_text || result_map.is_text
+        }
+      end
     end)
     |> Enum.with_index()
     |> Enum.reduce(%{}, fn {type, index}, acc ->
@@ -163,6 +111,14 @@ defmodule Csv2sql.SchemaMaker do
         end
 
       Map.put(acc, header, type)
+    end)
+  end
+
+  def infer_type(chunk, headers_type_list) do
+    Enum.reduce(chunk, headers_type_list, fn cols, type_list ->
+      for {item, item_type_map} <- Enum.zip(cols, type_list) do
+        check_type(item, item_type_map)
+      end
     end)
   end
 
