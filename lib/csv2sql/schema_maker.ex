@@ -34,6 +34,8 @@ defmodule Csv2sql.SchemaMaker do
     else
       is_date = type.is_date && is_date?(item)
       is_timestamp = type.is_timestamp && is_timestamp?(item)
+      is_integer = type.is_integer && is_integer?(item)
+      is_float = type.is_float && is_float?(item)
       is_boolean = type.is_boolean && is_boolean?(item)
       is_text = type.is_text || is_text?(item)
 
@@ -42,6 +44,8 @@ defmodule Csv2sql.SchemaMaker do
         is_date: is_date,
         is_timestamp: is_timestamp,
         is_boolean: is_boolean,
+        is_integer: is_integer,
+        is_float: is_float,
         is_text: is_text
       }
     end
@@ -91,6 +95,8 @@ defmodule Csv2sql.SchemaMaker do
           is_date: acc_map.is_date && result_map.is_date,
           is_timestamp: acc_map.is_timestamp && result_map.is_timestamp,
           is_boolean: acc_map.is_boolean && result_map.is_boolean,
+          is_integer: acc_map.is_integer && result_map.is_integer,
+          is_float: acc_map.is_float && result_map.is_float,
           is_text: acc_map.is_text || result_map.is_text
         }
       end
@@ -101,11 +107,12 @@ defmodule Csv2sql.SchemaMaker do
 
       type =
         cond do
-          # empty
           type[:is_empty] -> "VARCHAR(#{varchar_limit})"
           type[:is_timestamp] -> "TIMESTAMP"
           type[:is_date] -> "DATE"
           type[:is_boolean] -> "BIT"
+          type[:is_integer] -> "INT"
+          type[:is_float] -> "DOUBLE"
           type[:is_text] -> "TEXT"
           true -> "VARCHAR(#{varchar_limit})"
         end
@@ -139,6 +146,8 @@ defmodule Csv2sql.SchemaMaker do
       is_date: true,
       is_timestamp: true,
       is_boolean: true,
+      is_integer: true,
+      is_float: true,
       is_text: false
     }
   end
@@ -162,6 +171,27 @@ defmodule Csv2sql.SchemaMaker do
       {1, ""} -> true
       {0, ""} -> true
       _ -> false
+    end
+  end
+
+  defp is_integer?(item) do
+    case Integer.parse(item) do
+      {item, ""} -> if item > -2_147_483_648 && item < 2_147_483_647, do: true, else: false
+      _ -> false
+    end
+  end
+
+  defp is_float?(item) do
+    try do
+      case Float.parse(item) do
+        {_, ""} ->
+          true
+
+        _ ->
+          false
+      end
+    rescue
+      _e in ArgumentError -> false
     end
   end
 
