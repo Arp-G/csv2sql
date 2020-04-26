@@ -83,7 +83,9 @@ defmodule Csv2sql.SchemaMaker do
     path
     |> File.stream!()
     |> CSV.parse_stream()
-    |> Stream.chunk_every(100)
+    |> Stream.chunk_every(
+      Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_infer_chunk_size]
+    )
     |> Task.async_stream(__MODULE__, :infer_type, [headers_type_list], timeout: :infinity)
     |> Enum.reduce(List.duplicate(get_type_map(), Enum.count(headers)), fn {:ok, result}, acc ->
       # Here we get a list of type maps for each chunk of data
