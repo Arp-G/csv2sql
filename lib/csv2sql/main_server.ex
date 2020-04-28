@@ -105,13 +105,22 @@ defmodule Csv2sql.MainServer do
   end
 
   defp make_directories_if_not_present() do
-    unless File.exists?(Application.get_env(:csv2sql, Csv2sql.MainServer)[:source_csv_directory]) do
+    source_csv_directory =
+      Application.get_env(:csv2sql, Csv2sql.MainServer)[:source_csv_directory]
+
+    imported_csv_directory =
+      Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]
+
+    validated_csv_directory =
+      Application.get_env(:csv2sql, Csv2sql.MainServer)[:validated_csv_directory]
+
+    if source_csv_directory && !File.exists?(source_csv_directory) do
       Csv2sql.Helpers.print_msg("ERROR: csv source directory does not exists !", :red)
       System.halt(0)
     end
 
-    File.mkdir(Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory])
+    if imported_csv_directory, do: File.mkdir(imported_csv_directory)
 
-    File.mkdir(Application.get_env(:csv2sql, Csv2sql.MainServer)[:validated_csv_directory])
+    if validated_csv_directory, do: File.mkdir(validated_csv_directory)
   end
 end

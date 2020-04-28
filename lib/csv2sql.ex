@@ -24,10 +24,10 @@ defmodule Csv2sql do
           source_csv_directory: :string,
           imported_csv_directory: :string,
           validated_csv_directory: :string,
-          make_schema: :boolean,
-          insert_schema: :boolean,
-          insert_data: :boolean,
-          validate_import: :boolean,
+          skip_make_schema: :boolean,
+          skip_insert_schema: :boolean,
+          skip_insert_data: :boolean,
+          skip_validate_import: :boolean,
           db_connection_string: :string,
           connection_socket: :string,
           varchar_limit: :integer,
@@ -36,7 +36,7 @@ defmodule Csv2sql do
           db_worker_count: :integer,
           insertion_chunk_size: :integer,
           job_count_limit: :integer,
-          log: :boolean,
+          log: :string,
           timeout: :integer,
           connect_timeout: :integer,
           pool_size: :integer,
@@ -46,7 +46,7 @@ defmodule Csv2sql do
       )
 
     source_csv_directory =
-      opts[:source_csv_directory] || System.get_env("csv2sql_source_csv_directory")
+      opts[:source_csv_directory] || System.get_env("csv2sql_source_csv_directory") || "."
 
     schema_file_path =
       opts[:schema_file_path] || is_blank(System.get_env("csv2sql_schema_file_path")) ||
@@ -63,20 +63,24 @@ defmodule Csv2sql do
            "#{source_csv_directory}/validated")
 
     make_schema =
-      opts[:make_schema] ||
-        if(System.get_env("csv2sql_set_make_schema") == "false", do: false, else: true)
+      if opts[:skip_make_schema],
+        do: false,
+        else: if(System.get_env("csv2sql_set_make_schema") == "false", do: false, else: true)
 
     insert_schema =
-      opts[:insert_schema] ||
-        if(System.get_env("csv2sql_set_insert_schema") == "false", do: false, else: true)
+      if opts[:skip_insert_schema],
+        do: false,
+        else: if(System.get_env("csv2sql_set_insert_schema") == "false", do: false, else: true)
 
     insert_data =
-      opts[:insert_data] ||
-        if(System.get_env("csv2sql_set_insert_data") == "false", do: false, else: true)
+      if opts[:skip_insert_data],
+        do: false,
+        else: if(System.get_env("csv2sql_set_insert_data") == "false", do: false, else: true)
 
     validate_import =
-      opts[:validate_import] ||
-        if(System.get_env("csv2sql_set_validate") == "false", do: false, else: true)
+      if opts[:skip_validate_import],
+        do: false,
+        else: if(System.get_env("csv2sql_set_validate") == "false", do: false, else: true)
 
     [username, password, host, database_name] =
       if opts[:db_connection_string] do
@@ -126,7 +130,18 @@ defmodule Csv2sql do
       opts[:job_count_limit] || System.get_env("csv2sql_job_count_limit") |> to_int() ||
         10
 
-    log = opts[:log] || if(System.get_env("csv2sql_log") == "true", do: true, else: false)
+    log =
+      if(opts[:log],
+        do: String.to_atom(opts[:log]),
+        else: false
+      ) ||
+        if(System.get_env("csv2sql_log") == "false") do
+          false
+        else
+          if System.get_env("csv2sql_log"),
+            do: String.to_atom(System.get_env("csv2sql_log")),
+            else: false
+        end
 
     timeout = opts[:timeout] || System.get_env("csv2sql_timeout") |> to_int() || 60000
 
