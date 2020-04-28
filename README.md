@@ -1,13 +1,9 @@
-# Csv2Sql
+# Csv2sql
 
-  
-  
 
-<img  src="https://github.com/Arpan-Kreeti/csv2sql/blob/master/repo_image.png"
-
-alt="csv2sql image"
-
-style="float: left; margin-right: 10px;" />
+<img src="https://github.com/Arpan-Kreeti/csv2sql/blob/master/repo_image.png"
+     alt="csv2sql image"
+     style="float: left; margin-right: 10px;" />
 
   
 
