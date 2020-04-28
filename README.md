@@ -1,17 +1,17 @@
-# Csv2sql
+# Csv2Sql
 
 
-<img src="https://github.com/Arpan-Kreeti/csv2sql/blob/master/repo_image.png"
-     alt="csv2sql image"
+<img src="https://github.com/Arpan-Kreeti/Csv2Sql/blob/master/repo_image.png"
+     alt="Csv2Sql image"
      style="float: left; margin-right: 10px;" />
 
   
 
-## What is Csv2sql ?
+## What is Csv2Sql ?
 
   
 
-Csv2sql is a blazing fast fully automated tool to load huge csv files into a mysql database.
+Csv2Sql is a blazing fast fully automated tool to load huge csv files into a mysql database.
 
   
 
@@ -36,26 +36,26 @@ Csv2 sql can automatically...
   
   
 
-## Why Csv2sql ?
+## Why Csv2Sql ?
 
   
 
-* Using the power of otp and multiple processes in elixir, Csv2sql does all the tasks
+* Using the power of otp and multiple processes in elixir, Csv2Sql does all the tasks
 in parallel whether its infering table schemas from csv files or inserting huge csvs into the database, this makes it super fast and efficient.
 
 
-* When inserting huge files Csv2sql uses multiple processes which inserts multiple portions of the same file
+* When inserting huge files Csv2Sql uses multiple processes which inserts multiple portions of the same file
 into the database parallely thus improving insertion speeds immensely (35% faster than a script written in other languages)
 
   
 
-* Csv2sql uses streams, to lazily read huge csv files, thus it has minimal memory footprint
+* Csv2Sql uses streams, to lazily read huge csv files, thus it has minimal memory footprint
 
   
 
-* Csv2sql comes with lots of customizable parameters which can be changed to fine tune the application based on requirement. 
+* Csv2Sql comes with lots of customizable parameters which can be changed to fine tune the application based on requirement. 
 
-* Csv2Sql supports partial operations, so if you only want to generate a schema file or insert data into in already created tables or validate imported data, everthing is possible with csv2sql.
+* Csv2Sql supports partial operations, so if you only want to generate a schema file or insert data into in already created tables or validate imported data, everthing is possible with Csv2Sql.
 
 * Csv2Sql can be configured to reduce cpu usage at the cost of slower speed or increase speed at the cost of more cpu usage and database load.
 
@@ -66,9 +66,9 @@ into the database parallely thus improving insertion speeds immensely (35% faste
 
 ## Run from executable escript
 
-Download the [csv2sql executable escript](https://github.com/Arpan-Kreeti/csv2sql/blob/master/executable/csv2sql.zip).
+Download the [Csv2Sql executable escript](https://github.com/Arpan-Kreeti/Csv2Sql/blob/master/executable/Csv2Sql.zip).
 
-You must have mysql and erlang installed to run csv2sql...
+You must have mysql and erlang installed to run Csv2Sql...
 
   
 ### You must first install erlang
@@ -104,14 +104,14 @@ sudo apt-get install esl-erlang
   
 
 ### Start the app
-Start csv2sql by ```./csv2sql --<argument>```
+Start Csv2Sql by ```./Csv2Sql --<argument>```
 
  
 ### Use command line args
 
   
 
-You can pass various command line arguments to csv2sql to configure how to process csvs and specify important information.
+You can pass various command line arguments to Csv2Sql to configure how to process csvs and specify important information.
 Any command line argument if specified will override the corresponding environemnt varaible.
 
 A description of all the available command line flags that can be used are given below.
@@ -147,52 +147,52 @@ A description of all the available command line flags that can be used are given
 
 #### Load csvs to database, this will infer the schema, insert the infered schemas to the database, insert the data and then validate data for all the csvs
 
-`./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --db-connection-string "root:mysql@localhost/test_csv"`
+`./Csv2Sql --source-csv-directory "/home/user/Desktop/csvs" --db-connection-string "root:mysql@localhost/test_csv"`
 
 #### Import schema only:
 
-`./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --skip-insert-schema --skip-insert-data --skip-validate-import`
+`./Csv2Sql --source-csv-directory "/home/user/Desktop/csvs" --skip-insert-schema --skip-insert-data --skip-validate-import`
 
 
 #### Skip validation:
 
-`./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --db-connection-string "root:mysql@localhost/test_csv" --skip-validate-import`
+`./Csv2Sql --source-csv-directory "/home/user/Desktop/csvs" --db-connection-string "root:mysql@localhost/test_csv" --skip-validate-import`
 
   #### Only validate imported csv
-  `./csv2sql --skip-make-schema --skip-insert-data --imported-csv-directory "/home/user/Desktop/imported-csvs" --db-connection-string "root:mysql@localhost/test_csv"`
+  `./Csv2Sql --skip-make-schema --skip-insert-data --imported-csv-directory "/home/user/Desktop/imported-csvs" --db-connection-string "root:mysql@localhost/test_csv"`
   
 
 #### Custom path for imported and validated csv files:
 
-`./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --imported-csv-directory "/home/user/Desktop/imported_csvs" --validated-csv-directory "/home/user/Desktop/validated_csvs" --db-connection-string "root:mysql@localhost/test_csv"`
+`./Csv2Sql --source-csv-directory "/home/user/Desktop/csvs" --imported-csv-directory "/home/user/Desktop/imported_csvs" --validated-csv-directory "/home/user/Desktop/validated_csvs" --db-connection-string "root:mysql@localhost/test_csv"`
 
   
   
 
 #### Only infer and create schema but don't insert data:
 
-`./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --skip-insert-data --db-connection-string "root:mysql@localhost/test_csv"`
+`./Csv2Sql --source-csv-directory "/home/user/Desktop/csvs" --skip-insert-data --db-connection-string "root:mysql@localhost/test_csv"`
 
   
   
 
 #### Change the worker count, setting this to one will lead to processing a single csv at a time, this will be slower but will lead to lower cpu usage:
 
-`./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --db-worker-count 1 --db-connection-string "root:mysql@localhost/test_csv"`
+`./Csv2Sql --source-csv-directory "/home/user/Desktop/csvs" --db-worker-count 1 --db-connection-string "root:mysql@localhost/test_csv"`
 
   
   
 
 #### Enable logs, to log the queries being executed:
 
-`./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --log debug --db-connection-string "root:mysql@localhost/test_csv"`
+`./Csv2Sql --source-csv-directory "/home/user/Desktop/csvs" --log debug --db-connection-string "root:mysql@localhost/test_csv"`
 
   
   
 
 #### Set the number of workers inserting data into the database, lowering the value will lead to slow performance but lesser load on database, a higher value can lead to too many database connection errors:
 
-`./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --db-worker-count 2 --db-connection-string "root:mysql@localhost/test_csv"`
+`./Csv2Sql --source-csv-directory "/home/user/Desktop/csvs" --db-worker-count 2 --db-connection-string "root:mysql@localhost/test_csv"`
 
   
   
@@ -201,7 +201,7 @@ A description of all the available command line flags that can be used are given
 
  You can use configuration files to specify various arguments or if the number of arguments is very large and difficult to specify as command line arguments.
 
-cd into the directry with the configuration file and csv2sql executable
+cd into the directry with the configuration file and Csv2Sql executable
 
   
 
@@ -219,13 +219,13 @@ Load the configurations in ```config.env``` in your current shell session by ```
 
 ### Start the app
 
-Start csv2sql by ```./csv2sql```
+Start Csv2Sql by ```./Csv2Sql```
 
 
 ## Run the app from source code
 
   
-You must have elixir and mysql installed in your system to run Csv2sql.
+You must have elixir and mysql installed in your system to run Csv2Sql.
 
  
 
@@ -241,7 +241,7 @@ Then start the application by ```iex -S mix```
 
   
 
-Execute the followinf function to begin the process ```Csv2sql.main(nil)```
+Execute the followinf function to begin the process ```Csv2Sql.main(nil)```
 
   
 
@@ -250,7 +250,7 @@ Thats all !
 
 ### Supported data types
 
-As of now csv2sql can map data into one of the following datatypes:
+As of now Csv2Sql can map data into one of the following datatypes:
 
 * date
 * timestamp
@@ -267,9 +267,9 @@ As of now csv2sql can map data into one of the following datatypes:
 
 In case you face datatrucation errors or other issues when inserting data, delete the database in which
 
-csv2sql inserts data, so that it will be recreated with correct encoding and collation next time.
+Csv2Sql inserts data, so that it will be recreated with correct encoding and collation next time.
 
-By default csv2sql uses ```utf8mb4``` character set and ```utf8mb4_general_ci``` collation when
+By default Csv2Sql uses ```utf8mb4``` character set and ```utf8mb4_general_ci``` collation when
 
 creating a database.
 
