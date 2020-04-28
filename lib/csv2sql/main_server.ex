@@ -15,6 +15,7 @@ defmodule Csv2sql.MainServer do
   # server is then free to pick up this message, which triggers the handle_info
   # callback, and the workers get started
   def init(_) do
+    make_directories_if_not_present()
     Process.send_after(self(), :kickoff, 0)
     worker_count = Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count]
     {:ok, worker_count}
@@ -101,5 +102,25 @@ defmodule Csv2sql.MainServer do
       Csv2sql.JobQueueServer.get_job_count() > 0 -> wait_for_pending_jobs()
       true -> nil
     end
+  end
+
+  defp make_directories_if_not_present() do
+    source_csv_directory =
+      Application.get_env(:csv2sql, Csv2sql.MainServer)[:source_csv_directory]
+
+    imported_csv_directory =
+      Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]
+
+    validated_csv_directory =
+      Application.get_env(:csv2sql, Csv2sql.MainServer)[:validated_csv_directory]
+
+    if source_csv_directory && !File.exists?(source_csv_directory) do
+      Csv2sql.Helpers.print_msg("ERROR: csv source directory does not exists !", :red)
+      System.halt(0)
+    end
+
+    if imported_csv_directory, do: File.mkdir(imported_csv_directory)
+
+    if validated_csv_directory, do: File.mkdir(validated_csv_directory)
   end
 end

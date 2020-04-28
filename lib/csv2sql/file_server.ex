@@ -29,7 +29,7 @@ defmodule Csv2sql.FileServer do
 
         if extension == ".csv", do: path, else: get_next_file(dir_walker_pid)
 
-      # Retuns nil when ther are no fore files to return
+      # Retuns nil when ther are no more files to return
       other ->
         other
     end
