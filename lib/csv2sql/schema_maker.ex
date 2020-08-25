@@ -74,11 +74,11 @@ defmodule Csv2sql.SchemaMaker do
   def get_types(path) do
     headers = get_headers(path)
 
+    column_count = Enum.count(headers)
+
     varchar_limit = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
 
-    headers_type_list =
-      headers
-      |> Enum.map(fn _header -> get_type_map() end)
+    headers_type_list = List.duplicate(get_type_map(), column_count)
 
     path
     |> File.stream!()
@@ -87,7 +87,7 @@ defmodule Csv2sql.SchemaMaker do
       Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_infer_chunk_size]
     )
     |> Task.async_stream(__MODULE__, :infer_type, [headers_type_list], timeout: :infinity)
-    |> Enum.reduce(List.duplicate(get_type_map(), Enum.count(headers)), fn {:ok, result}, acc ->
+    |> Enum.reduce(headers_type_list, fn {:ok, result}, acc ->
       # Here we get a list of type maps for each chunk of data
       # We need to merge theses type maps obtained from each chunk
 
@@ -121,6 +121,7 @@ defmodule Csv2sql.SchemaMaker do
 
       Map.put(acc, header, type)
     end)
+    |> header_map_to_list(headers)
   end
 
   def infer_type(chunk, headers_type_list) do
@@ -152,6 +153,12 @@ defmodule Csv2sql.SchemaMaker do
       is_float: true,
       is_text: false
     }
+  end
+
+  defp header_map_to_list(header_map, headers) do
+    Enum.reduce(headers, [], fn header, acc ->
+      acc ++ [{header, header_map[header]}]
+    end)
   end
 
   defp is_empty?(item) do
