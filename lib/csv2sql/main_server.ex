@@ -9,6 +9,10 @@ defmodule Csv2sql.MainServer do
     GenServer.cast(__MODULE__, :done)
   end
 
+  def get_worker_count() do
+    GenServer.call(__MODULE__, :get_active_worker_count)
+  end
+
   # Starts the server with initial state set to worker_count
   # The init function uses send_after to tell the runtime to queue a message to this
   # server immediately (that is, after waiting 0 ms). When the init function exits, the
@@ -45,6 +49,10 @@ defmodule Csv2sql.MainServer do
     {:noreply, worker_count}
   end
 
+  def handle_call(:get_active_worker_count, _from, worker_count) do
+    {:reply, worker_count, worker_count}
+  end
+
   def handle_cast(:done, 1) do
     set_validate = Application.get_env(:csv2sql, Csv2sql.MainServer)[:set_validate]
 
@@ -52,26 +60,7 @@ defmodule Csv2sql.MainServer do
 
     :timer.sleep(2000)
 
-    # Add line break
-    IO.puts("----------------------------------------")
-    IO.puts("")
-
-    CliSpinners.spin_fun(
-      [
-        frames: :arrow2,
-        text: "Finished importing CSVs...",
-        done: ""
-      ],
-      fn ->
-        CliSpinners.spin(
-          frames: :clock,
-          text: "Staring Validation Process...",
-          done: "Staring Validation Process..."
-        )
-
-        :timer.sleep(3000)
-      end
-    )
+    start_validation_message()
 
     if(set_validate) do
       Csv2sql.Helpers.print_msg("\nValidation Process Started...\n\n", :green)
@@ -122,5 +111,28 @@ defmodule Csv2sql.MainServer do
     if imported_csv_directory, do: File.mkdir(imported_csv_directory)
 
     if validated_csv_directory, do: File.mkdir(validated_csv_directory)
+  end
+
+  defp start_validation_message() do
+    # Add line break
+    IO.puts("----------------------------------------")
+    IO.puts("")
+
+    CliSpinners.spin_fun(
+      [
+        frames: :arrow2,
+        text: "Finished importing CSVs...",
+        done: ""
+      ],
+      fn ->
+        CliSpinners.spin(
+          frames: :clock,
+          text: "Staring Validation Process...",
+          done: "Staring Validation Process..."
+        )
+
+        :timer.sleep(3000)
+      end
+    )
   end
 end
