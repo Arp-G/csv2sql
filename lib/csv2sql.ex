@@ -179,7 +179,8 @@ defmodule Csv2sql do
          [
            set_make_schema: make_schema,
            set_insert_schema: insert_schema,
-           set_insert_data: insert_data
+           set_insert_data: insert_data,
+           gui: true
          ]},
         {Csv2sql.Repo,
          [
