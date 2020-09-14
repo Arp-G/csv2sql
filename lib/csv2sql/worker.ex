@@ -19,12 +19,12 @@ defmodule Csv2sql.Worker do
 
   def handle_info(
         {:start_new_work,
-         work_config = %{
+         work_config = [
            set_make_schema: set_make_schema,
            set_insert_schema: set_insert_schema,
            set_insert_data: set_insert_data,
            gui: gui
-         }},
+         ]},
         _
       ) do
     file = Csv2sql.FileServer.next_file()
