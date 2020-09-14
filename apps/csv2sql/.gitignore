@@ -19,8 +19,20 @@ erl_crash.dump
 # Also ignore archive artifacts (built via "mix archive.build").
 *.ez
 
+# Ignore package tarball (built via "mix hex.build").
+csv2sql-*.tar
+
 # linter
 /.elixir_ls/
 
+# schema file
+schema.sql
+
+# config file
+/config.env
+
 # Formatting file
 .formatter.exs
+
+# escipt binary
+csv2sql
