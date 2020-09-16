@@ -48,6 +48,7 @@ defmodule Dashboard.MixProject do
       {:gettext, "~> 0.11"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
+      {:cachex, "~> 3.3"},
       {:csv2sql, in_umbrella: true}
     ]
   end
