@@ -1,27 +1,26 @@
 <div class="config-page">
 
-
 <div class="flex-container legend">
   <h2 class="legend-heading "> LEGEND </h2>
 
   <div class="legend-item">
     <span class="legend-text-item"> This config is compulsary (Database configs are compulsary only if database access is needed) </span>
-    <span style="background-color: #20c997" class="legend-color-item"/>
+    <span style="background-color: #c3e6cb" class="legend-color-item"/>
   </div>
 
   <div class="legend-item">
     <span class="legend-text-item"> Changing this config is potentially dangerous </span>
-    <span style="background-color: #ffc107" class="legend-color-item"/>
+    <span style="background-color: #ffeeba" class="legend-color-item"/>
   </div>
 
   <div class="legend-item">
     <span class="legend-text-item"> Changing this config can be dangerous </span>
-    <span style="background-color: #fd7e14" class="legend-color-item"/>
+    <span style="background-color: #f5c6cb" class="legend-color-item"/>
   </div>
 
   <div class="legend-item">
     <span class="legend-text-item"> This config is optional </span>
-    <span style="background-color: #6c757d" class="legend-color-item"/>
+    <span style="background-color: #d6d8db" class="legend-color-item"/>
   </div>
 
 </div>
@@ -34,7 +33,7 @@
       <div class="d-flex w-100 justify-content-between list-group-item-secondary">
         <h5 class="mb-1">
           <span
-            aria-label="The path were the generated schema file will be stored, defaults to the csv2sql_source_csv_directory Example: /home/user/Desktop/schema"
+            aria-label="The path were the generated schema file will be stored, defaults to the csv source directory, Example: /home/user/Desktop/schema"
             data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> Schema File Path </span>
@@ -63,7 +62,7 @@
       <div class="d-flex w-100 justify-content-between list-group-item-secondary">
         <h5 class="mb-1">
           <span
-            aria-label="The directory were the csvs will be moved after importing to database, defaults to the <csv2sql_source_csv_directory>/imported"
+            aria-label="The directory were the csvs will be moved after importing to database, defaults to the <source_csv_directory>/imported"
             data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> Import CSV Directory </span>
@@ -78,7 +77,7 @@
       <div class="d-flex w-100 justify-content-between list-group-item-secondary">
         <h5 class="mb-1">
           <span
-            aria-label="The directory were the csvs will be moved after they are validated, defaults to the <csv2sql_source_csv_directory>/validated"
+            aria-label="The directory were the csvs will be moved after they are validated, defaults to the <source_csv_directory>/validated"
             data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> Validate CSV Directory </span>
@@ -107,7 +106,7 @@
       <div class="d-flex w-100 justify-content-between list-group-item-secondary">
         <h5 class="mb-1">
           <span
-            aria-label="Set whether you want to insert the schema file that is generated (this option will only work if set_make_schema=true)" data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
+            aria-label="Set whether you want to insert the schema file that is generated (this option will only work if make_schema=true)" data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> Insert Schema ? </span>
           </span>
