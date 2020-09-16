@@ -24,7 +24,7 @@ defmodule Csv2sql.Application do
         Csv2sql.DbWorkerSupervisor,
         Csv2sql.WorkerSupervisor,
         Csv2sql.MainServer,
-        Csv2sql.StatsKeeper
+        Csv2sql.Observer
       ])
 
     opts = [strategy: :one_for_one, name: Csv2sql.Supervisor]

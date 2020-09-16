@@ -1,7 +1,7 @@
 defmodule Csv2sql.Worker do
   use GenServer
 
-  alias Csv2sql.StatsKeeper
+  alias Csv2sql.Observer
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, :no_args)
@@ -31,24 +31,24 @@ defmodule Csv2sql.Worker do
 
     if file do
       if(set_make_schema) do
-        if gui, do: StatsKeeper.update_file_status(file, :infer_schema)
+        if gui, do: Observer.update_file_status(file, :infer_schema)
 
         result = make_schema(file)
 
         if(set_insert_schema) do
-          if gui, do: StatsKeeper.update_file_status(file, :insert_schema)
+          if gui, do: Observer.update_file_status(file, :insert_schema)
 
           insert_schema(result)
         end
       end
 
       if(set_insert_data) do
-        if gui, do: StatsKeeper.update_file_status(file, :insert_data)
+        if gui, do: Observer.update_file_status(file, :insert_data)
 
         insert_data(file)
       end
 
-      if gui, do: StatsKeeper.update_file_status(file, :finish)
+      if gui, do: Observer.update_file_status(file, :finish)
 
       send(self(), {:start_new_work, work_config})
 
