@@ -32,4 +32,9 @@ defmodule DashboardWeb.ConfigLive do
        valid_config: ConfigHelper.validate_config(assigns.config)
      )}
   end
+
+  @impl true
+  def handle_params(_unsigned_params, _uri, socket) do
+    {:noreply, socket}
+  end
 end

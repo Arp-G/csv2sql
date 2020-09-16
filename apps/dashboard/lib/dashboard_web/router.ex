@@ -19,6 +19,8 @@ defmodule DashboardWeb.Router do
 
     live "/", PageLive, :index
     live "/config", ConfigLive, :index
+    live "/main", MainLive, :index
+    live "/about", AboutLive, :index
   end
 
   # Other scopes may use custom stacks.

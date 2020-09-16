@@ -1,3 +1,38 @@
+<header id="main-nav-header">
+  <section>
+    <a href="https://github.com/Arp-G/csv2sql/" class="csv2sql-logo">
+      <img src="<%= Routes.static_path(@socket, "/images/csv2sql.png") %>" alt="csv2sql Logo"/>
+    </a>
+    <span class="nav-header"> Blazing fast fully automated csv to sql loader</span>
+    <ul class="tab-navbar nav nav-tabs nav-fill">
+      <li class="nav-item">
+        <%= live_patch to: Routes.config_path(@socket, :index),
+            class: "nav-link #{if @socket.view==DashboardWeb.ConfigLive, do: "active", else: ""}" do %>
+            <i class="fa fa-cog" aria-hidden="true"></i> Change Configuration
+        <% end %>
+      </li>
+      <li class="nav-item">
+        <%= live_patch to: Routes.main_path(@socket, :index),
+          class: "nav-link #{if @socket.view==DashboardWeb.MainLive, do: "active", else: ""}" do %>
+          <i class="fa fa-bolt" aria-hidden="true"></i> Start!
+        <% end %>
+      </li>
+        <%= if function_exported?(Routes, :live_dashboard_path, 2) do %>
+        <li class="nav-item">
+          <%= link to: Routes.live_dashboard_path(@socket, :home), class: "nav-link" do %>
+            <i class="fa fa-info" aria-hidden="true"></i> LiveDashboard
+          <% end %>
+        </li>
+      <% end %>
+      <li class="nav-item">
+        <%= live_patch to: Routes.about_path(@socket, :index),
+          class: "nav-link #{if @socket.view==DashboardWeb.AboutLive, do: "active", else: ""}" do %>
+          <i class="fa fa-heart" aria-hidden="true"></i> About
+        <% end %>
+      </li>
+    </ul>
+  </section>
+</header>
 <main role="main">
   <p class="alert alert-info" role="alert"
     phx-click="lv:clear-flash"

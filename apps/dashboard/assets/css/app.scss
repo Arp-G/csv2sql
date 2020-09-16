@@ -6,6 +6,14 @@
   background-color: #f8f9fa;
 }
 
+.tab-navbar{
+  font-size: 1.5em;
+  font-weight: bold;
+  font-variant: small-caps;
+  font-style: oblique;
+  background-color: white;
+}
+
 .flex-container {
   display: flex;
   flex-wrap: wrap;
@@ -19,7 +27,7 @@
   position: absolute;
   flex-direction: column;
   margin: 10px;
-  width: 300px;
+  width: 13%;
   border-radius: 6px;
   box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
   background-color: #fff;
@@ -34,14 +42,20 @@
   font-weight: bold;
 }
 
+.legend-heading{
+  font-weight: bold;
+  font-style: italic;
+}
+
 .legend-text-item{
+  width: 90%;
   align-self: flex-start;
   display: inline-block;
 }
 
 .legend-color-item{
-  position: relative;
-  right: 0px;
+  position: absolute;
+  right: 10px;
   width: 20px;
   height: 20px;
 }
