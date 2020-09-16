@@ -26,6 +26,9 @@
       <li>
         <a href="https://github.com/phoenixframework/phoenix/blob/v1.5/CHANGELOG.md">v1.5 Changelog</a>
       </li>
+      <li>
+       <%= live_patch "Config", to: Routes.config_path(@socket, :index) %>
+      </li>
     </ul>
   </article>
   <article class="column">

@@ -12,9 +12,8 @@ defmodule Dashboard.Application do
       # Start the PubSub system
       {Phoenix.PubSub, name: Dashboard.PubSub},
       # Start the Endpoint (http/https)
-      DashboardWeb.Endpoint
-      # Start a worker by calling: Dashboard.Worker.start_link(arg)
-      # {Dashboard.Worker, arg}
+      DashboardWeb.Endpoint,
+      {Cachex, name: :config_cache}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
