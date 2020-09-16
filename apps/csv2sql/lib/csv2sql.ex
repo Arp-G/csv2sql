@@ -6,13 +6,24 @@ defmodule Csv2sql do
     # escript was build and cannot be changed later
     update_config(args)
 
-    Csv2sql.Application.start(:no_args, :no_args)
+    {:ok, sup_pid} = Csv2sql.Application.start(:no_args, :no_args)
 
     # In escripts as soon as the main() function return,, the escript ends,
     # this allows the escript to keep running.
-    receive do
-      {:wait} ->
-        System.halt(0)
+    # receive do
+    #   {:wait} ->
+    #     System.halt(0)
+    # end
+
+    wait_for_finish()
+    Supervisor.stop(sup_pid)
+  end
+
+  defp wait_for_finish() do
+    Csv2sql.Observer.get_stage()
+    |> case do
+      :finish -> nil
+      _ -> wait_for_finish()
     end
   end
 

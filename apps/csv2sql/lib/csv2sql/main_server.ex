@@ -1,5 +1,6 @@
 defmodule Csv2sql.MainServer do
   use GenServer
+  alias Csv2sql.Observer
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, :no_args, name: __MODULE__)
@@ -63,6 +64,8 @@ defmodule Csv2sql.MainServer do
     start_validation_message()
 
     if(set_validate) do
+      Observer.change_stage(:validation)
+
       Csv2sql.Helpers.print_msg("\nValidation Process Started...\n\n", :green)
 
       imported_csv_directory =
@@ -77,7 +80,7 @@ defmodule Csv2sql.MainServer do
 
     :timer.sleep(100)
 
-    System.halt(0)
+    Observer.change_stage(:finish)
 
     {:noreply, 0}
   end
