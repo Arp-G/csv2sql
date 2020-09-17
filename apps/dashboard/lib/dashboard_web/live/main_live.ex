@@ -55,18 +55,24 @@ defmodule DashboardWeb.MainLive do
         {:noreply, assign(socket, timer_set: nil)}
 
       _ ->
+        %{
+          file_list: file_list,
+          stage: stage,
+          active_worker_count: active_worker_count
+        } = Csv2sql.Observer.get_stats()
+
         file_list =
-          Csv2sql.Observer.get_stats()
+          file_list
           |> Enum.map(fn {_, file_struct} -> file_struct end)
           |> Enum.sort_by(fn %Csv2sql.File{raw_size: size} -> size end, :desc)
 
         {:noreply,
          assign(socket,
            file_list: file_list,
-           stage: Csv2sql.Observer.get_stage(),
+           stage: stage,
            timer_set: Process.send_after(self(), :tick, 1000),
            stats: %{
-             active_workers: 0,
+             active_workers: active_worker_count,
              worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count],
              db_worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count],
              cpu_usage: :cpu_sup.util() |> Float.round(2),
