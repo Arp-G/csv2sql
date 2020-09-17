@@ -10,10 +10,6 @@ defmodule Csv2sql.MainServer do
     GenServer.cast(__MODULE__, :done)
   end
 
-  def get_worker_count() do
-    GenServer.call(__MODULE__, :get_active_worker_count)
-  end
-
   # Starts the server with initial state set to worker_count
   # The init function uses send_after to tell the runtime to queue a message to this
   # server immediately (that is, after waiting 0 ms). When the init function exits, the
@@ -50,16 +46,14 @@ defmodule Csv2sql.MainServer do
     {:noreply, worker_count}
   end
 
-  def handle_call(:get_active_worker_count, _from, worker_count) do
-    {:reply, worker_count, worker_count}
-  end
-
   def handle_cast(:done, 1) do
+    Csv2sql.Observer.update_active_worker_count(0)
+
     set_validate = Application.get_env(:csv2sql, Csv2sql.MainServer)[:set_validate]
 
     wait_for_pending_jobs()
 
-    :timer.sleep(2000)
+    :timer.sleep(500)
 
     start_validation_message()
 
@@ -76,7 +70,7 @@ defmodule Csv2sql.MainServer do
       Csv2sql.Helpers.print_msg("\nValidation Process Skipped...\n\n", :green)
     end
 
-    Csv2sql.TimerServer.get_time_spend()
+    pretty_print_time_take()
 
     :timer.sleep(100)
 
@@ -86,6 +80,7 @@ defmodule Csv2sql.MainServer do
   end
 
   def handle_cast(:done, worker_count) do
+    Csv2sql.Observer.update_active_worker_count(worker_count - 1)
     {:noreply, worker_count - 1}
   end
 
@@ -94,6 +89,30 @@ defmodule Csv2sql.MainServer do
       Csv2sql.JobQueueServer.get_job_count() > 0 -> wait_for_pending_jobs()
       true -> nil
     end
+  end
+
+  defp pretty_print_time_take() do
+    %{start_time: start_time} = Csv2sql.Observer.get_stats()
+
+    time_taken =
+      DateTime.utc_now()
+      |> Time.diff(start_time, :millisecond)
+      |> Kernel./(1000)
+      |> Float.round()
+
+    """
+
+    ----------------------------------------
+
+    FINISHED !!!
+
+    The operation took #{time_taken} seconds
+
+
+    ----------------------------------------
+
+    """
+    |> Csv2sql.Helpers.print_msg(:green)
   end
 
   defp make_directories_if_not_present() do
