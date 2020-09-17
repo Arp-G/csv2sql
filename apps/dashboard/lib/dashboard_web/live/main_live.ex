@@ -45,7 +45,24 @@ defmodule DashboardWeb.MainLive do
           :working
       end
 
-    {:noreply, assign(socket, stage: new_stage)}
+    if new_stage == :reset do
+      {:noreply,
+       assign(socket,
+         file_list: [],
+         stage: :waiting,
+         timer_set: nil,
+         stats: %{
+           active_workers: 0,
+           worker_count: 0,
+           db_worker_count: 0,
+           cpu_usage: 0,
+           memory_usage: 0,
+           time_spend: 0
+         }
+       )}
+    else
+      {:noreply, assign(socket, stage: new_stage)}
+    end
   end
 
   @impl true
@@ -56,6 +73,7 @@ defmodule DashboardWeb.MainLive do
 
       _ ->
         %{
+          start_time: start_time,
           file_list: file_list,
           stage: stage,
           active_worker_count: active_worker_count
@@ -66,18 +84,24 @@ defmodule DashboardWeb.MainLive do
           |> Enum.map(fn {_, file_struct} -> file_struct end)
           |> Enum.sort_by(fn %Csv2sql.File{raw_size: size} -> size end, :desc)
 
+        time_taken =
+          DateTime.utc_now()
+          |> Time.diff(start_time, :millisecond)
+          |> Kernel./(1000)
+          |> Float.round()
+
         {:noreply,
          assign(socket,
            file_list: file_list,
            stage: stage,
-           timer_set: Process.send_after(self(), :tick, 1000),
+           timer_set: Process.send_after(self(), :tick, 500),
            stats: %{
              active_workers: active_worker_count,
              worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count],
              db_worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count],
              cpu_usage: :cpu_sup.util() |> Float.round(2),
              memory_usage: :erlang.memory(:total) |> Sizeable.filesize(),
-             time_spend: Csv2sql.TimerServer.get_time_spend()
+             time_spend: time_taken
            }
          )}
     end
