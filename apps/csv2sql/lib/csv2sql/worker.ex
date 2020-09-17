@@ -48,8 +48,6 @@ defmodule Csv2sql.Worker do
         insert_data(file)
       end
 
-      if gui, do: Observer.update_file_status(file, :finish)
-
       send(self(), {:start_new_work, work_config})
 
       {:noreply, nil}
