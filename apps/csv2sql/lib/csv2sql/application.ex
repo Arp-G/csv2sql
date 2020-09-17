@@ -14,9 +14,7 @@ defmodule Csv2sql.Application do
       end
 
     children =
-      [
-        {Csv2sql.TimerServer, Time.utc_now()}
-      ]
+      []
       |> Kernel.++(repo_supervisor)
       |> Kernel.++([
         Csv2sql.FileServer,
