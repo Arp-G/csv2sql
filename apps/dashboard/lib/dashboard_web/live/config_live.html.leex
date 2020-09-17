@@ -27,9 +27,7 @@
 
   <div class="container flex-container">
 
-
     <div class="flex-item">
-
       <div class="d-flex w-100 justify-content-between list-group-item-secondary">
         <h5 class="mb-1">
           <span
@@ -40,8 +38,14 @@
           </span>
         </h5>
       </div>
-      <input type="text" placeholder="Type here..." aria-describedby="basic-addon1" phx-blur="update_config" phx-value-config="csv2sql_schema_file_path" />
-
+      <input
+        type="text"
+        placeholder="Type here..."
+        aria-describedby="basic-addon1"
+        phx-blur="update_config"
+        phx-value-config="schema-file-path"
+        value=<%= @config[:"schema-file-path"] %>
+      />
     </div>
 
 
@@ -55,7 +59,14 @@
           </span>
         </h5>
       </div>
-      <input type="text" placeholder="Type here..." class="form-control" phx-blur="update_config" phx-value-config="csv2sql_source_csv_directory" />
+      <input
+      type="text"
+      placeholder="Type here..."
+      class="form-control"
+      phx-blur="update_config"
+      phx-value-config="source-csv-directory"
+      value=<%= @config[:"source-csv-directory"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -69,8 +80,14 @@
           </span>
         </h5>
       </div>
-      <input type="text" placeholder="Type here..." class="form-control" phx-blur="update_config"
-        phx-value-config="csv2sql_imported_csv_directory" />
+      <input
+        type="text"
+        placeholder="Type here..."
+        class="form-control"
+        phx-blur="update_config"
+        phx-value-config="imported-csv-directory"
+        value=<%= @config[:"imported-csv-directory"] %>
+        />
     </div>
 
     <div class="flex-item">
@@ -84,64 +101,91 @@
           </span>
         </h5>
       </div>
-      <input type="text" placeholder="Type here..." class="form-control" phx-blur="update_config"
-        phx-value-config="csv2sql_validated_csv_directory" />
+      <input
+      type="text"
+      placeholder="Type here..."
+      class="form-control"
+      phx-blur="update_config"
+      phx-value-config="validated-csv-directory"
+      value=<%= @config[:"validated-csv-directory"] %>
+      />
     </div>
 
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-secondary">
         <h5 class="mb-1">
-          <span aria-label="Set whether you want to make schema file" data-microtip-size="large" class="popup"
+          <span aria-label="Set whether you want to skip making a schema file" data-microtip-size="large" class="popup"
             data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Make Schema ? </span>
+            <span style="font-size: 1.3em; margin: 5px"> Skip Make Schema ? </span>
           </span>
         </h5>
       </div>
-      <input type="checkbox" checked class="form-control check-box-input" value="true" phx-click="update_config"
-        phx-value-config="csv2sql_set_make_schema" />
+      <input
+      type="checkbox"
+      class="form-control check-box-input"
+      phx-click="update_config"
+      phx-value-config="skip-make-schema"
+      <%= if @config[:"skip-make-schema"]=="true", do: "checked", else: "" %>
+      />
     </div>
 
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-secondary">
         <h5 class="mb-1">
           <span
-            aria-label="Set whether you want to insert the schema file that is generated (this option will only work if make_schema=true)" data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
+            aria-label="Set whether you want to skip inserting the schema file that is generated (this option will only work if skip_make_schema=false)" data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Insert Schema ? </span>
+            <span style="font-size: 1.3em; margin: 5px"> Skip Insert Schema ? </span>
           </span>
         </h5>
       </div>
-      <input type="checkbox" checked class="form-control check-box-input" value="true" phx-click="update_config"
-        phx-value-config="csv2sql_set_insert_schema" />
+      <input
+      type="checkbox"
+      class="form-control
+      check-box-input"
+      phx-click="update_config"
+      phx-value-config="skip-insert-schema"
+      <%= if @config[:"skip-insert-schema"]=="true", do: "checked", else: "" %>
+      />
     </div>
 
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-secondary">
         <h5 class="mb-1">
-          <span aria-label="Set whether to insert the CSVs into the database" data-microtip-size="large" class="popup"
+          <span aria-label="Set whether to skip inserting the CSVs into the database" data-microtip-size="large" class="popup"
             data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Insert CSV ? </span>
+            <span style="font-size: 1.3em; margin: 5px"> Skip Insert CSV ? </span>
           </span>
         </h5>
       </div>
-      <input type="checkbox" checked class="form-control check-box-input" value="true" phx-click="update_config"
-        phx-value-config="csv2sql_set_insert_data" />
+      <input
+      type="checkbox"
+      class="form-control check-box-input"
+      phx-click="update_config"
+      phx-value-config="skip-insert-data"
+      <%= if @config[:"skip-insert-data"]=="true", do: "checked", else: "" %>
+      />
     </div>
 
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-secondary">
         <h5 class="mb-1">
-          <span aria-label="Set whether to validate if the csvs have been inserted correctly" data-microtip-size="large" class="popup"
+          <span aria-label="Set whether to skip validating the import" data-microtip-size="large" class="popup"
             data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Validate Import ? </span>
+            <span style="font-size: 1.3em; margin: 5px"> Skip Validations ? </span>
           </span>
         </h5>
       </div>
-      <input type="checkbox" checked class="form-control check-box-input" value="true" phx-click="update_config"
-        phx-value-config="csv2sql_set_validate" />
+      <input
+      type="checkbox"
+      class="form-control check-box-input"
+      phx-click="update_config"
+      phx-value-config="skip-validate-import"
+      <%= if @config[:"skip-validate-import"]=="true", do: "checked", else: "" %>
+      />
     </div>
 
     <div class="flex-item">
@@ -154,7 +198,14 @@
           </span>
         </h5>
       </div>
-      <input type="text" placeholder="Type here..." class="form-control" phx-blur="update_config" phx-value-config="csv2sql_username" />
+      <input
+      type="text"
+      placeholder="Type here..."
+      class="form-control"
+      phx-blur="update_config"
+      phx-value-config="csv2sql_username"
+      value=<%= @config[:"csv2sql_username"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -167,7 +218,13 @@
           </span>
         </h5>
       </div>
-      <input type="password" class="form-control" phx-blur="update_config" phx-value-config="csv2sql_password" />
+      <input
+      type="password"
+      class="form-control"
+      phx-blur="update_config"
+      phx-value-config="csv2sql_password"
+      value=<%= @config[:"csv2sql_password"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -180,8 +237,13 @@
           </span>
         </h5>
       </div>
-      <input type="text" placeholder="Type here..." "text" placeholder="Type here..." value="localhost" phx-blur="update_config"
-        phx-value-config="csv2sql_host" />
+      <input
+      type="text"
+      placeholder="Type here..."
+      phx-blur="update_config"
+      phx-value-config="csv2sql_host"
+      value=<%= @config[:"csv2sql_host"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -195,7 +257,14 @@
           </span>
         </h5>
       </div>
-      <input type="text" placeholder="Type here..." class="form-control" phx-blur="update_config" phx-value-config="csv2sql_database_name" />
+      <input
+      type="text"
+      placeholder="Type here..."
+      class="form-control"
+      phx-blur="update_config"
+      phx-value-config="csv2sql_database_name"
+      value=<%= @config[:"csv2sql_database_name"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -208,8 +277,14 @@
           </span>
         </h5>
       </div>
-      <input type="text" placeholder="Type here..." class="form-control" value="/var/run/mysqld/mysqld.sock" phx-blur="update_config"
-        phx-value-config="csv2sql_socket" />
+      <input
+      type="text"
+      placeholder="Type here..."
+      class="form-control"
+      phx-blur="update_config"
+      phx-value-config="connection-socket"
+      value=<%= @config[:"connection-socket"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -222,8 +297,15 @@
           </span>
         </h5>
       </div>
-      <input type="number" class="form-control" value="100" min="20" max="500" phx-blur="update_config"
-        phx-value-config="csv2sql_varchar_limit" />
+      <input
+      type="number"
+      class="form-control"
+      min="20"
+      max="500"
+      phx-blur="update_config"
+      phx-value-config="varchar-limit"
+      value=<%= @config[:"varchar-limit"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -238,8 +320,15 @@
           </span>
         </h5>
       </div>
-      <input type="number" class="form-control" value="100" min="20" max="500" phx-blur="update_config"
-        phx-value-config="csv2sql_schema_infer_chunk_size" />
+      <input
+      type="number"
+      class="form-control"
+      min="20"
+      max="500"
+      phx-blur="update_config"
+      phx-value-config="schema-infer-chunk-size"
+      value=<%= @config[:"schema-infer-chunk-size"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -252,8 +341,15 @@
           </span>
         </h5>
       </div>
-      <input type="number" class="form-control" value="10" min="1" max="50" phx-blur="update_config"
-        phx-value-config="csv2sql_worker_count" />
+      <input
+      type="number"
+      class="form-control"
+      min="1"
+      max="50"
+      phx-blur="update_config"
+      phx-value-config="worker-count"
+      value=<%= @config[:"worker-count"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -266,8 +362,15 @@
           </span>
         </h5>
       </div>
-      <input type="number" value="15" min="1" max="25" class="form-control" phx-blur="update_config"
-        phx-value-config="csv2sql_db_worker_count" />
+      <input
+      type="number"
+      min="1"
+      max="25"
+      class="form-control"
+      phx-blur="update_config"
+      phx-value-config="db-worker-count"
+      value=<%= @config[:"db-worker-count"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -281,8 +384,15 @@
           </span>
         </h5>
       </div>
-      <input type="number" class="form-control" value="100" min="1" max="500" phx-blur="update_config"
-        phx-value-config="csv2sql_insertion_chunk_size" />
+      <input
+      type="number"
+      class="form-control"
+      min="1"
+      max="500"
+      phx-blur="update_config"
+      phx-value-config="insertion-chunk-size"
+      value=<%= @config[:"insertion-chunk-size"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -295,8 +405,15 @@
           </span>
         </h5>
       </div>
-      <input type="number" class="form-control" value="10" min="1" max="500" phx-blur="update_config"
-        phx-value-config="csv2sql_job_count_limit" />
+      <input
+      type="number"
+      class="form-control"
+      min="1"
+      max="500"
+      phx-blur="update_config"
+      phx-value-config="job-count-limit"
+      value=<%= @config[:"job-count-limit"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -310,8 +427,14 @@
           </span>
         </h5>
       </div>
-      <input type="number" class="form-control" value="60000" min="10000" phx-blur="update_config"
-        phx-value-config="csv2sql_timeout" />
+      <input
+      type="number"
+      class="form-control"
+      min="10000"
+      phx-blur="update_config"
+      phx-value-config="timeout"
+      value=<%= @config[:timeout] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -326,8 +449,14 @@
           </span>
         </h5>
       </div>
-      <input type="number" class="form-control" value="60000" min="10000" phx-blur="update_config"
-        phx-value-config="csv2sql_connect_timeout" />
+      <input
+      type="number"
+      class="form-control"
+      min="10000"
+      phx-blur="update_config"
+      phx-value-config="connect-timeout"
+      value=<%= @config[:"connect-timeout"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -345,8 +474,14 @@
           </span>
         </h5>
       </div>
-      <input type="number" class="form-control" value="20" min="1" phx-blur="update_config"
-        phx-value-config="csv2sql_pool_size" />
+      <input
+      type="number"
+      class="form-control"
+      min="1"
+      phx-blur="update_config"
+      phx-value-config="pool-size"
+      value=<%= @config[:"pool-size"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -363,8 +498,14 @@
           </span>
         </h5>
       </div>
-      <input type="number" class="form-control" value="5000" min="1000" phx-blur="update_config"
-        phx-value-config="csv2sql_queue_target" />
+      <input
+      type="number"
+      class="form-control"
+      min="1000"
+      phx-blur="update_config"
+      phx-value-config="queue-target"
+      value=<%= @config[:"queue-target"] %>
+      />
     </div>
 
     <div class="flex-item">
@@ -381,8 +522,14 @@
           </span>
         </h5>
       </div>
-      <input type="number" class="form-control" value="1000" min="10" phx-blur="update_config"
-        phx-value-config="csv2sql_queue_interval" />
+      <input
+      type="number"
+      class="form-control"
+      min="10"
+      phx-blur="update_config"
+      phx-value-config="queue-interval"
+      value=<%= @config[:"queue-interval"] %>
+      />
     </div>
   </div>
 

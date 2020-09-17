@@ -19,6 +19,13 @@ defmodule Dashboard.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Dashboard.Supervisor]
+
+    # Load initial cache config
+    Task.start(fn ->
+      :timer.sleep(500)
+      DashboardWeb.Helper.ConfigHelper.load_initial_config()
+    end)
+
     Supervisor.start_link(children, opts)
   end
 
