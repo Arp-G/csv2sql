@@ -22,8 +22,7 @@ defmodule Csv2sql.Worker do
          work_config = [
            set_make_schema: set_make_schema,
            set_insert_schema: set_insert_schema,
-           set_insert_data: set_insert_data,
-           gui: gui
+           set_insert_data: set_insert_data
          ]},
         _
       ) do
@@ -31,19 +30,19 @@ defmodule Csv2sql.Worker do
 
     if file do
       if(set_make_schema) do
-        if gui, do: Observer.update_file_status(file, :infer_schema)
+        Observer.update_file_status(file, :infer_schema)
 
         result = make_schema(file)
 
         if(set_insert_schema) do
-          if gui, do: Observer.update_file_status(file, :insert_schema)
+          Observer.update_file_status(file, :insert_schema)
 
           insert_schema(result)
         end
       end
 
       if(set_insert_data) do
-        if gui, do: Observer.update_file_status(file, :insert_data)
+        Observer.update_file_status(file, :insert_data)
 
         insert_data(file)
       end

@@ -1,1 +1,74 @@
-<h1> PLACEHOLDER </h1>
+<div class="main-container">
+  <div class="current-stats">
+    <strong> Stage: </strong> <%= @stage %>  <br>
+    <%= if @stage != :waiting do %>
+      <strong> Total Files: </strong><%= Enum.count(@file_list) %> <br>
+      <strong> Files Imported: </strong><%= Enum.count(@file_list, fn %{status: status} -> status == :finish end) %>  <br>
+      <strong> Total Completion: </strong> <%= calc_total_progress(@file_list) %>% <br>
+      <strong> Total Workers: </strong> <%= @stats.worker_count %> <br>
+      <strong> Total Database Workers: </strong> <%= @stats.db_worker_count %> <br>
+      <strong> Active Workers: </strong> <%= @stats.active_workers %> <br>
+      <strong> CPU Usage: </strong> <%= @stats.cpu_usage %>% <br>
+      <strong> Memory Usage of Application: </strong>  <%= @stats.memory_usage %><br>
+      <strong> Time Elapsed: </strong> <%= @stats.time_spend %>
+    <% end %>
+  </div>
+
+  <div class="file-list list-group">
+
+    <%= Enum.map @file_list, fn %{name: name, path: path, humanised_size: humanised_size, row_count: row_count, status: status} -> %>
+
+      <div class="file-list-item list-group-item list-group-item-action <%= if status==:finish, do: "list-group-item-success", else: "" %> ">
+        <%= if status==:finish do %>
+          <i class="fa fa-check-circle fa-2x finish-check" aria-hidden="true"></i>
+        <% end %>
+        <span class="file-name"> <strong> Name: </strong> <%= name %> </span>
+        <span class="file-path"> <strong> Path: </strong> <a href="file:///<%= path %>" target="_blank"><%= path %></a> </span>
+        <span class="file-size"> <strong> Size: </strong> <%= humanised_size %> </span>
+        <span class="row_count"> <strong> Total Number of Records: </strong> <%= row_count %> </span>
+        <span class="status">
+          <Strong> Status: </Strong>
+          <%= case status do %>
+            <% :pending -> %>  Pending
+
+            <% :infer_schema -> %> Infering Schema
+
+            <% :insert_schema -> %> Loading Schema
+
+            <% {:insert_data, progress} -> %>
+              Inserting Data
+              <span class="records_inserted"> <strong> Record Inserted: </strong> <%= progress %> </span>
+              <div class="progress">
+                <div
+                  class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                  role="progressbar"
+                  style="width: <%= (progress / row_count) * 100 %>%">
+                  <span class="progress-percentage"> <%= Float.round((progress / row_count) * 100 , 2) %>% </span>
+                </div> %>
+              </div>
+
+            <% :finish -> %> Finisihed
+          <% end %>
+        </span>
+      </div>
+
+    <% end %>
+
+  </div>
+</div>
+
+  <footer class="main-footer fixed-bottom">
+    <div class="container" phx-click="start">
+      <div id="divSpinner" class="<%= if @stage==:working, do: "spinner loading", else: "" %>" >
+        <div id="spinnerText">
+        <%=case @stage do %>
+          <% :waiting -> %> Start !
+          <% :working -> %> Working..
+          <% :validation -> %> Validating..
+          <% :finish -> %> Finished!
+        <% end %>
+
+        </div>
+      </div>
+    </div>
+  </footer>
