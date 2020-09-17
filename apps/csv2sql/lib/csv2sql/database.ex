@@ -40,6 +40,7 @@ defmodule Csv2sql.Database do
       end)
 
     Repo.insert_all(table_name, data_chunk, prefix: database_name)
+    Csv2sql.Observer.update_file_status(file, :insert_data)
   end
 
   def prepare_db() do

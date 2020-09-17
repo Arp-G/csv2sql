@@ -59,6 +59,13 @@ defmodule Csv2sql.ImportValidator do
     end
   end
 
+  def get_count_from_csv(file) do
+    file
+    |> File.stream!()
+    |> CSV.parse_stream()
+    |> Enum.count()
+  end
+
   defp validate_csv(file) do
     csv_count = get_count_from_csv(file)
     db_count = get_db_count(file)
@@ -85,13 +92,6 @@ defmodule Csv2sql.ImportValidator do
 
       false
     end
-  end
-
-  defp get_count_from_csv(file) do
-    file
-    |> File.stream!()
-    |> CSV.parse_stream()
-    |> Enum.count()
   end
 
   defp get_db_count(file) do
