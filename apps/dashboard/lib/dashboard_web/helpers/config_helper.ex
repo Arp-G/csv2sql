@@ -15,7 +15,7 @@ defmodule DashboardWeb.Helper.ConfigHelper do
     end)
   end
 
-  def convert_to_cmd_arg() do
+  def get_to_config_arg() do
     Cachex.export!(:config_cache)
     |> add_db_connection_config()
     |> Enum.map(fn {:entry, key, _, _, value} ->
@@ -23,9 +23,16 @@ defmodule DashboardWeb.Helper.ConfigHelper do
     end)
     |> Enum.reject(fn {_, value} -> value == "" || value == nil end)
     |> Enum.reduce([], fn {key, value}, acc ->
-      IO.inspect([key, value])
+      #IO.inspect([key, value])
       acc ++ [key, value]
     end)
+
+    [
+      "--source-csv-directory",
+      "/home/arpan/Desktop/test/csvs",
+      "--db-connection-string",
+      "root:mysql@localhost/csvsql_test"
+    ]
   end
 
   defp add_db_connection_config(config) do

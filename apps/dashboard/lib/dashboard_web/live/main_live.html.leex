@@ -3,12 +3,10 @@
     <strong> Stage: </strong> <%= @stage %>  <br>
     <%= if @stage != :waiting do %>
       <strong> Total Files: </strong><%= Enum.count(@file_list) %> <br>
-      <strong> Files Imported: </strong><%= Enum.count(@file_list, fn %{status: status} -> status==:finish end) %>  <br>
-      <strong> CPU Usage: </strong>  <br>
-      <strong> Memory Usage: </strong>  <br>
+      <strong> Files Imported: </strong><%= Enum.count(@file_list, fn %{status: status} -> status == :finish end) %>  <br>
+      <strong>  Total Completion: </strong> <%= calc_total_progress(@file_list) %>%
     <% end %>
   </div>
-
 
   <div class="file-list list-group">
 
@@ -60,6 +58,7 @@
         <%=case @stage do %>
           <% :waiting -> %> Start !
           <% :working -> %> Working..
+          <% :validation -> %> Validating..
           <% :finish -> %> Finished!
         <% end %>
 

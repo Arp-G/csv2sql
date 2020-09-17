@@ -1,19 +1,12 @@
 defmodule Csv2sql do
   def main(args) do
-   # Csv2sql.Helpers.greet()
+    # Csv2sql.Helpers.greet()
     # Load configuration varaibles dynamically for escripts, this is required
     # since configuration variables are set to whatever they where when the
     # escript was build and cannot be changed later
     update_config(args)
 
     {:ok, sup_pid} = Csv2sql.Application.start(:no_args, :no_args)
-
-    # In escripts as soon as the main() function return,, the escript ends,
-    # this allows the escript to keep running.
-    # receive do
-    #   {:wait} ->
-    #     System.halt(0)
-    # end
 
     wait_for_finish()
     Supervisor.stop(sup_pid)
@@ -22,8 +15,12 @@ defmodule Csv2sql do
   defp wait_for_finish() do
     Csv2sql.Observer.get_stage()
     |> case do
-      :finish -> nil
-      _ -> wait_for_finish()
+      :finish ->
+        # Finish and stop supervisors after a second
+        :timer.sleep(1000)
+
+      _ ->
+        wait_for_finish()
     end
   end
 
@@ -190,8 +187,7 @@ defmodule Csv2sql do
          [
            set_make_schema: make_schema,
            set_insert_schema: insert_schema,
-           set_insert_data: insert_data,
-           gui: true
+           set_insert_data: insert_data
          ]},
         {Csv2sql.Repo,
          [
