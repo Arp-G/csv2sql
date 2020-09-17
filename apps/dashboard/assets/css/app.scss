@@ -36,10 +36,12 @@ spinner.loading {
 }
 
 #spinnerText{
-  font-size: 2.1em;
-  font-weight: bold;
-  padding-top: 45%;
+  font-size: 2.2em;
+  font-weight: bolder;
+  font-variant: small-caps;
+  padding-top: 35%;
   text-align: center;
+  vertical-align: middle;
 }
 
 .main-footer {
@@ -53,12 +55,16 @@ spinner.loading {
   width: 120px;
   position: absolute;
   bottom: 5px;
-  right: 50%;
   border-radius: 50%;
   opacity: 1;
   background-image: linear-gradient(red, yellow);
   border: 1px solid rgb(168, 159, 159);
   box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
+ // center item
+  left: 0; 
+  right: 0; 
+  margin-left: auto; 
+  margin-right: auto; 
 }
 
 .current-stats{

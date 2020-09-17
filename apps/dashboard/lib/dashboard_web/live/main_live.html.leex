@@ -10,7 +10,7 @@
       <strong> Active Workers: </strong> <%= @stats.active_workers %> <br>
       <strong> CPU Usage: </strong> <%= @stats.cpu_usage %>% <br>
       <strong> Memory Usage of Application: </strong>  <%= @stats.memory_usage %><br>
-      <strong> Time Elapsed: </strong> <%= @stats.time_spend %>
+      <strong> Time Elapsed: </strong> <%= @stats.time_spend %> seconds
     <% end %>
   </div>
 
@@ -62,10 +62,10 @@
       <div id="divSpinner" class="<%= if @stage==:working, do: "spinner loading", else: "" %>" >
         <div id="spinnerText">
         <%=case @stage do %>
-          <% :waiting -> %> Start !
-          <% :working -> %> Working..
-          <% :validation -> %> Validating..
-          <% :finish -> %> Finished!
+          <% :waiting -> %> <span> Start!</span>
+          <% :working -> %> <span> Working.. </span>
+          <% :validation -> %> <span> Validating.. </span>
+          <% :finish -> %> <span> Finished!  Reset? </span>
         <% end %>
 
         </div>
