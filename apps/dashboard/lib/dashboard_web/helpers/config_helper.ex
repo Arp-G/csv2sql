@@ -1,31 +1,79 @@
 defmodule DashboardWeb.Helper.ConfigHelper do
-  def get_initial_config do
+  def load_initial_config do
+    inital_config = get_initial_config()
+    Cachex.put_many(:config_cache, convert_to_klist(inital_config))
+  end
+
+  defp convert_to_klist(map) do
+    Enum.map(map, fn {key, value} -> {key, value} end)
+  end
+
+  def get_config_from_cache() do
+    Cachex.export!(:config_cache)
+    |> Enum.reduce(%{}, fn {:entry, key, _, _, value}, acc ->
+      Map.put(acc, key, value)
+    end)
+  end
+
+  def convert_to_cmd_arg() do
+    Cachex.export!(:config_cache)
+    |> add_db_connection_config()
+    |> Enum.map(fn {:entry, key, _, _, value} ->
+      {"--" <> to_string(key), to_string(value)}
+    end)
+    |> Enum.reject(fn {_, value} -> value == "" || value == nil end)
+    |> Enum.reduce([], fn {key, value}, acc ->
+      IO.inspect([key, value])
+      acc ++ [key, value]
+    end)
+  end
+
+  defp add_db_connection_config(config) do
+    {:entry, _, _, _, username} =
+      Enum.find(config, fn {:entry, key, _, _, _value} -> key == :csv2sql_username end)
+
+    {:entry, _, _, _, password} =
+      Enum.find(config, fn {:entry, key, _, _, _value} -> key == :csv2sql_password end)
+
+    {:entry, _, _, _, host} =
+      Enum.find(config, fn {:entry, key, _, _, _value} -> key == :csv2sql_host end)
+
+    {:entry, _, _, _, database_name} =
+      Enum.find(config, fn {:entry, key, _, _, _value} -> key == :csv2sql_database_name end)
+
+    config ++
+      [
+        {:entry, String.to_atom("db-connection-string"), nil, nil,
+         "#{username}:#{password}@#{host}/#{database_name}"}
+      ]
+  end
+
+  defp get_initial_config do
     %{
-      csv2sql_schema_file_path: nil,
-      csv2sql_source_csv_directory: nil,
-      csv2sql_imported_csv_directory: nil,
-      csv2sql_validated_csv_directory: nil,
-      csv2sql_set_make_schema: "true",
-      csv2sql_set_insert_schema: "true",
-      csv2sql_set_insert_data: "true",
-      csv2sql_set_validate: "true",
-      csv2sql_username: "user",
-      csv2sql_password: nil,
+      "schema-file-path": "",
+      "source-csv-directory": "",
+      "imported-csv-directory": "",
+      "validated-csv-directory": "",
+      "skip-make-schema": "false",
+      "skip-insert-schema": "false",
+      "skip-insert-data": "false",
+      "skip-validate-import": "false",
+      csv2sql_username: "",
+      csv2sql_password: "",
       csv2sql_host: "localhost",
-      csv2sql_database_name: nil,
-      csv2sql_socket: "/var/run/mysqld/mysqld.sock",
-      csv2sql_varchar_limit: 100,
-      csv2sql_schema_infer_chunk_size: 100,
-      csv2sql_worker_count: 10,
-      csv2sql_db_worker_count: 15,
-      csv2sql_insertion_chunk_size: 100,
-      csv2sql_job_count_limit: 10,
-      csv2sql_log: false,
-      csv2sql_timeout: 60000,
-      csv2sql_connect_timeout: 60000,
-      csv2sql_pool_size: 20,
-      csv2sql_queue_target: 5000,
-      csv2sql_queue_interval: 1000
+      csv2sql_database_name: "",
+      "connection-socket": "/var/run/mysqld/mysqld.sock",
+      "varchar-limit": 100,
+      "schema-infer-chunk-size": 100,
+      "worker-count": 10,
+      "db-worker-count": 15,
+      "insertion-chunk-size": 100,
+      "job-count-limit": 10,
+      timeout: 60000,
+      "connect-timeout": 60000,
+      "pool-size": 20,
+      "queue-target": 5000,
+      "queue-interval": 1000
     }
   end
 
@@ -125,9 +173,5 @@ defmodule DashboardWeb.Helper.ConfigHelper do
       csv2sql_queue_target: true,
       csv2sql_queue_interval: true
     }
-  end
-
-  def convert_to_klist(map) do
-    Enum.map(map, fn {key, value} -> {key, value} end)
   end
 end

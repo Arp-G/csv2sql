@@ -4,8 +4,7 @@ defmodule DashboardWeb.ConfigLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    inital_config = ConfigHelper.get_initial_config()
-    Cachex.put_many(:config_cache, ConfigHelper.convert_to_klist(inital_config))
+    inital_config = ConfigHelper.get_config_from_cache()
 
     {:ok,
      assign(socket,
@@ -20,11 +19,14 @@ defmodule DashboardWeb.ConfigLive do
         %{"config" => config} = param,
         %{assigns: assigns} = socket
       ) do
-    value = param["value"] || "false"
-    value = if String.trim(value) == "", do: nil, else: value
-    config = String.to_atom(config)
-    Cachex.put(:config_cache, config, value)
-    IO.inspect({config, value})
+    value =
+      case param["value"] do
+        nil -> "false"
+        "on" -> "true"
+        value -> if String.trim(value) == "", do: nil, else: value
+      end
+
+    Cachex.put(:config_cache, String.to_atom(config), value)
 
     {:noreply,
      assign(socket,
