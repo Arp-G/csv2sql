@@ -5,19 +5,20 @@ defmodule DashboardWeb.MainLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # file_list =
-    #   [
-    #     %Csv2sql.File{
-    #       humanised_size: "1.57 MB",
-    #       name: "010_person_attachments_20200911",
-    #       path: "/home/arpan/Desktop/test/csvs/010_person_attachments_20200911.csv",
-    #       raw_size: 1_642_432,
-    #       row_count: 10725,
-    #       status: :finish
-    #     }
-    #   ] ++ file_list
-
-    {:ok, assign(socket, file_list: [], stage: :waiting, timer_set: nil)}
+    {:ok,
+     assign(socket,
+       file_list: [],
+       stage: :waiting,
+       timer_set: nil,
+       stats: %{
+         active_workers: 0,
+         worker_count: 0,
+         db_worker_count: 0,
+         cpu_usage: 0,
+         memory_usage: 0,
+         time_spend: 0
+       }
+     )}
   end
 
   @impl true
@@ -34,7 +35,7 @@ defmodule DashboardWeb.MainLive do
             |> Csv2sql.main()
           end)
 
-          :timer.send_after(1000, self(), :kickoff)
+          Process.send_after(self(), :tick, 1000)
           :working
 
         :finish ->
@@ -48,23 +49,9 @@ defmodule DashboardWeb.MainLive do
   end
 
   @impl true
-  def handle_info(:kickoff, socket) do
-    {:noreply,
-     assign(socket,
-       timer_set: Process.send_after(self(), :tick, 1000)
-     )}
-  end
-
-  @impl true
   def handle_info(:tick, %{assigns: assigns} = socket) do
-
-    IO.inspect("Tick !")
-
-    case {assigns.stage, socket.assigns[:timer_set]} do
-      {:finish, nil} ->
-        {:noreply, socket}
-
-      {:finish, timer} ->
+    case assigns.stage do
+      :finish ->
         {:noreply, assign(socket, timer_set: nil)}
 
       _ ->
@@ -77,7 +64,15 @@ defmodule DashboardWeb.MainLive do
          assign(socket,
            file_list: file_list,
            stage: Csv2sql.Observer.get_stage(),
-           timer_set: Process.send_after(self(), :tick, 1000)
+           timer_set: Process.send_after(self(), :tick, 1000),
+           stats: %{
+             active_workers: 0,
+             worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count],
+             db_worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count],
+             cpu_usage: :cpu_sup.util() |> Float.round(2),
+             memory_usage: :erlang.memory(:total) |> Sizeable.filesize(),
+             time_spend: Csv2sql.TimerServer.get_time_spend()
+           }
          )}
     end
   end
@@ -106,8 +101,5 @@ defmodule DashboardWeb.MainLive do
 
       Float.round(current / total * 100, 2)
     end
-  end
-
-  def tick do
   end
 end

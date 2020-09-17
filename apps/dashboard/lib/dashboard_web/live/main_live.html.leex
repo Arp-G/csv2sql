@@ -4,7 +4,13 @@
     <%= if @stage != :waiting do %>
       <strong> Total Files: </strong><%= Enum.count(@file_list) %> <br>
       <strong> Files Imported: </strong><%= Enum.count(@file_list, fn %{status: status} -> status == :finish end) %>  <br>
-      <strong>  Total Completion: </strong> <%= calc_total_progress(@file_list) %>%
+      <strong> Total Completion: </strong> <%= calc_total_progress(@file_list) %>% <br>
+      <strong> Total Workers: </strong> <%= @stats.worker_count %> <br>
+      <strong> Total Database Workers: </strong> <%= @stats.db_worker_count %> <br>
+      <strong> Active Workers: </strong> <%= @stats.active_workers %> <br>
+      <strong> CPU Usage: </strong> <%= @stats.cpu_usage %>% <br>
+      <strong> Memory Usage of Application: </strong>  <%= @stats.memory_usage %><br>
+      <strong> Time Elapsed: </strong> <%= @stats.time_spend %>
     <% end %>
   </div>
 
