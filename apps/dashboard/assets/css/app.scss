@@ -2,6 +2,129 @@
 @import "./phoenix.css";
 @import "../node_modules/nprogress/nprogress.css";
 
+
+spinner.loading {
+  display: none;
+  text-align: center;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 106px;
+  height: 106px;
+}
+.spinner.loading:before {
+  content: "";
+  height: 120px;
+  width: 120px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-width: 8px;
+  border-style: solid;
+  border-color: #770505 #ccc #ccc;
+  border-radius: 100%;
+  animation: rotation .7s infinite linear;
+}
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}
+
+#spinnerText{
+  font-size: 2.1em;
+  font-weight: bold;
+  padding-top: 45%;
+  text-align: center;
+}
+
+.main-footer {
+  height: 70px;
+  background-color: rebeccapurple;
+  opacity: 0.8;
+}
+
+.main-footer .container {
+  height: 120px;
+  width: 120px;
+  position: absolute;
+  bottom: 5px;
+  right: 50%;
+  border-radius: 50%;
+  opacity: 1;
+  background-image: linear-gradient(red, yellow);
+  border: 1px solid rgb(168, 159, 159);
+  box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
+}
+
+.current-stats{
+  border-radius: 10px;
+  width: 90%;
+  min-height: 150px;
+  box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
+  margin: auto;
+  margin-bottom: 50px;
+  margin-top: 20px;
+  padding: 10px;
+}
+
+.current-stats {
+  font-size: 2em;
+}
+
+.finish-check {
+  color: #cc00ff;
+}
+
+.file-list {
+  margin: auto;
+  width: 90%;
+  box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
+}
+
+.file-list-item {
+  min-height: 100px;
+  font-size: 1.5em;
+}
+
+.file-name, .file-path, .file-size, .row_count, .records_inserted, .status {
+  display: block;
+}
+
+.progress {
+  height: 25px !important;
+}
+
+.progress-percentage{
+  color: black;
+  font-size: 2.5em;
+  font-weight: bold;
+}
+
+// .file-name {
+
+// }
+
+// .file-path {
+
+// }
+
+// .file-size {
+
+// }
+
+// .row_count {
+
+// }
+
+// .status {
+
+// }
+
 .config-page {
   background-color: #f8f9fa;
 }
