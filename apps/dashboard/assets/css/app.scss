@@ -2,7 +2,6 @@
 @import "./phoenix.css";
 @import "../node_modules/nprogress/nprogress.css";
 
-
 spinner.loading {
   display: none;
   text-align: center;
@@ -35,6 +34,11 @@ spinner.loading {
   }
 }
 
+.required-config{
+  color: red;
+  font-size: 1em;
+}
+
 #spinnerText{
   font-size: 2.2em;
   font-weight: bolder;
@@ -60,6 +64,7 @@ spinner.loading {
   background-image: linear-gradient(red, yellow);
   border: 1px solid rgb(168, 159, 159);
   box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
+  cursor: pointer;
  // center item
   left: 0; 
   right: 0; 
@@ -68,6 +73,8 @@ spinner.loading {
 }
 
 .current-stats{
+  display: flex;
+  flex-wrap: wrap;
   border-radius: 10px;
   width: 90%;
   min-height: 150px;
@@ -76,10 +83,11 @@ spinner.loading {
   margin-bottom: 50px;
   margin-top: 20px;
   padding: 10px;
+  font-size: 2em;
 }
 
-.current-stats {
-  font-size: 2em;
+.current-stats > div {
+  width: 50%;
 }
 
 .finish-check {

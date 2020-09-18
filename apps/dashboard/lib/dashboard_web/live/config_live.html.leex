@@ -44,7 +44,7 @@
         aria-describedby="basic-addon1"
         phx-blur="update_config"
         phx-value-config="schema-file-path"
-        value=<%= @config[:"schema-file-path"] %>
+        value="<%= @config[:"schema-file-path"] %>"
       />
     </div>
 
@@ -55,7 +55,7 @@
           <span aria-label="The source directory where the csvs are located, Example: /home/user/Desktop/csvs"
             data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Source CSV Directory </span>
+            <span style="font-size: 1.3em; margin: 5px"> <span class="required-config"> * </span> Source CSV Directory </span>
           </span>
         </h5>
       </div>
@@ -65,7 +65,7 @@
       class="form-control"
       phx-blur="update_config"
       phx-value-config="source-csv-directory"
-      value=<%= @config[:"source-csv-directory"] %>
+      value="<%= @config[:"source-csv-directory"] %>"
       />
     </div>
 
@@ -86,7 +86,7 @@
         class="form-control"
         phx-blur="update_config"
         phx-value-config="imported-csv-directory"
-        value=<%= @config[:"imported-csv-directory"] %>
+        value="<%= @config[:"imported-csv-directory"] %>"
         />
     </div>
 
@@ -107,7 +107,7 @@
       class="form-control"
       phx-blur="update_config"
       phx-value-config="validated-csv-directory"
-      value=<%= @config[:"validated-csv-directory"] %>
+      value="<%= @config[:"validated-csv-directory"] %>"
       />
     </div>
 
@@ -194,7 +194,7 @@
           <span aria-label="mysql username, required field if database access is required" data-microtip-size="large" class="popup"
             data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Database Username </span>
+            <span style="font-size: 1.3em; margin: 5px"> <span class="required-config"> * </span> Database Username </span>
           </span>
         </h5>
       </div>
@@ -204,7 +204,7 @@
       class="form-control"
       phx-blur="update_config"
       phx-value-config="csv2sql_username"
-      value=<%= @config[:csv2sql_username] %>
+      value="<%= @config[:csv2sql_username] %>"
       />
     </div>
 
@@ -214,7 +214,7 @@
           <span aria-label="mysql password, required field if database access is required" data-microtip-size="large" class="popup"
             data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Database Password </span>
+            <span style="font-size: 1.3em; margin: 5px"> <span class="required-config"> * </span> Database Password </span>
           </span>
         </h5>
       </div>
@@ -223,7 +223,7 @@
       class="form-control"
       phx-blur="update_config"
       phx-value-config="csv2sql_password"
-      value=<%= @config[:csv2sql_password] %>
+      value="<%= @config[:csv2sql_password] %>"
       />
     </div>
 
@@ -242,7 +242,7 @@
       placeholder="Type here..."
       phx-blur="update_config"
       phx-value-config="csv2sql_host"
-      value=<%= @config[:csv2sql_host] %>
+      value="<%= @config[:csv2sql_host] %>"
       />
     </div>
 
@@ -253,7 +253,7 @@
             aria-label="This is the name of the database which will be created (if not present already), required field if database access is required"
             data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Database Name </span>
+            <span style="font-size: 1.3em; margin: 5px"> <span class="required-config"> * </span> Database Name </span>
           </span>
         </h5>
       </div>
@@ -263,7 +263,7 @@
       class="form-control"
       phx-blur="update_config"
       phx-value-config="csv2sql_database_name"
-      value=<%= @config[:csv2sql_database_name] %>
+      value="<%= @config[:csv2sql_database_name] %>"
       />
     </div>
 
@@ -283,7 +283,7 @@
       class="form-control"
       phx-blur="update_config"
       phx-value-config="connection-socket"
-      value=<%= @config[:"connection-socket"] %>
+      value="<%= @config[:"connection-socket"] %>"
       />
     </div>
 
@@ -304,7 +304,7 @@
       max="500"
       phx-blur="update_config"
       phx-value-config="varchar-limit"
-      value=<%= @config[:"varchar-limit"] %>
+      value="<%= @config[:"varchar-limit"] %>"
       />
     </div>
 
@@ -327,7 +327,7 @@
       max="500"
       phx-blur="update_config"
       phx-value-config="schema-infer-chunk-size"
-      value=<%= @config[:"schema-infer-chunk-size"] %>
+      value="<%= @config[:"schema-infer-chunk-size"] %>"
       />
     </div>
 
@@ -348,7 +348,7 @@
       max="50"
       phx-blur="update_config"
       phx-value-config="worker-count"
-      value=<%= @config[:"worker-count"] %>
+      value="<%= @config[:"worker-count"] %>"
       />
     </div>
 
@@ -369,7 +369,7 @@
       class="form-control"
       phx-blur="update_config"
       phx-value-config="db-worker-count"
-      value=<%= @config[:"db-worker-count"] %>
+      value="<%= @config[:"db-worker-count"] %>"
       />
     </div>
 
@@ -391,7 +391,7 @@
       max="500"
       phx-blur="update_config"
       phx-value-config="insertion-chunk-size"
-      value=<%= @config[:"insertion-chunk-size"] %>
+      value="<%= @config[:"insertion-chunk-size"] %>"
       />
     </div>
 
@@ -412,7 +412,7 @@
       max="500"
       phx-blur="update_config"
       phx-value-config="job-count-limit"
-      value=<%= @config[:"job-count-limit"] %>
+      value="<%= @config[:"job-count-limit"] %>"
       />
     </div>
 
@@ -433,7 +433,7 @@
       min="10000"
       phx-blur="update_config"
       phx-value-config="timeout"
-      value=<%= @config[:timeout] %>
+      value="<%= @config[:timeout] %>"
       />
     </div>
 
@@ -455,7 +455,7 @@
       min="10000"
       phx-blur="update_config"
       phx-value-config="connect-timeout"
-      value=<%= @config[:"connect-timeout"] %>
+      value="<%= @config[:"connect-timeout"] %>"
       />
     </div>
 
@@ -480,7 +480,7 @@
       min="1"
       phx-blur="update_config"
       phx-value-config="pool-size"
-      value=<%= @config[:"pool-size"] %>
+      value="<%= @config[:"pool-size"] %>"
       />
     </div>
 
@@ -504,7 +504,7 @@
       min="1000"
       phx-blur="update_config"
       phx-value-config="queue-target"
-      value=<%= @config[:"queue-target"] %>
+      value="<%= @config[:"queue-target"] %>"
       />
     </div>
 
@@ -528,7 +528,7 @@
       min="10"
       phx-blur="update_config"
       phx-value-config="queue-interval"
-      value=<%= @config[:"queue-interval"] %>
+      value="<%= @config[:"queue-interval"] %>"
       />
     </div>
   </div>
