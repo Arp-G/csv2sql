@@ -1,16 +1,20 @@
 <div class="main-container">
   <div class="current-stats">
-    <strong> Stage: </strong> <%= @stage %>  <br>
+    <div><strong> Stage: </strong> <%= @stage %></div>
     <%= if @stage != :waiting do %>
-      <strong> Total Files: </strong><%= Enum.count(@file_list) %> <br>
-      <strong> Files Imported: </strong><%= Enum.count(@file_list, fn %{status: status} -> status == :finish end) %>  <br>
-      <strong> Total Completion: </strong> <%= calc_total_progress(@file_list) %>% <br>
-      <strong> Total Workers: </strong> <%= @stats.worker_count %> <br>
-      <strong> Total Database Workers: </strong> <%= @stats.db_worker_count %> <br>
-      <strong> Active Workers: </strong> <%= @stats.active_workers %> <br>
-      <strong> CPU Usage: </strong> <%= @stats.cpu_usage %>% <br>
-      <strong> Memory Usage of Application: </strong>  <%= @stats.memory_usage %><br>
-      <strong> Time Elapsed: </strong> <%= @stats.time_spend %> seconds
+      <div><strong> Total Files: </strong><%= Enum.count(@file_list) %> </div>
+      <div><strong> Files Imported: </strong><%= Enum.count(@file_list, fn %{status: status} -> status == :finish end) %> </div>
+      <div><strong> Total Completion: </strong> <%= calc_total_progress(@file_list) %>% </div>
+      <div><strong> Total Workers: </strong> <%= @stats.worker_count %> </div>
+      <div><strong> Total Database Workers: </strong> <%= @stats.db_worker_count %> </div>
+      <div><strong> Active Workers: </strong> <%= @stats.active_workers %> </div>
+      <div><strong> CPU Usage: </strong> <%= @stats.cpu_usage %>% </div>
+      <div><strong> Memory Usage of Application: </strong>  <%= @stats.memory_usage %></div>
+      <div><strong> Time Elapsed: </strong> <%= @stats.time_spend %> seconds </div>
+      <%= if(Application.get_env(:csv2sql, Csv2sql.Worker)[:set_make_schema]) do %>
+        <% schema_file = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_file_path] %>
+        <div><strong> Schema File: </strong> <a href="file:///<%= schema_file %>" target="_blank"><%= schema_file %></a></div>
+      <% end %>
     <% end %>
   </div>
 
@@ -72,3 +76,9 @@
       </div>
     </div>
   </footer>
+
+  <script>
+    window.onbeforeunload = function() {
+      return "CSV2SQL is working, are you sure you want to leave? You can't come back to this page if you leave !";
+    }
+  </script>

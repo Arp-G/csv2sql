@@ -21,18 +21,9 @@ defmodule DashboardWeb.Helper.ConfigHelper do
     |> Enum.map(fn {:entry, key, _, _, value} ->
       {"--" <> to_string(key), to_string(value)}
     end)
-    |> Enum.reject(fn {_, value} -> value == "" || value == nil end)
     |> Enum.reduce([], fn {key, value}, acc ->
-      #IO.inspect([key, value])
       acc ++ [key, value]
     end)
-
-    [
-      "--source-csv-directory",
-      "/home/arpan/Desktop/test/csvs",
-      "--db-connection-string",
-      "root:mysql@localhost/csvsql_test"
-    ]
   end
 
   defp add_db_connection_config(config) do
@@ -61,10 +52,10 @@ defmodule DashboardWeb.Helper.ConfigHelper do
       "source-csv-directory": "",
       "imported-csv-directory": "",
       "validated-csv-directory": "",
-      "skip-make-schema": "false",
-      "skip-insert-schema": "false",
-      "skip-insert-data": "false",
-      "skip-validate-import": "false",
+      "skip-make-schema": nil,
+      "skip-insert-schema": nil,
+      "skip-insert-data": nil,
+      "skip-validate-import": nil,
       csv2sql_username: "",
       csv2sql_password: "",
       csv2sql_host: "localhost",

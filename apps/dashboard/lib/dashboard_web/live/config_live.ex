@@ -21,7 +21,7 @@ defmodule DashboardWeb.ConfigLive do
       ) do
     value =
       case param["value"] do
-        nil -> "false"
+        nil -> nil
         "on" -> "true"
         value -> if String.trim(value) == "", do: nil, else: value
       end

@@ -208,6 +208,8 @@ defmodule Csv2sql do
       ]
     ]
 
+    IO.inspect(current_config)
+
     Application.put_all_env(current_config)
   end
 
