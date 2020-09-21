@@ -26,6 +26,7 @@ defmodule DashboardWeb.ConfigLive do
         value -> if String.trim(value) == "", do: nil, else: value
       end
 
+    IO.inspect("GOT #{inspect({String.to_atom(config), value})}")
     Cachex.put(:config_cache, String.to_atom(config), value)
 
     {:noreply,

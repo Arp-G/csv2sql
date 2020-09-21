@@ -35,7 +35,7 @@ defmodule DashboardWeb.MainLive do
             |> Csv2sql.main()
           end)
 
-          Process.send_after(self(), :tick, 1000)
+          Process.send_after(self(), :tick, 2000)
           :working
 
         :finish ->

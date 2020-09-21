@@ -18,6 +18,7 @@ defmodule DashboardWeb.Helper.ConfigHelper do
   def get_to_config_arg() do
     Cachex.export!(:config_cache)
     |> add_db_connection_config()
+    |> Enum.reject(fn {_, _, _, _, val} -> is_nil(val) || val=="" end)
     |> Enum.map(fn {:entry, key, _, _, value} ->
       {"--" <> to_string(key), to_string(value)}
     end)

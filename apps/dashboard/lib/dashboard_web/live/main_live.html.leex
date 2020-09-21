@@ -11,9 +11,9 @@
       <div><strong> CPU Usage: </strong> <%= @stats.cpu_usage %>% </div>
       <div><strong> Memory Usage of Application: </strong>  <%= @stats.memory_usage %></div>
       <div><strong> Time Elapsed: </strong> <%= @stats.time_spend %> seconds </div>
-      <%= if(Application.get_env(:csv2sql, Csv2sql.Worker)[:set_make_schema]) do %>
+      <%= if @stage == :finish && Application.get_env(:csv2sql, Csv2sql.Worker)[:set_make_schema] do %>
         <% schema_file = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_file_path] %>
-        <div><strong> Schema File: </strong> <a href="file:///<%= schema_file %>" target="_blank"><%= schema_file %></a></div>
+        <div><strong> Schema File: </strong> <a href="file:///<%= schema_file %>/schema.sql" target="_blank"><%= "#{schema_file}/schema.sql" %></a></div>
       <% end %>
     <% end %>
   </div>
@@ -76,9 +76,3 @@
       </div>
     </div>
   </footer>
-
-  <script>
-    window.onbeforeunload = function() {
-      return "CSV2SQL is working, are you sure you want to leave? You can't come back to this page if you leave !";
-    }
-  </script>

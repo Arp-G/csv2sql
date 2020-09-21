@@ -17,12 +17,11 @@ defmodule Csv2sql.Application do
       []
       |> Kernel.++(repo_supervisor)
       |> Kernel.++([
-        Csv2sql.FileServer,
+        Csv2sql.Observer,
         Csv2sql.JobQueueServer,
         Csv2sql.DbWorkerSupervisor,
         Csv2sql.WorkerSupervisor,
-        Csv2sql.MainServer,
-        Csv2sql.Observer
+        Csv2sql.MainServer
       ])
 
     opts = [strategy: :one_for_one, name: Csv2sql.Supervisor]

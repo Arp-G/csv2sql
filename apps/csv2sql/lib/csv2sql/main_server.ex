@@ -62,10 +62,8 @@ defmodule Csv2sql.MainServer do
 
       Csv2sql.Helpers.print_msg("\nValidation Process Started...\n\n", :green)
 
-      imported_csv_directory =
-        Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]
-
-      Csv2sql.ImportValidator.validate_import(imported_csv_directory)
+      %{file_list: file_list} = Csv2sql.Observer.get_stats()
+      Csv2sql.ImportValidator.validate_import(file_list)
     else
       Csv2sql.Helpers.print_msg("\nValidation Process Skipped...\n\n", :green)
     end

@@ -2,16 +2,17 @@ defmodule Csv2sql.ImportValidator do
   alias NimbleCSV.RFC4180, as: CSV
   alias Csv2sql.Helpers
 
-  def validate_import(path) do
+  def validate_import(file_list) do
     %{stats: {total, correct, incorrect}, incorrect_files: incorrect_files} =
-      Path.wildcard("#{path}/*.csv")
+      file_list
       |> Enum.reduce(
         %{stats: {0, 0, 0}, incorrect_files: []},
-        fn file, %{stats: {total, correct, incorrect}, incorrect_files: incorrect_files} ->
+        fn {_file_path, %Csv2sql.File{name: file, row_count: row_count}},
+           %{stats: {total, correct, incorrect}, incorrect_files: incorrect_files} ->
           Helpers.print_msg("Checking File: #{Path.basename(file)}", :yellow)
 
           result =
-            if validate_csv(file) do
+            if validate_csv(file, row_count) do
               %{
                 stats: {total + 1, correct + 1, incorrect},
                 incorrect_files: incorrect_files
@@ -26,7 +27,14 @@ defmodule Csv2sql.ImportValidator do
           validated_csv_directory =
             Application.get_env(:csv2sql, Csv2sql.MainServer)[:validated_csv_directory]
 
-          File.rename!(file, "#{validated_csv_directory}/#{Path.basename(file)}")
+          imported_csv_directory =
+            Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]
+
+          File.rename!(
+            "#{imported_csv_directory}/#{file}.csv",
+            "#{validated_csv_directory}/#{file}.csv"
+          )
+
           result
         end
       )
@@ -66,16 +74,15 @@ defmodule Csv2sql.ImportValidator do
     |> Enum.count()
   end
 
-  defp validate_csv(file) do
-    csv_count = get_count_from_csv(file)
+  defp validate_csv(file, row_count) do
     db_count = get_db_count(file)
 
     white = IO.ANSI.white()
 
-    Helpers.print_msg("Count in csv: #{white}#{csv_count}")
+    Helpers.print_msg("Count in csv: #{white}#{row_count}")
     Helpers.print_msg("Count in database:  #{white}#{db_count}")
 
-    if csv_count == db_count do
+    if row_count == db_count do
       """
       Correct !
 
@@ -107,10 +114,11 @@ defmodule Csv2sql.ImportValidator do
     try do
       Ecto.Query.from(p in table_name, select: count("*"))
       |> Csv2sql.Repo.one(prefix: database_name)
-    rescue
-      MyXQL.Error ->
+    catch
+      _, _ ->
         Helpers.print_msg("An exception occured !", :red)
         "#{IO.ANSI.red()}✗#{IO.ANSI.reset()}"
+        -1
     end
   end
 end

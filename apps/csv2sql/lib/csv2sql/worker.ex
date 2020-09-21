@@ -26,7 +26,7 @@ defmodule Csv2sql.Worker do
          ]},
         _
       ) do
-    file = Csv2sql.FileServer.next_file()
+    file = Csv2sql.Observer.next_file()
 
     if file do
       if(set_make_schema) do
