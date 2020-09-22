@@ -30,12 +30,10 @@ defmodule DashboardWeb.MainLive do
     new_stage =
       case assigns.stage do
         :waiting ->
-          Task.start(fn ->
-            ConfigHelper.get_to_config_arg()
-            |> Csv2sql.main()
-          end)
+          ConfigHelper.get_to_config_arg()
+          |> Csv2sql.main()
 
-          Process.send_after(self(), :tick, 2000)
+          send(self(), :tick)
           :working
 
         :finish ->
@@ -72,38 +70,46 @@ defmodule DashboardWeb.MainLive do
         {:noreply, assign(socket, timer_set: nil)}
 
       _ ->
-        %{
-          start_time: start_time,
-          file_list: file_list,
-          stage: stage,
-          active_worker_count: active_worker_count
-        } = Csv2sql.Observer.get_stats()
+        Csv2sql.Observer.get_stats()
+        |> case do
+          # Handles genserver get_stats call when work has finished and observer server has shut down
+          nil ->
+            {:noreply, assign(socket, stage: :finish, timer_set: nil)}
 
-        file_list =
-          file_list
-          |> Enum.map(fn {_, file_struct} -> file_struct end)
-          |> Enum.sort_by(fn %Csv2sql.File{raw_size: size} -> size end, :desc)
+          # Updates socket assigns according to observer server stats reports
+          %{
+            start_time: start_time,
+            file_list: file_list,
+            stage: stage,
+            active_worker_count: active_worker_count
+          } ->
+            file_list =
+              file_list
+              |> Enum.map(fn {_, file_struct} -> file_struct end)
+              |> Enum.sort_by(fn %Csv2sql.File{raw_size: size} -> size end, :desc)
 
-        time_taken =
-          DateTime.utc_now()
-          |> Time.diff(start_time, :millisecond)
-          |> Kernel./(1000)
-          |> Float.round()
+            time_taken =
+              DateTime.utc_now()
+              |> Time.diff(start_time, :millisecond)
+              |> Kernel./(1000)
+              |> Float.round()
 
-        {:noreply,
-         assign(socket,
-           file_list: file_list,
-           stage: stage,
-           timer_set: Process.send_after(self(), :tick, 500),
-           stats: %{
-             active_workers: active_worker_count,
-             worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count],
-             db_worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count],
-             cpu_usage: :cpu_sup.util() |> Float.round(2),
-             memory_usage: :erlang.memory(:total) |> Sizeable.filesize(),
-             time_spend: time_taken
-           }
-         )}
+            {:noreply,
+             assign(socket,
+               file_list: file_list,
+               stage: stage,
+               timer_set: Process.send_after(self(), :tick, 500),
+               stats: %{
+                 active_workers: active_worker_count,
+                 worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count],
+                 db_worker_count:
+                   Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count],
+                 cpu_usage: :cpu_sup.util() |> Float.round(2),
+                 memory_usage: :erlang.memory(:total) |> Sizeable.filesize(),
+                 time_spend: time_taken
+               }
+             )}
+        end
     end
   end
 

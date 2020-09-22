@@ -8,8 +8,15 @@ defmodule Csv2sql do
 
     {:ok, sup_pid} = Csv2sql.Application.start(:no_args, :no_args)
 
-    wait_for_finish()
-    Supervisor.stop(sup_pid)
+    # Wait for finish and stop supervion tree
+    # This is done in separate Task to reply back to the caller(dashbaord GUI)
+    # immediately after the supervision tree is started successfully
+    Task.start(fn ->
+      wait_for_finish()
+      Supervisor.stop(sup_pid)
+    end)
+
+    sup_pid
   end
 
   defp wait_for_finish() do
