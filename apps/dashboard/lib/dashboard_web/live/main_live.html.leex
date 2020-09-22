@@ -43,11 +43,12 @@
               Inserting Data
               <span class="records_inserted"> <strong> Record Inserted: </strong> <%= progress %> </span>
               <div class="progress">
+               <%= percentage_progress = if(row_count == 0, do: 100, else: (progress / row_count) * 100) %>
                 <div
                   class="progress-bar progress-bar-striped progress-bar-animated bg-success"
                   role="progressbar"
-                  style="width: <%= (progress / row_count) * 100 %>%">
-                  <span class="progress-percentage"> <%= Float.round((progress / row_count) * 100 , 2) %>% </span>
+                  style="width: <%= percentage_progress %>%">
+                  <span class="progress-percentage"> <%= Float.round(percentage_progress * 1.0 , 2) %>% </span>
                 </div> %>
               </div>
 
