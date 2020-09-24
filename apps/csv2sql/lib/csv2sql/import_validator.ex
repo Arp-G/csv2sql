@@ -27,13 +27,13 @@ defmodule Csv2sql.ImportValidator do
           validated_csv_directory =
             Application.get_env(:csv2sql, Csv2sql.MainServer)[:validated_csv_directory]
 
-          imported_csv_directory =
+          src =
             if Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_data],
               do: Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory],
               else: Application.get_env(:csv2sql, Csv2sql.MainServer)[:source_csv_directory]
 
           File.rename!(
-            "#{imported_csv_directory}/#{file}.csv",
+            "#{src}/#{file}.csv",
             "#{validated_csv_directory}/#{file}.csv"
           )
 
