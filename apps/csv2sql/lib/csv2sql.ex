@@ -6,6 +6,7 @@ defmodule Csv2sql do
     # escript was build and cannot be changed later
     update_config(args)
 
+    # Start supervision tree
     {:ok, sup_pid} = Csv2sql.Application.start(:no_args, :no_args)
 
     # Wait for finish and stop supervion tree

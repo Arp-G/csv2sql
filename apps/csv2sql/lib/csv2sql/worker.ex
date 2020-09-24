@@ -26,7 +26,7 @@ defmodule Csv2sql.Worker do
          ]},
         _
       ) do
-    file = Csv2sql.Observer.next_file()
+    {file, row_count} = Csv2sql.Observer.next_file()
 
     if file do
       if(set_make_schema) do
@@ -41,11 +41,13 @@ defmodule Csv2sql.Worker do
         end
       end
 
-      if(set_insert_data) do
+      if(set_insert_data && row_count != 0) do
         Observer.update_file_status(file, :insert_data)
 
         insert_data(file)
       end
+
+      if set_insert_data && row_count == 0, do: handle_empty_file(file)
 
       send(self(), {:start_new_work, work_config})
 
@@ -69,5 +71,17 @@ defmodule Csv2sql.Worker do
   def insert_data(file) do
     Csv2sql.DataTransfer.process_file(file)
     file
+  end
+
+  # Handle csvs having 0 rows, change status to finish and move to imported directory
+  defp handle_empty_file(file) do
+    Observer.update_file_status(file, :finish)
+
+    File.rename!(
+      file,
+      "#{Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]}/#{
+        Path.basename(file)
+      }"
+    )
   end
 end

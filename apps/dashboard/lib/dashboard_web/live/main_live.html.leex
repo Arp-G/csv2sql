@@ -1,6 +1,6 @@
 <div class="main-container">
   <div class="current-stats">
-    <div><strong> Stage: </strong> <%= @stage %></div>
+    <div><strong> Stage: </strong> <span class="overall-status"> <%= @stage %> </span> </div>
     <%= if @stage != :waiting do %>
       <div><strong> Total Files: </strong><%= Enum.count(@file_list) %> </div>
       <div><strong> Files Imported: </strong><%= Enum.count(@file_list, fn %{status: status} -> status == :finish end) %> </div>
@@ -30,29 +30,29 @@
         <span class="file-path"> <strong> Path: </strong> <a href="file:///<%= path %>" target="_blank"><%= path %></a> </span>
         <span class="file-size"> <strong> Size: </strong> <%= humanised_size %> </span>
         <span class="row_count"> <strong> Total Number of Records: </strong> <%= row_count %> </span>
-        <span class="status">
-          <Strong> Status: </Strong>
+        <span>
+          <Strong class="status"> Status: </Strong>
           <%= case status do %>
-            <% :pending -> %>  Pending
+            <% :pending -> %>  <span class="stage_pending"> Pending </span>
 
-            <% :infer_schema -> %> Infering Schema
+            <% :infer_schema -> %> <span class="stage_infer_schema"> Infering Schema </span>
 
-            <% :insert_schema -> %> Loading Schema
+            <% :insert_schema -> %> <span class="stage_loading_schema"> Loading Schema </span>
 
             <% {:insert_data, progress} -> %>
-              Inserting Data
+              <span class="stage_insert_data"> Inserting Data </span>
               <span class="records_inserted"> <strong> Record Inserted: </strong> <%= progress %> </span>
               <div class="progress">
-               <%= percentage_progress = if(row_count == 0, do: 100, else: (progress / row_count) * 100) %>
+               <% percentage_progress = if(row_count == 0, do: 100, else: (progress / row_count) * 100) %>
                 <div
                   class="progress-bar progress-bar-striped progress-bar-animated bg-success"
                   role="progressbar"
                   style="width: <%= percentage_progress %>%">
-                  <span class="progress-percentage"> <%= Float.round(percentage_progress * 1.0 , 2) %>% </span>
-                </div> %>
+                  <span class="progress-percentage justify-content-center d-flex position-absolute w-100"> <%= Float.round(percentage_progress * 1.0 , 2) %>% </span>
+                </div>
               </div>
 
-            <% :finish -> %> Finisihed
+            <% :finish -> %> <span class="stage_finished"> Finisihed </span>
           <% end %>
         </span>
       </div>

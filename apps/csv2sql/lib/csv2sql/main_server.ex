@@ -53,7 +53,7 @@ defmodule Csv2sql.MainServer do
 
     wait_for_pending_jobs()
 
-    :timer.sleep(500)
+    :timer.sleep(1000)
 
     start_validation_message()
 

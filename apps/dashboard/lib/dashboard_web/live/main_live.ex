@@ -30,10 +30,9 @@ defmodule DashboardWeb.MainLive do
     new_stage =
       case assigns.stage do
         :waiting ->
-          ConfigHelper.get_to_config_arg()
-          |> Csv2sql.main()
-
+          ConfigHelper.get_to_config_arg() |> Csv2sql.main()
           send(self(), :tick)
+
           :working
 
         :finish ->

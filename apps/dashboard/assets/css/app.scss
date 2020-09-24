@@ -119,6 +119,39 @@ spinner.loading {
   font-weight: bold;
 }
 
+.stage_pending, 
+.stage_infer_schema, 
+.stage_loading_schema,
+.stage_insert_data,
+.stage_finished {
+  border-radius: 10px;
+  border: 1px solid black;
+  padding: 5px;
+  font-weight: bold;
+}
+
+.stage_pending {
+  background-color: #FFA07A;
+}
+
+.stage_infer_schema {
+  background-color: #8A2BE2;
+  color: white;
+}
+
+.stage_loading_schema {
+  background-color: #BDB76B;
+}
+
+.stage_insert_data {
+  background-color: #0000FF;
+  color: white;
+}
+
+.stage_finished {
+background-color: #3CB371;
+}
+
 // .file-name {
 
 // }
@@ -135,9 +168,22 @@ spinner.loading {
 
 // }
 
-// .status {
+.status {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
 
-// }
+.overall-status {
+  text-transform: capitalize;
+  border: 1px solid #FAEBD7;
+  background-color: #FAEBD7;
+  border-radius: 15px;
+  padding: 5px;
+  font-variant: small-caps;
+  font-weight: bold;
+  font-style: italic;
+  box-shadow: rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 56px, rgba(17, 17, 26, 0.1) 0px 24px 80px;
+}
 
 .config-page {
   background-color: #f8f9fa;
