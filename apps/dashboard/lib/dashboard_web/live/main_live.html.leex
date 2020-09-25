@@ -1,6 +1,6 @@
 <div class="main-container">
   <div class="current-stats">
-    <div><strong> Stage: </strong> <span class="overall-status"> <%= @stage %> </span> </div>
+    <div><strong> Stage: </strong> <span class="overall-status <%= if @stage == :error, do: "error-status" %> "> <%= @stage %> </span> </div>
     <%= if @stage != :waiting do %>
       <div><strong> Total Files: </strong><%= Enum.count(@file_list) %> </div>
       <div><strong> Files Imported: </strong><%= Enum.count(@file_list, fn %{status: status} -> status == :finish end) %> </div>
@@ -71,8 +71,8 @@
           <% :working -> %> <span> Working.. </span>
           <% :validation -> %> <span> Validating.. </span>
           <% :finish -> %> <span> Finished!  Reset? </span>
+          <% :error -> %> <span id="error_stage"> ERROR! View Logs</span>
         <% end %>
-
         </div>
       </div>
     </div>

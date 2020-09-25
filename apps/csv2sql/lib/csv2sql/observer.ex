@@ -2,7 +2,7 @@ defmodule Csv2sql.Observer do
   use GenServer
 
   @status_list [:pending, :infer_schema, :insert_schema, :insert_data, :finish]
-  @stage_list [:waiting, :working, :validation, :finish]
+  @stage_list [:waiting, :working, :validation, :finish, :error]
 
   def get_stats do
     try do

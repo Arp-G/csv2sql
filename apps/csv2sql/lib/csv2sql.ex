@@ -12,23 +12,27 @@ defmodule Csv2sql do
     # Wait for finish and stop supervion tree
     # This is done in separate Task to reply back to the caller(dashbaord GUI)
     # immediately after the supervision tree is started successfully
-    Task.start(fn ->
-      wait_for_finish()
-      Supervisor.stop(sup_pid)
-    end)
+    Task.start(fn -> wait_for_finish(sup_pid) end)
+
+    if !Process.whereis(:error_tracker), do: Csv2sql.ErrorTracker.start_link(:no_args)
+    Csv2sql.ErrorTracker.register_supervisor(sup_pid)
 
     sup_pid
   end
 
-  defp wait_for_finish() do
+  defp wait_for_finish(sup_pid) do
     Csv2sql.Observer.get_stage()
     |> case do
+      :error ->
+        nil
+
       :finish ->
         # Finish and stop supervisors after a second
         :timer.sleep(1000)
+        Supervisor.stop(sup_pid)
 
       _ ->
-        wait_for_finish()
+        wait_for_finish(sup_pid)
     end
   end
 

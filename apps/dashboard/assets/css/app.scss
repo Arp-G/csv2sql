@@ -48,6 +48,11 @@ spinner.loading {
   vertical-align: middle;
 }
 
+#error_stage {
+  font-size: 0.7em;
+}
+
+
 .main-footer {
   height: 70px;
   background-color: rebeccapurple;
@@ -152,21 +157,6 @@ spinner.loading {
 background-color: #3CB371;
 }
 
-// .file-name {
-
-// }
-
-// .file-path {
-
-// }
-
-// .file-size {
-
-// }
-
-// .row_count {
-
-// }
 
 .status {
   margin-top: 10px;
@@ -183,6 +173,10 @@ background-color: #3CB371;
   font-weight: bold;
   font-style: italic;
   box-shadow: rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 56px, rgba(17, 17, 26, 0.1) 0px 24px 80px;
+}
+
+.error-status {
+  background-color: red;
 }
 
 .config-page {

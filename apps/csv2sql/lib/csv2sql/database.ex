@@ -9,8 +9,14 @@ defmodule Csv2sql.Database do
       String.trim_leading(drop_query, "DROP TABLE IF EXISTS #{database_name}.")
       |> String.trim_trailing(";")
 
-    execute_query(drop_query)
-    execute_query(create_query)
+    try do
+      execute_query(drop_query)
+      execute_query(create_query)
+    catch
+      _, reason ->
+        Csv2sql.ErrorTracker.add_error(reason)
+    end
+
     Csv2sql.Helpers.print_msg("Create Schema for: #{table_name}")
   end
 
@@ -39,12 +45,19 @@ defmodule Csv2sql.Database do
         end)
       end)
 
-    Repo.insert_all(table_name, data_chunk, prefix: database_name)
+    try do
+      Repo.insert_all(table_name, data_chunk, prefix: database_name)
+    catch
+      _, reason ->
+        Csv2sql.ErrorTracker.add_error(reason)
+    end
+
     Csv2sql.Observer.update_file_status(file, :insert_data)
   end
 
   def prepare_db() do
     database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
+
     Ecto.Adapters.SQL.query!(
       Repo,
       "CREATE DATABASE IF NOT EXISTS #{database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;",

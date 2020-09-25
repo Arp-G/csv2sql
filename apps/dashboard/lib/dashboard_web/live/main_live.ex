@@ -65,6 +65,9 @@ defmodule DashboardWeb.MainLive do
   @impl true
   def handle_info(:tick, %{assigns: assigns} = socket) do
     case assigns.stage do
+      :error ->
+        {:noreply, assign(socket, timer_set: nil)}
+
       :finish ->
         {:noreply, assign(socket, timer_set: nil)}
 
@@ -73,7 +76,8 @@ defmodule DashboardWeb.MainLive do
         |> case do
           # Handles genserver get_stats call when work has finished and observer server has shut down
           nil ->
-            {:noreply, assign(socket, stage: :finish, timer_set: nil)}
+            stage = if Csv2sql.ErrorTracker.get_errors() == [], do: :finish, else: :error
+            {:noreply, assign(socket, stage: stage, timer_set: nil)}
 
           # Updates socket assigns according to observer server stats reports
           %{
@@ -97,7 +101,7 @@ defmodule DashboardWeb.MainLive do
              assign(socket,
                file_list: file_list,
                stage: stage,
-               timer_set: Process.send_after(self(), :tick, 500),
+               timer_set: Process.send_after(self(), :tick, 200),
                stats: %{
                  active_workers: active_worker_count,
                  worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count],
