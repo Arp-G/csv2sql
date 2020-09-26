@@ -2,22 +2,26 @@ defmodule Csv2sql.Observer do
   use GenServer
 
   @status_list [:pending, :infer_schema, :insert_schema, :insert_data, :finish]
-  @stage_list [:waiting, :working, :validation, :finish, :error]
+  @stage_list [:loading_files, :waiting, :working, :validation, :finish, :error]
 
   def get_stats do
     try do
-      GenServer.call(__MODULE__, :get_stats)
+      # timeout is infinity here this makes the caller wait untill server responds
+      # usefull when the server is loading files in handle_continue block
+      # catch block is usefull when genserver is requested when no longer running
+      GenServer.call(__MODULE__, :get_stats, :infinity)
     catch
-      _, _ -> nil
+      _, _ ->
+        nil
     end
   end
 
   def get_stage do
-    GenServer.call(__MODULE__, :get_stage)
+    GenServer.call(__MODULE__, :get_stage, :infinity)
   end
 
   def next_file() do
-    GenServer.call(__MODULE__, :next_file)
+    GenServer.call(__MODULE__, :next_file, :infinity)
   end
 
   def start_link(_) do
@@ -37,16 +41,25 @@ defmodule Csv2sql.Observer do
   end
 
   def init(_) do
-    {files_map, files_to_process} = get_file_list()
-
     {:ok,
      %{
        start_time: DateTime.utc_now(),
-       file_list: files_map,
-       files_to_process: files_to_process,
-       stage: :working,
+       file_list: %{},
+       files_to_process: [],
+       stage: :loading_files,
        active_worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count]
-     }}
+     }, {:continue, :load_files}}
+  end
+
+  # Will be invoked right after init, the genserver will always process this callback first before any other messages
+  def handle_continue(:load_files, state) do
+    {files_map, files_to_process} = get_file_list()
+
+    {:noreply,
+     Map.merge(
+       state,
+       %{stage: :working, file_list: files_map, files_to_process: files_to_process}
+     )}
   end
 
   def handle_call(

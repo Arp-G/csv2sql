@@ -33,13 +33,14 @@ defmodule DashboardWeb.MainLive do
           ConfigHelper.get_to_config_arg() |> Csv2sql.main()
           send(self(), :tick)
 
-          :working
+          :loading_files
 
-        :finish ->
+        stage when stage in [:finish, :error] ->
           :reset
 
-        :working ->
-          :working
+        # Do nothing when :loading_files, :working, :validation
+        stage ->
+          stage
       end
 
     if new_stage == :reset do
@@ -65,10 +66,7 @@ defmodule DashboardWeb.MainLive do
   @impl true
   def handle_info(:tick, %{assigns: assigns} = socket) do
     case assigns.stage do
-      :error ->
-        {:noreply, assign(socket, timer_set: nil)}
-
-      :finish ->
+      stage when stage in [:finish, :error] ->
         {:noreply, assign(socket, timer_set: nil)}
 
       _ ->

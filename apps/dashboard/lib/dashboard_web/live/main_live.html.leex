@@ -68,6 +68,7 @@
         <div id="spinnerText">
         <%=case @stage do %>
           <% :waiting -> %> <span> Start!</span>
+          <% :loading_files -> %> <span> Analyzing files..</span>
           <% :working -> %> <span> Working.. </span>
           <% :validation -> %> <span> Validating.. </span>
           <% :finish -> %> <span> Finished!  Reset? </span>
