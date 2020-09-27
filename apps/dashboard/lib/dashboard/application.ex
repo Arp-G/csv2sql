@@ -7,8 +7,6 @@ defmodule Dashboard.Application do
 
   def start(_type, _args) do
     children = [
-      # Start the Telemetry supervisor
-      DashboardWeb.Telemetry,
       # Start the PubSub system
       {Phoenix.PubSub, name: Dashboard.PubSub},
       # Start the Endpoint (http/https)

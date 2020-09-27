@@ -17,7 +17,8 @@ module.exports = (env, options) => {
     },
     entry: {
       'app': glob.sync('./vendor/**/*.js').concat(['./js/app.js']),
-      'custom': ['./css/common.scss', './css/main_live.scss', './css/config_live.scss'].concat(glob.sync('./vendor/**/*.css'))
+      'custom': ['./css/common.scss', './css/main_live.scss', './css/config_live.scss'].concat(glob.sync('./vendor/**/*.css')),
+      'about': ['./css/about_live.scss']
     },
     output: {
       filename: '[name].js',
