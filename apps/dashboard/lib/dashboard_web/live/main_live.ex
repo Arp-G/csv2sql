@@ -99,7 +99,7 @@ defmodule DashboardWeb.MainLive do
              active_workers: active_worker_count,
              worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count],
              db_worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count],
-             cpu_usage: :cpu_sup.util() |> Float.round(2),
+             cpu_usage: :cpu_sup.util() * 1.0 |> Float.round(2),
              memory_usage: :erlang.memory(:total) |> Sizeable.filesize(),
              time_spend: time_taken
            }

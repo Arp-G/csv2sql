@@ -47,15 +47,15 @@ defmodule Csv2sql.Database do
     database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
     Ecto.Adapters.SQL.query!(
       Repo,
-      "CREATE DATABASE IF NOT EXISTS #{database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;",
+      "CREATE DATABASE IF NOT EXISTS #{database_name};",
       []
     )
 
-    Ecto.Adapters.SQL.query!(
-      Repo,
-      "SET GLOBAL SQL_MODE=\"NO_BACKSLASH_ESCAPES,NO_ENGINE_SUBSTITUTION,NO_ZERO_IN_DATE\";",
-      []
-    )
+    # Ecto.Adapters.SQL.query!(
+    #   Repo,
+    #   "SET GLOBAL SQL_MODE=\"NO_BACKSLASH_ESCAPES,NO_ENGINE_SUBSTITUTION,NO_ZERO_IN_DATE\";",
+    #   []
+    # )
   end
 
   defp get_headers(file) do

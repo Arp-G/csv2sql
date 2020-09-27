@@ -26,14 +26,16 @@ defmodule Csv2sql.Worker do
          ]},
         _
       ) do
+
     file = Csv2sql.FileServer.next_file()
 
     if file do
       if(set_make_schema) do
+        IO.puts(file)
         Observer.update_file_status(file, :infer_schema)
-
+        IO.puts("done")
         result = make_schema(file)
-
+        IO.puts("schema done")
         if(set_insert_schema) do
           Observer.update_file_status(file, :insert_schema)
 

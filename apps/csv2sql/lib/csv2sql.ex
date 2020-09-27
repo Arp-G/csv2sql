@@ -54,7 +54,7 @@ defmodule Csv2sql do
       )
 
     source_csv_directory =
-      opts[:source_csv_directory] || System.get_env("csv2sql_source_csv_directory") || "."
+      opts[:source_csv_directory] || System.get_env("csv2sql_source_csv_directory") || "c:/Users/arpan/Desktop/test"
 
     schema_file_path =
       opts[:schema_file_path] || is_blank(System.get_env("csv2sql_schema_file_path")) ||
@@ -191,19 +191,10 @@ defmodule Csv2sql do
          ]},
         {Csv2sql.Repo,
          [
-           username: username,
-           password: password,
-           host: host,
-           database_name: database_name,
-           insertion_chunk_size: insertion_chunk_size,
-           job_count_limit: job_count_limit,
-           socket: connection_socket,
-           log: log,
-           timeout: timeout,
-           connect_timeout: connect_timeout,
-           pool_size: pool_size,
-           queue_target: queue_target,
-           queue_interval: queue_interval
+           username: "root",
+           password: "mysql",
+           hostname: "localhost",
+           database_name: "csvsql_test"
          ]}
       ]
     ]
