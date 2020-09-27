@@ -40,6 +40,10 @@ defmodule Csv2sql.Observer do
     GenServer.cast(__MODULE__, {:update_active_worker_count, worker_count})
   end
 
+  def update_validation_status(validation_status) do
+    GenServer.call(__MODULE__, {:update_validation_status, validation_status}, :infinity)
+  end
+
   def init(_) do
     {:ok,
      %{
@@ -47,6 +51,7 @@ defmodule Csv2sql.Observer do
        file_list: %{},
        files_to_process: [],
        stage: :loading_files,
+       validation_status: nil,
        active_worker_count: Application.get_env(:csv2sql, Csv2sql.MainServer)[:worker_count]
      }, {:continue, :load_files}}
   end
@@ -90,6 +95,10 @@ defmodule Csv2sql.Observer do
 
   def handle_call(:get_stage, _from, %{stage: stage} = state) do
     {:reply, stage, state}
+  end
+
+  def handle_call({:update_validation_status, validation_status}, _from, state) do
+    {:reply, validation_status, Map.put(state, :validation_status, validation_status)}
   end
 
   def handle_cast({:change_stage, new_stage}, state) when new_stage in @stage_list do

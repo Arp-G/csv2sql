@@ -11,8 +11,21 @@ defmodule Csv2sql.ImportValidator do
            %{stats: {total, correct, incorrect}, incorrect_files: incorrect_files} ->
           Helpers.print_msg("Checking File: #{Path.basename(file)}", :yellow)
 
+          validated_csv_directory =
+            Application.get_env(:csv2sql, Csv2sql.MainServer)[:validated_csv_directory]
+
+          src =
+            if Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_data],
+              do: Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory],
+              else: Application.get_env(:csv2sql, Csv2sql.MainServer)[:source_csv_directory]
+
           result =
             if validate_csv(file, row_count) do
+              File.rename(
+                "#{src}/#{file}.csv",
+                "#{validated_csv_directory}/#{file}.csv"
+              )
+
               %{
                 stats: {total + 1, correct + 1, incorrect},
                 incorrect_files: incorrect_files
@@ -23,19 +36,6 @@ defmodule Csv2sql.ImportValidator do
                 incorrect_files: incorrect_files ++ [file]
               }
             end
-
-          validated_csv_directory =
-            Application.get_env(:csv2sql, Csv2sql.MainServer)[:validated_csv_directory]
-
-          src =
-            if Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_data],
-              do: Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory],
-              else: Application.get_env(:csv2sql, Csv2sql.MainServer)[:source_csv_directory]
-
-          File.rename!(
-            "#{src}/#{file}.csv",
-            "#{validated_csv_directory}/#{file}.csv"
-          )
 
           result
         end
@@ -67,6 +67,8 @@ defmodule Csv2sql.ImportValidator do
         Helpers.print_msg("* #{Path.basename(file)}", :red)
       end)
     end
+
+    {incorrect, incorrect_files}
   end
 
   def get_count_from_csv(file) do

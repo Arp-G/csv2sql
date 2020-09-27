@@ -9,6 +9,7 @@ defmodule DashboardWeb.MainLive do
      assign(socket,
        file_list: [],
        stage: :waiting,
+       validation_status: nil,
        timer_set: nil,
        stats: %{
          active_workers: 0,
@@ -82,6 +83,7 @@ defmodule DashboardWeb.MainLive do
             start_time: start_time,
             file_list: file_list,
             stage: stage,
+            validation_status: validation_status,
             active_worker_count: active_worker_count
           } ->
             file_list =
@@ -99,6 +101,7 @@ defmodule DashboardWeb.MainLive do
              assign(socket,
                file_list: file_list,
                stage: stage,
+               validation_status: validation_status,
                timer_set: Process.send_after(self(), :tick, 200),
                stats: %{
                  active_workers: active_worker_count,

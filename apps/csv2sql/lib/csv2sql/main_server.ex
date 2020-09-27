@@ -63,8 +63,11 @@ defmodule Csv2sql.MainServer do
       Csv2sql.Helpers.print_msg("\nValidation Process Started...\n\n", :green)
 
       %{file_list: file_list} = Csv2sql.Observer.get_stats()
+
       Csv2sql.ImportValidator.validate_import(file_list)
+      |> Csv2sql.Observer.update_validation_status()
     else
+      Csv2sql.Observer.update_validation_status({:skipped, nil})
       Csv2sql.Helpers.print_msg("\nValidation Process Skipped...\n\n", :green)
     end
 

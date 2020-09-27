@@ -1,6 +1,17 @@
 <div class="main-container">
   <div class="current-stats">
     <div><strong> Stage: </strong> <span class="overall-status <%= if @stage == :error, do: "error-status" %> "> <%= @stage %> </span> </div>
+    <%= if @validation_status do %>
+      <div><strong> Validation Status: </strong>
+        <span class="validation-status <%= if @validation_status != {0,[]} && @validation_status != {:skipped, nil}, do: "error-status" %>">
+          <%= case @validation_status do %>
+            <% {:skipped, nil} -> %> <span> Skipped!</span>
+            <% {0, []} -> %> <span> Passed!</span>
+            <% {incorrect_count, _incorrect_files} -> %> <span> Failed!(Check logs) </span>
+          <% end %>
+        </span>
+      </div>
+    <% end %>
     <%= if @stage != :waiting do %>
       <div><strong> Total Files: </strong><%= Enum.count(@file_list) %> </div>
       <div><strong> Files Imported: </strong><%= Enum.count(@file_list, fn %{status: status} -> status == :finish end) %> </div>
@@ -66,7 +77,7 @@
     <div class="container" phx-click="start">
       <div id="divSpinner" class="<%= if @stage==:working, do: "spinner loading", else: "" %>" >
         <div id="spinnerText">
-        <%=case @stage do %>
+        <%= case @stage do %>
           <% :waiting -> %> <span> Start!</span>
           <% :loading_files -> %> <span> Analyzing files..</span>
           <% :working -> %> <span> Working.. </span>

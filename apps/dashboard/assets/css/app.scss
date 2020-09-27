@@ -157,13 +157,12 @@ spinner.loading {
 background-color: #3CB371;
 }
 
-
 .status {
   margin-top: 10px;
   margin-bottom: 10px;
 }
 
-.overall-status {
+.overall-status, .validation-status {
   text-transform: capitalize;
   border: 1px solid #FAEBD7;
   background-color: #FAEBD7;
@@ -175,8 +174,12 @@ background-color: #3CB371;
   box-shadow: rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 56px, rgba(17, 17, 26, 0.1) 0px 24px 80px;
 }
 
+.validation-status {
+  background-color: #3CB371;
+}
+
 .error-status {
-  background-color: red;
+  background-color: rgb(214, 29, 29);
 }
 
 .config-page {
