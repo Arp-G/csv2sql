@@ -7,7 +7,7 @@
           <%= case @validation_status do %>
             <% {:skipped, nil} -> %> <span> Skipped!</span>
             <% {0, []} -> %> <span> Passed!</span>
-            <% {incorrect_count, _incorrect_files} -> %> <span> Failed!(Check logs) </span>
+            <% {_incorrect_count, _incorrect_files} -> %> <span> Failed!(Check logs) </span>
           <% end %>
         </span>
       </div>

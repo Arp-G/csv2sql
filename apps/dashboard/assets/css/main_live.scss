@@ -1,0 +1,184 @@
+
+spinner.loading {
+  display: none;
+  text-align: center;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 106px;
+  height: 106px;
+}
+.spinner.loading:before {
+  content: "";
+  height: 120px;
+  width: 120px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-width: 8px;
+  border-style: solid;
+  border-color: #770505 #ccc #ccc;
+  border-radius: 100%;
+  animation: rotation .7s infinite linear;
+}
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}
+
+.required-config{
+  color: red;
+  font-size: 1em;
+}
+
+#spinnerText{
+  font-size: 2.2em;
+  font-weight: bolder;
+  font-variant: small-caps;
+  padding-top: 35%;
+  text-align: center;
+  vertical-align: middle;
+}
+
+#error_stage {
+  font-size: 0.7em;
+}
+
+
+.main-footer {
+  height: 70px;
+  background-color: rebeccapurple;
+  opacity: 0.8;
+}
+
+.main-footer .container {
+  height: 120px;
+  width: 120px;
+  position: absolute;
+  bottom: 5px;
+  border-radius: 50%;
+  opacity: 1;
+  background-image: linear-gradient(red, yellow);
+  border: 1px solid rgb(168, 159, 159);
+  box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
+  cursor: pointer;
+ // center item
+  left: 0; 
+  right: 0; 
+  margin-left: auto; 
+  margin-right: auto; 
+}
+
+.current-stats{
+  display: flex;
+  flex-wrap: wrap;
+  border-radius: 10px;
+  width: 90%;
+  min-height: 150px;
+  box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
+  margin: auto;
+  margin-bottom: 50px;
+  margin-top: 20px;
+  padding: 10px;
+  font-size: 2em;
+}
+
+.current-stats > div {
+  width: 50%;
+}
+
+.finish-check {
+  color: #cc00ff;
+}
+
+.file-list {
+  margin: auto;
+  width: 90%;
+  box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
+}
+
+.file-list-item {
+  min-height: 100px;
+  font-size: 1.5em;
+}
+
+.file-name, .file-path, .file-size, .row_count, .records_inserted, .status {
+  display: block;
+}
+
+.progress {
+  height: 25px !important;
+}
+
+.progress-percentage{
+  color: black;
+  font-size: 2.5em;
+  font-weight: bold;
+}
+
+.stage_pending, 
+.stage_infer_schema, 
+.stage_loading_schema,
+.stage_insert_data,
+.stage_finished {
+  border-radius: 10px;
+  border: 1px solid black;
+  padding: 5px;
+  font-weight: bold;
+}
+
+.stage_pending {
+  background-color: #FFA07A;
+}
+
+.stage_infer_schema {
+  background-color: #8A2BE2;
+  color: white;
+}
+
+.stage_loading_schema {
+  background-color: #BDB76B;
+}
+
+.stage_insert_data {
+  background-color: #0000FF;
+  color: white;
+}
+
+.stage_finished {
+background-color: #3CB371;
+}
+
+.status {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.overall-status, .validation-status {
+  text-transform: capitalize;
+  border: 1px solid #FAEBD7;
+  background-color: #FAEBD7;
+  border-radius: 15px;
+  padding: 5px;
+  font-variant: small-caps;
+  font-weight: bold;
+  font-style: italic;
+  box-shadow: rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 56px, rgba(17, 17, 26, 0.1) 0px 24px 80px;
+}
+
+.validation-status {
+  background-color: #3CB371;
+}
+
+.error-status {
+  background-color: rgb(214, 29, 29);
+}
+
+.config-page {
+  background-color: #f8f9fa;
+}
