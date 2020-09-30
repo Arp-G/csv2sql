@@ -49,11 +49,11 @@ defmodule Csv2sql.JobQueueServer do
   end
 
   def handle_call({:job_for_file_present, file}, _from, state) do
-    file_present? =
+    file_present =
       Enum.any?(state, fn {file_job, _data_chunk} ->
         file == file_job
       end)
 
-    {:reply, file_present?, state}
+    {:reply, file_present, state}
   end
 end

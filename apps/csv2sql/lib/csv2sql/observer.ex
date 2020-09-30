@@ -6,9 +6,9 @@ defmodule Csv2sql.Observer do
 
   def get_stats do
     try do
-      # timeout is infinity here this makes the caller wait untill server responds
+      # timeout is infinity here this makes the caller wait until server responds
       # usefull when the server is loading files in handle_continue block
-      # catch block is usefull when genserver is requested when no longer running
+      # catch block is usefull when genserver is requested when it is not running
       GenServer.call(__MODULE__, :get_stats, :infinity)
     catch
       _, _ ->
@@ -122,12 +122,9 @@ defmodule Csv2sql.Observer do
           current_progress =
             progress + Application.get_env(:csv2sql, Csv2sql.Repo)[:insertion_chunk_size]
 
-          current_progress =
-            if current_progress >= file_struct.row_count,
-              do: :finish,
-              else: current_progress
-
-          if current_progress == :finish, do: :finish, else: {:insert_data, current_progress}
+          if current_progress >= file_struct.row_count,
+            do: :finish,
+            else: {:insert_data, current_progress}
 
         {_, :insert_data} ->
           {:insert_data, 0}
@@ -148,7 +145,7 @@ defmodule Csv2sql.Observer do
     }
   end
 
-  def get_file_list() do
+  defp get_file_list() do
     source_dir = Application.get_env(:csv2sql, Csv2sql.MainServer)[:source_csv_directory]
 
     source_dir

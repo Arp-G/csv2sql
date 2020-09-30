@@ -1,32 +1,34 @@
 defmodule Csv2sql.SchemaMaker do
   alias NimbleCSV.RFC4180, as: CSV
 
+  @doc """
+  Writes the DDL queries in file
+  """
   def make_schema(file_path) do
-    [drop, create] =
+    [drop_query, create_query] =
       file_path
       |> get_types()
       |> query_maker(file_path)
 
     query = """
 
-    #{drop}
+    #{drop_query}
 
-    #{create}
+    #{create_query}
 
     """
 
     schema_file_path = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_file_path]
-
     File.write("#{schema_file_path}/schema.sql", query, [:append])
-
     Csv2sql.Helpers.print_msg("Infer Schema for: #{Path.basename(file_path)}")
-
-    [drop, create]
+    [drop_query, create_query]
   end
 
+  @doc """
+  Check type of data
+  """
   def check_type(item, type) do
     item = String.trim(item)
-
     empty = is_empty?(item)
 
     if(empty) do
@@ -51,6 +53,14 @@ defmodule Csv2sql.SchemaMaker do
     end
   end
 
+  def infer_type(chunk, headers_type_list) do
+    Enum.reduce(chunk, headers_type_list, fn cols, type_list ->
+      for {item, item_type_map} <- Enum.zip(cols, type_list) do
+        check_type(item, item_type_map)
+      end
+    end)
+  end
+
   defp query_maker(types, file_path) do
     database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
 
@@ -71,14 +81,11 @@ defmodule Csv2sql.SchemaMaker do
     ["DROP TABLE IF EXISTS #{database_name}.#{table_name};", "#{create_table}"]
   end
 
-  def get_types(path) do
+  defp get_types(path) do
     headers = get_headers(path)
-
-    column_count = Enum.count(headers)
-
     varchar_limit = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
 
-    headers_type_list = List.duplicate(get_type_map(), column_count)
+    headers_type_list = List.duplicate(get_type_map(), Enum.count(headers))
 
     path
     |> File.stream!()
@@ -122,14 +129,6 @@ defmodule Csv2sql.SchemaMaker do
       Map.put(acc, header, type)
     end)
     |> header_map_to_list(headers)
-  end
-
-  def infer_type(chunk, headers_type_list) do
-    Enum.reduce(chunk, headers_type_list, fn cols, type_list ->
-      for {item, item_type_map} <- Enum.zip(cols, type_list) do
-        check_type(item, item_type_map)
-      end
-    end)
   end
 
   defp get_headers(path) do

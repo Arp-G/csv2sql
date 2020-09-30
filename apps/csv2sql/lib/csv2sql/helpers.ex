@@ -58,16 +58,5 @@ defmodule Csv2sql.Helpers do
        }  by Arpan.
        """ <> reset())
     |> IO.puts()
-
-    start_text = [:yellow_background, :black, " Starting... !"] |> format()
-
-    CliSpinners.spin_fun(
-      [
-        frames: :arrow3,
-        text: start_text,
-        done: ""
-      ],
-      fn -> :timer.sleep(5000) end
-    )
   end
 end

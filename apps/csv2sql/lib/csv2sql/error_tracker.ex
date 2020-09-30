@@ -1,5 +1,6 @@
 defmodule Csv2sql.ErrorTracker do
   use GenServer
+  alias Csv2sql.{Observer, Helpers}
 
   def register_supervisor(sup_pid) do
     GenServer.cast(:error_tracker, {:register_supervisor, sup_pid})
@@ -11,9 +12,9 @@ defmodule Csv2sql.ErrorTracker do
 
     #{inspect(error)}
     """
-    |> Csv2sql.Helpers.print_msg(:red)
+    |> Helpers.print_msg(:red)
 
-    Csv2sql.Observer.change_stage(:error)
+    Observer.change_stage(:error)
 
     # Call genserver not cast since, we need the wait synchronously untill supervisor is stopped
     GenServer.call(:error_tracker, {:add_error, error})

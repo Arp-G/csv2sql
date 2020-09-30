@@ -1,6 +1,4 @@
 defmodule Dashboard.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
   @moduledoc false
 
   use Application
@@ -14,17 +12,13 @@ defmodule Dashboard.Application do
       {Cachex, name: :config_cache}
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Dashboard.Supervisor]
+    sup = Supervisor.start_link(children, opts)
 
     # Load initial cache config
-    Task.start(fn ->
-      :timer.sleep(500)
-      DashboardWeb.Helper.ConfigHelper.load_initial_config()
-    end)
+    DashboardWeb.Helper.ConfigHelper.load_initial_config()
 
-    Supervisor.start_link(children, opts)
+    sup
   end
 
   # Tell Phoenix to update the endpoint configuration

@@ -1,7 +1,6 @@
 defmodule Csv2sql.DbWorker do
   use GenServer
-
-  alias Csv2sql.JobQueueServer, as: FS
+  alias Csv2sql.{JobQueueServer, Database}
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, :no_args)
@@ -12,11 +11,14 @@ defmodule Csv2sql.DbWorker do
     {:ok, nil}
   end
 
+  @doc """
+  Recursively requests the job queue for work(chunks of data)
+  """
   def handle_info(:start_new_db_work, _) do
-    FS.get_work()
+    JobQueueServer.get_work()
     |> case do
       {file, data_chunk} ->
-        Csv2sql.Database.insert_data_chunk(file, data_chunk)
+        Database.insert_data_chunk(file, data_chunk)
 
       :no_work ->
         nil

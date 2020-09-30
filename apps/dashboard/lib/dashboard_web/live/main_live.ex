@@ -44,24 +44,24 @@ defmodule DashboardWeb.MainLive do
           stage
       end
 
-    if new_stage == :reset do
-      {:noreply,
-       assign(socket,
-         file_list: [],
-         stage: :waiting,
-         timer_set: nil,
-         stats: %{
-           active_workers: 0,
-           worker_count: 0,
-           db_worker_count: 0,
-           cpu_usage: 0,
-           memory_usage: 0,
-           time_spend: 0
-         }
-       )}
-    else
-      {:noreply, assign(socket, stage: new_stage)}
-    end
+    if new_stage == :reset,
+      do:
+        {:noreply,
+         assign(socket,
+           file_list: [],
+           stage: :waiting,
+           validation_status: nil,
+           timer_set: nil,
+           stats: %{
+             active_workers: 0,
+             worker_count: 0,
+             db_worker_count: 0,
+             cpu_usage: 0,
+             memory_usage: 0,
+             time_spend: 0
+           }
+         )},
+      else: {:noreply, assign(socket, stage: new_stage)}
   end
 
   @impl true

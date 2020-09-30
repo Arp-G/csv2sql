@@ -1,7 +1,6 @@
 defmodule Csv2sql.Worker do
   use GenServer
-
-  alias Csv2sql.Observer
+  alias Csv2sql.{MainServer, Observer}
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, :no_args)
@@ -26,49 +25,44 @@ defmodule Csv2sql.Worker do
          ]},
         _
       ) do
-    {file, row_count} = Csv2sql.Observer.next_file()
+    {file, row_count} = Observer.next_file()
 
     if file do
-      if(set_make_schema) do
+      if set_make_schema do
         Observer.update_file_status(file, :infer_schema)
-
         result = make_schema(file)
 
-        if(set_insert_schema) do
+        if set_insert_schema do
           Observer.update_file_status(file, :insert_schema)
-
           insert_schema(result)
         end
       end
 
       if(set_insert_data && row_count != 0) do
         Observer.update_file_status(file, :insert_data)
-
         insert_data(file)
       end
 
       if set_insert_data && row_count == 0, do: handle_empty_file(file)
-
       send(self(), {:start_new_work, work_config})
-
       {:noreply, nil}
     else
-      Csv2sql.MainServer.work_done()
+      MainServer.work_done()
       {:noreply, nil}
     end
   end
 
-  def make_schema(file) do
+  defp make_schema(file) do
     queries = Csv2sql.SchemaMaker.make_schema(file)
     {file, queries}
   end
 
-  def insert_schema({file, queries}) do
+  defp insert_schema({file, queries}) do
     Csv2sql.Database.make_db_schema(queries)
     file
   end
 
-  def insert_data(file) do
+  defp insert_data(file) do
     Csv2sql.DataTransfer.process_file(file)
     file
   end
@@ -79,7 +73,7 @@ defmodule Csv2sql.Worker do
 
     File.rename!(
       file,
-      "#{Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]}/#{
+      "#{Application.get_env(:csv2sql, MainServer)[:imported_csv_directory]}/#{
         Path.basename(file)
       }"
     )

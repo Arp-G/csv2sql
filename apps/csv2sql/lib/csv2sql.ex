@@ -1,6 +1,6 @@
 defmodule Csv2sql do
   def main(args) do
-    # Csv2sql.Helpers.greet()
+    Csv2sql.Helpers.greet()
     # Load configuration varaibles dynamically for escripts, this is required
     # since configuration variables are set to whatever they where when the
     # escript was build and cannot be changed later

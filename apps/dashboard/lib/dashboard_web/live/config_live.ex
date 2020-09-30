@@ -8,8 +8,7 @@ defmodule DashboardWeb.ConfigLive do
 
     {:ok,
      assign(socket,
-       config: inital_config,
-       valid_config: ConfigHelper.validate_config(inital_config)
+       config: inital_config
      )}
   end
 
@@ -26,13 +25,11 @@ defmodule DashboardWeb.ConfigLive do
         value -> if String.trim(value) == "", do: nil, else: value
       end
 
-    IO.inspect("GOT #{inspect({String.to_atom(config), value})}")
     Cachex.put(:config_cache, String.to_atom(config), value)
 
     {:noreply,
      assign(socket,
-       config_list: Map.put(assigns, config, value),
-       valid_config: ConfigHelper.validate_config(assigns.config)
+       config_list: Map.put(assigns, config, value)
      )}
   end
 

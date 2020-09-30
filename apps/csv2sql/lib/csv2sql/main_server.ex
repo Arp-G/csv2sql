@@ -1,6 +1,6 @@
 defmodule Csv2sql.MainServer do
   use GenServer
-  alias Csv2sql.Observer
+  alias Csv2sql.{JobQueueServer, Database, Observer}
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, :no_args, name: __MODULE__)
@@ -23,33 +23,26 @@ defmodule Csv2sql.MainServer do
   end
 
   def handle_info(:kickoff, worker_count) do
-    set_insert_schema = Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_schema]
-    set_insert_data = Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_data]
+    worker_config = Application.get_env(:csv2sql, Csv2sql.Worker)
+    main_server_config = Application.get_env(:csv2sql, Csv2sql.MainServer)
 
-    if set_insert_schema || set_insert_data do
-      Csv2sql.Database.prepare_db()
-    end
+    if worker_config[:set_insert_schema] || worker_config[:set_insert_data],
+      do: Database.prepare_db()
 
-    schema_file_path = Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count]
-    db_worker_count = Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_worker_count]
-
-    if Application.get_env(:csv2sql, Csv2sql.Worker)[:set_make_schema] do
-      File.rm("#{schema_file_path}/schema.sql")
-    end
+    if Application.get_env(:csv2sql, Csv2sql.Worker)[:set_make_schema],
+      do: File.rm("#{main_server_config[:db_worker_count]}/schema.sql")
 
     1..worker_count
     |> Enum.each(fn _ -> Csv2sql.WorkerSupervisor.add_worker() end)
 
-    1..db_worker_count
+    1..main_server_config[:db_worker_count]
     |> Enum.each(fn _ -> Csv2sql.DbWorkerSupervisor.add_worker() end)
 
     {:noreply, worker_count}
   end
 
   def handle_cast(:done, 1) do
-    Csv2sql.Observer.update_active_worker_count(0)
-
-    set_validate = Application.get_env(:csv2sql, Csv2sql.MainServer)[:set_validate]
+    Observer.update_active_worker_count(0)
 
     wait_for_pending_jobs()
 
@@ -57,7 +50,7 @@ defmodule Csv2sql.MainServer do
 
     start_validation_message()
 
-    if(set_validate) do
+    if(Application.get_env(:csv2sql, Csv2sql.MainServer)[:set_validate]) do
       Observer.change_stage(:validation)
 
       Csv2sql.Helpers.print_msg("\nValidation Process Started...\n\n", :green)
@@ -87,7 +80,7 @@ defmodule Csv2sql.MainServer do
 
   defp wait_for_pending_jobs() do
     cond do
-      Csv2sql.JobQueueServer.get_job_count() > 0 -> wait_for_pending_jobs()
+      JobQueueServer.get_job_count() > 0 -> wait_for_pending_jobs()
       true -> nil
     end
   end

@@ -1,8 +1,14 @@
 defmodule Csv2sql.DataTransfer do
   alias NimbleCSV.RFC4180, as: CSV
+  alias Csv2sql.{JobQueueServer, Helpers}
 
+  @doc """
+  Divides a csv file in chunks and place them in a job queue.
+  Whenever a DB worker is free it will pick up a chunk from the queue
+  and insert it in the database.
+  """
   def process_file(file) do
-    Csv2sql.Helpers.print_msg("Begin data tranfer for file: " <> Path.basename(file))
+    Helpers.print_msg("Begin data tranfer for file: " <> Path.basename(file))
 
     insertion_chunk_size = Application.get_env(:csv2sql, Csv2sql.Repo)[:insertion_chunk_size]
 
@@ -17,6 +23,11 @@ defmodule Csv2sql.DataTransfer do
     wait_for_file_transfer(file)
   end
 
+
+  # Wait until all chunks for the current file in the job queue has been processed
+  # `:timer.sleep(300)` waits for the last chunk in queue to get inserted that is
+  # if no, chunks were present on the job queue this means a DB worker has picked
+  # up the chunk for insertion, so we wait for 300ms for the chunk to get inserted.
   defp wait_for_file_transfer(file) do
     if Csv2sql.JobQueueServer.job_for_file_present(file) do
       wait_for_file_transfer(file)
@@ -24,21 +35,23 @@ defmodule Csv2sql.DataTransfer do
       imported_csv_directory =
         Application.get_env(:csv2sql, Csv2sql.MainServer)[:imported_csv_directory]
 
-      # wait for the last chunk in queue to get inserted
       :timer.sleep(300)
-      File.rename!(file, "#{imported_csv_directory}/#{Path.basename(file)}")
-      Csv2sql.Helpers.print_msg("Finished processing file: " <> Path.basename(file), :green)
+      File.rename(file, "#{imported_csv_directory}/#{Path.basename(file)}")
+      Helpers.print_msg("Finished processing file: " <> Path.basename(file), :green)
     end
   end
 
+
+  # Wait until job queue has space for the next chunk
+  # by recursively calling itself.
   defp check_job_queue(file, data_chunk) do
     job_count_limit = Application.get_env(:csv2sql, Csv2sql.Repo)[:job_count_limit]
-    job_count = Csv2sql.JobQueueServer.get_job_count()
+    job_count = JobQueueServer.get_job_count()
 
     if job_count > job_count_limit do
       check_job_queue(file, data_chunk)
     else
-      Csv2sql.JobQueueServer.add_data_chunk(file, data_chunk)
+      JobQueueServer.add_data_chunk(file, data_chunk)
     end
   end
 end
