@@ -102,19 +102,20 @@ defmodule Csv2sql do
         do: false,
         else: if(System.get_env("csv2sql_set_validate") == "false", do: false, else: true)
 
-    [username, password, host, database_name] =
+    [db_type, username, password, host, database_name] =
       if opts[:db_connection_string] do
         str = opts[:db_connection_string]
 
-        [username, tmp] = String.split(str, ":")
+        [db_type, username, tmp] = String.split(str, ":")
 
         [password, tmp] = String.split(tmp, "@")
 
         [host, database_name] = String.split(tmp, "/")
 
-        [username, password, host, database_name]
+        [db_type, username, password, host, database_name]
       else
         [
+          System.get_env("csv2sql_db_type"),
           System.get_env("csv2sql_username"),
           System.get_env("csv2sql_password"),
           System.get_env("csv2sql_host"),
@@ -178,6 +179,32 @@ defmodule Csv2sql do
       opts[:queue_interval] || System.get_env("csv2sql_queue_interval") |> to_int() ||
         1000
 
+    repo_config = [
+      username: username,
+      password: password,
+      host: host,
+      insertion_chunk_size: insertion_chunk_size,
+      job_count_limit: job_count_limit,
+      log: log
+    ]
+
+    repo_config =
+      if db_type == "postgres" do
+        {Csv2sql.PostgreSQLRepo, repo_config ++ [database: database_name]}
+      else
+        {Csv2sql.MySQLRepo,
+         repo_config ++
+           [
+             database_name: database_name,
+             timeout: timeout,
+             connect_timeout: connect_timeout,
+             pool_size: pool_size,
+             queue_target: queue_target,
+             queue_interval: queue_interval,
+             socket: connection_socket
+           ]}
+      end
+
     current_config = [
       csv2sql: [
         {Csv2sql.SchemaMaker,
@@ -193,7 +220,8 @@ defmodule Csv2sql do
            source_csv_directory: source_csv_directory,
            imported_csv_directory: imported_csv_directory,
            validated_csv_directory: validated_csv_directory,
-           set_validate: validate_import
+           set_validate: validate_import,
+           db_type: db_type
          ]},
         {Csv2sql.Worker,
          [
@@ -201,26 +229,26 @@ defmodule Csv2sql do
            set_insert_schema: insert_schema,
            set_insert_data: insert_data
          ]},
-        {Csv2sql.Repo,
-         [
-           username: username,
-           password: password,
-           host: host,
-           database_name: database_name,
-           insertion_chunk_size: insertion_chunk_size,
-           job_count_limit: job_count_limit,
-           socket: connection_socket,
-           log: log,
-           timeout: timeout,
-           connect_timeout: connect_timeout,
-           pool_size: pool_size,
-           queue_target: queue_target,
-           queue_interval: queue_interval
-         ]}
+        repo_config
       ]
     ]
 
     Application.put_all_env(current_config)
+  end
+
+  def get_repo() do
+    db_type = Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_type]
+
+    cond do
+      db_type == "postgres" -> Csv2sql.PostgreSQLRepo
+      true -> Csv2sql.MySQLRepo
+    end
+  end
+
+  def get_db_type() do
+    if Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_type] == "postgres",
+      do: :postgres,
+      else: :mysql
   end
 
   defp is_blank(item, int \\ false) do

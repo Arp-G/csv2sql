@@ -44,6 +44,14 @@ defmodule Csv2sql.Observer do
     GenServer.call(__MODULE__, {:update_validation_status, validation_status}, :infinity)
   end
 
+  def set_schema(file, schema) do
+    GenServer.call(__MODULE__, {:set_schema, file, schema}, :infinity)
+  end
+
+  def get_schema(file) do
+    GenServer.call(__MODULE__, {:get_schema, file}, :infinity)
+  end
+
   def init(_) do
     {:ok,
      %{
@@ -65,6 +73,20 @@ defmodule Csv2sql.Observer do
        state,
        %{stage: :working, file_list: files_map, files_to_process: files_to_process}
      )}
+  end
+
+  def handle_call({:set_schema, file, schema}, _from, %{file_list: file_list} = state) do
+    {_, file_list} =
+      Map.get_and_update(file_list, file, fn file_struct ->
+        {file, Map.put(file_struct, :schema, schema)}
+      end)
+
+    {:reply, nil, Map.put(state, :file_list, file_list)}
+  end
+
+  def handle_call({:get_schema, file}, _from, %{file_list: file_list} = state) do
+    %Csv2sql.File{schema: schema} = Map.get(file_list, file)
+    {:reply, schema, state}
   end
 
   def handle_call(
@@ -120,7 +142,7 @@ defmodule Csv2sql.Observer do
       case {file_struct.status, status} do
         {{:insert_data, progress}, :insert_data} ->
           current_progress =
-            progress + Application.get_env(:csv2sql, Csv2sql.Repo)[:insertion_chunk_size]
+            progress + Application.get_env(:csv2sql, Csv2sql.get_repo())[:insertion_chunk_size]
 
           if current_progress >= file_struct.row_count,
             do: :finish,

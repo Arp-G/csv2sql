@@ -10,7 +10,7 @@ defmodule Csv2sql.DataTransfer do
   def process_file(file) do
     Helpers.print_msg("Begin data tranfer for file: " <> Path.basename(file))
 
-    insertion_chunk_size = Application.get_env(:csv2sql, Csv2sql.Repo)[:insertion_chunk_size]
+    insertion_chunk_size = Application.get_env(:csv2sql, Csv2sql.get_repo())[:insertion_chunk_size]
 
     file
     |> File.stream!()
@@ -45,7 +45,7 @@ defmodule Csv2sql.DataTransfer do
   # Wait until job queue has space for the next chunk
   # by recursively calling itself.
   defp check_job_queue(file, data_chunk) do
-    job_count_limit = Application.get_env(:csv2sql, Csv2sql.Repo)[:job_count_limit]
+    job_count_limit = Application.get_env(:csv2sql, Csv2sql.get_repo())[:job_count_limit]
     job_count = JobQueueServer.get_job_count()
 
     if job_count > job_count_limit do

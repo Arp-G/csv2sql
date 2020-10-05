@@ -85,8 +85,6 @@ defmodule Csv2sql.ImportValidator do
   end
 
   defp get_db_count(file) do
-    database_name = Application.get_env(:csv2sql, Csv2sql.Repo)[:database_name]
-
     table_name =
       file
       |> Path.basename()
@@ -96,7 +94,12 @@ defmodule Csv2sql.ImportValidator do
 
     try do
       Ecto.Query.from(p in table_name, select: count("*"))
-      |> Csv2sql.Repo.one(prefix: database_name)
+      |> Csv2sql.get_repo().one(
+        prefix:
+          if(Csv2sql.get_db_type() == :mysql,
+            do: Application.get_env(:csv2sql, Csv2sql.get_repo())[:database_name]
+          )
+      )
     catch
       _, _ ->
         Helpers.print_msg("An exception occured !", :red)

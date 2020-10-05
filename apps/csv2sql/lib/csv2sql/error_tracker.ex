@@ -41,15 +41,15 @@ defmodule Csv2sql.ErrorTracker do
     {:reply, nil, %{errors: errors ++ [error], sup_pid: nil}}
   end
 
+  def handle_call(:get_errors, _from, %{errors: errors} = state) do
+    {:reply, errors, state}
+  end
+
   def handle_cast({:register_supervisor, sup_pid}, state) do
     {:noreply, Map.put(state, :sup_pid, sup_pid)}
   end
 
   def handle_cast(:reset_state, _state) do
     {:noreply, %{errors: [], sup_pid: nil}}
-  end
-
-  def handle_call(:get_errors, _from, %{errors: errors} = state) do
-    {:reply, errors, state}
   end
 end

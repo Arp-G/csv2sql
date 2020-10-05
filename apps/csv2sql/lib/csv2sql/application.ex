@@ -6,7 +6,7 @@ defmodule Csv2sql.Application do
       if Application.get_env(:csv2sql, Csv2sql.MainServer)[:set_validate] ||
            Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_schema] ||
            Application.get_env(:csv2sql, Csv2sql.Worker)[:set_insert_data],
-         do: [Csv2sql.Repo],
+         do: [Csv2sql.get_repo()],
          else: []
 
     children =
