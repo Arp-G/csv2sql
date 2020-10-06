@@ -16,7 +16,7 @@ defmodule DashboardWeb.ConfigLive do
   def handle_event(
         "update_config",
         %{"config" => config} = param,
-        %{assigns: assigns} = socket
+        socket
       ) do
     value =
       case param["value"] do
@@ -26,11 +26,7 @@ defmodule DashboardWeb.ConfigLive do
       end
 
     Cachex.put(:config_cache, String.to_atom(config), value)
-
-    {:noreply,
-     assign(socket,
-       config_list: Map.put(assigns, config, value)
-     )}
+    {:noreply, socket}
   end
 
   @impl true

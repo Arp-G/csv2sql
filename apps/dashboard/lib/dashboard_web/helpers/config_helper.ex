@@ -28,6 +28,9 @@ defmodule DashboardWeb.Helper.ConfigHelper do
   end
 
   defp add_db_connection_config(config) do
+    {:entry, _, _, _, database_type} =
+      Enum.find(config, fn {:entry, key, _, _, _value} -> key == :database_type end)
+
     {:entry, _, _, _, username} =
       Enum.find(config, fn {:entry, key, _, _, _value} -> key == :csv2sql_username end)
 
@@ -43,12 +46,13 @@ defmodule DashboardWeb.Helper.ConfigHelper do
     config ++
       [
         {:entry, String.to_atom("db-connection-string"), nil, nil,
-         "#{username}:#{password}@#{host}/#{database_name}"}
+         "#{database_type}:#{username}:#{password}@#{host}/#{database_name}"}
       ]
   end
 
   defp get_initial_config do
     %{
+      database_type: "mysql",
       "schema-file-path": "",
       "source-csv-directory": "/home/arpan/Desktop/test/bulk_csvs",
       "imported-csv-directory": "",
@@ -68,8 +72,8 @@ defmodule DashboardWeb.Helper.ConfigHelper do
       "db-worker-count": 15,
       "insertion-chunk-size": 100,
       "job-count-limit": 10,
-      timeout: 60000,
-      "connect-timeout": 60000,
+      timeout: 60_000,
+      "connect-timeout": 60_000,
       "pool-size": 20,
       "queue-target": 5000,
       "queue-interval": 1000

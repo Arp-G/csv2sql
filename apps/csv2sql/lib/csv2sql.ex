@@ -164,11 +164,11 @@ defmodule Csv2sql do
             else: false
         end
 
-    timeout = opts[:timeout] || System.get_env("csv2sql_timeout") |> to_int() || 60000
+    timeout = opts[:timeout] || System.get_env("csv2sql_timeout") |> to_int() || 60_000
 
     connect_timeout =
       opts[:connect_timeout] || System.get_env("csv2sql_connect_timeout") |> to_int() ||
-        60000
+        60_000
 
     pool_size = opts[:pool_size] || System.get_env("csv2sql_pool_size") |> to_int() || 20
 
@@ -239,10 +239,7 @@ defmodule Csv2sql do
   def get_repo() do
     db_type = Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_type]
 
-    cond do
-      db_type == "postgres" -> Csv2sql.PostgreSQLRepo
-      true -> Csv2sql.MySQLRepo
-    end
+    if db_type == "postgres", do: Csv2sql.PostgreSQLRepo, else: Csv2sql.MySQLRepo
   end
 
   def get_db_type() do

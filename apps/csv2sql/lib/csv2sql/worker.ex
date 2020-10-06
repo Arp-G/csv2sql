@@ -38,7 +38,7 @@ defmodule Csv2sql.Worker do
         end
       end
 
-      if(set_insert_data && row_count != 0) do
+      if set_insert_data && row_count != 0 do
         Observer.update_file_status(file, :insert_data)
         insert_data(file)
       end

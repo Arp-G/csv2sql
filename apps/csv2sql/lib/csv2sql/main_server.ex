@@ -50,7 +50,7 @@ defmodule Csv2sql.MainServer do
 
     start_validation_message()
 
-    if(Application.get_env(:csv2sql, Csv2sql.MainServer)[:set_validate]) do
+    if Application.get_env(:csv2sql, Csv2sql.MainServer)[:set_validate] do
       Observer.change_stage(:validation)
 
       Csv2sql.Helpers.print_msg("\nValidation Process Started...\n\n", :green)
@@ -79,10 +79,7 @@ defmodule Csv2sql.MainServer do
   end
 
   defp wait_for_pending_jobs() do
-    cond do
-      JobQueueServer.get_job_count() > 0 -> wait_for_pending_jobs()
-      true -> nil
-    end
+    if JobQueueServer.get_job_count() > 0, do: wait_for_pending_jobs(), else: nil
   end
 
   defp pretty_print_time_take() do

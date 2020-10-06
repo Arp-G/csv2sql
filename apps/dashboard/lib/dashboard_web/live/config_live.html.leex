@@ -1,29 +1,142 @@
 <div class="config-page">
 
-<div class="flex-container legend">
-  <h2 class="legend-heading "> LEGEND </h2>
-
-  <div class="legend-item">
-    <span class="legend-text-item"> This config is compulsary (Database configs are compulsary only if database access is needed) </span>
-    <span style="background-color: #c3e6cb" class="legend-color-item"/>
+  <div class="choose-db-type">
+    <div class="toggle-config-item">
+      <span aria-label="Set wether to use MySQL or PostgreSQL" data-microtip-size="large" class="popup"
+        data-microtip-position="top" role="tooltip">
+        <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
+        <span
+        class="toggle-config-text"> Choose Database Type </span>
+      </span>
+      <div class="database-radio">
+        <input
+        name="database-type"
+        type="radio"
+        class="database-radio-input"
+        phx-click="update_config"
+        phx-value-config="database_type"
+        value="mysql"
+        <%= if(@config[:database_type]=="mysql", do: "checked", else: nil) %>
+        />
+        <img style="width: 100px;" src="<%= Routes.static_path(@socket, "/images/mysql.svg") %>" />
+      </div>
+      <div class="database-radio">
+        <input
+        name="database-type"
+        type="radio"
+        class="database-radio-input"
+        phx-click="update_config"
+        phx-value-config="database_type"
+        value="postgres"
+        <%= if(@config[:database_type]=="postgres", do: "checked", else: nil) %>
+        />
+        <img style="width: 150px;" src="<%= Routes.static_path(@socket, "/images/pgsql.svg") %>" />
+      </div>
+    </div>
   </div>
 
-  <div class="legend-item">
-    <span class="legend-text-item"> Changing this config is potentially dangerous </span>
-    <span style="background-color: #ffeeba" class="legend-color-item"/>
+  <div class="flex-container legend">
+    <h2 class="legend-heading "> LEGEND </h2>
+
+    <div class="legend-item">
+      <span class="legend-text-item"> This config is compulsary (Database configs are compulsary only if database access is needed) </span>
+      <span style="background-color: #c3e6cb" class="legend-color-item"/>
+    </div>
+
+    <div class="legend-item">
+      <span class="legend-text-item"> Changing this config is potentially dangerous </span>
+      <span style="background-color: #ffeeba" class="legend-color-item"/>
+    </div>
+
+    <div class="legend-item">
+      <span class="legend-text-item"> Changing this config can be dangerous </span>
+      <span style="background-color: #f5c6cb" class="legend-color-item"/>
+    </div>
+
+    <div class="legend-item">
+      <span class="legend-text-item"> This config is optional </span>
+      <span style="background-color: #d6d8db" class="legend-color-item"/>
+    </div>
+
   </div>
 
-  <div class="legend-item">
-    <span class="legend-text-item"> Changing this config can be dangerous </span>
-    <span style="background-color: #f5c6cb" class="legend-color-item"/>
-  </div>
 
-  <div class="legend-item">
-    <span class="legend-text-item"> This config is optional </span>
-    <span style="background-color: #d6d8db" class="legend-color-item"/>
-  </div>
+  <div class="flex-container toggle-configs">
+    <h2 class="toggle-config-heading"> SKIP A TASK: </h2>
 
-</div>
+    <div class="toggle-config-item">
+      <span aria-label="Set whether you want to skip inserting the schema file that is generated (this option will only work if skip_make_schema=false)" data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
+        <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
+        <span class="toggle-config-text"> Skip Insert Schema: </span>
+      </span>
+      <label class="switch toggle-config-switch">
+        <input
+        type="checkbox"
+        class="form-control
+        check-box-input"
+        phx-click="update_config"
+        phx-value-config="skip-insert-schema"
+        <%= if @config[:"skip-insert-schema"]=="true", do: "checked", else: "" %>
+        />
+        <span class="slider round"></span>
+      </label>
+    </div>
+
+    <div class="toggle-config-item">
+      <span aria-label="Set whether you want to skip making a schema file" data-microtip-size="large" class="popup"
+        data-microtip-position="top" role="tooltip">
+        <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
+        <span class="toggle-config-text"> Skip Make Schema ? </span>
+      </span>
+      <label class="switch toggle-config-switch">
+        <input
+        type="checkbox"
+        data-toggle="toggle" data-onstyle="success" data-offstyle="danger"
+        class="form-control check-box-input"
+        phx-click="update_config"
+        phx-value-config="skip-make-schema"
+        <%= if @config[:"skip-make-schema"]=="true", do: "checked", else: "" %>
+        />
+        <span class="slider round"></span>
+      </label>
+    </div>
+
+    <div class="toggle-config-item">
+      <span aria-label="Set whether to skip inserting the CSVs into the database" data-microtip-size="large" class="popup"
+        data-microtip-position="top" role="tooltip">
+        <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
+        <span class="toggle-config-text"> Skip Insert CSV ? </span>
+      </span>
+      <label class="switch toggle-config-switch">
+        <input
+        type="checkbox"
+        class="form-control check-box-input"
+        phx-click="update_config"
+        phx-value-config="skip-insert-data"
+        <%= if @config[:"skip-insert-data"]=="true", do: "checked", else: "" %>
+        />
+        <span class="slider round"></span>
+      </label>
+    </div>
+
+    <div class="toggle-config-item">
+      <span aria-label="Set whether to skip validating the import" data-microtip-size="large" class="popup"
+        data-microtip-position="top" role="tooltip">
+        <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
+        <span class="toggle-config-text"> Skip Validations ? </span>
+      </span>
+      <label class="switch toggle-config-switch">
+        <input
+        type="checkbox"
+        class="form-control check-box-input"
+        phx-click="update_config"
+        phx-value-config="skip-validate-import"
+        <%= if @config[:"skip-validate-import"]=="true", do: "checked", else: "" %>
+        />
+        <span class="slider round"></span>
+      </label>
+    </div>
+  </div>
 
   <div class="container flex-container">
 
@@ -111,82 +224,7 @@
       />
     </div>
 
-    <div class="flex-item">
-      <div class="d-flex w-100 justify-content-between list-group-item-secondary">
-        <h5 class="mb-1">
-          <span aria-label="Set whether you want to skip making a schema file" data-microtip-size="large" class="popup"
-            data-microtip-position="top" role="tooltip">
-            <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Skip Make Schema ? </span>
-          </span>
-        </h5>
-      </div>
-      <input
-      type="checkbox"
-      class="form-control check-box-input"
-      phx-click="update_config"
-      phx-value-config="skip-make-schema"
-      <%= if @config[:"skip-make-schema"]=="true", do: "checked", else: "" %>
-      />
-    </div>
 
-    <div class="flex-item">
-      <div class="d-flex w-100 justify-content-between list-group-item-secondary">
-        <h5 class="mb-1">
-          <span
-            aria-label="Set whether you want to skip inserting the schema file that is generated (this option will only work if skip_make_schema=false)" data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
-            <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Skip Insert Schema ? </span>
-          </span>
-        </h5>
-      </div>
-      <input
-      type="checkbox"
-      class="form-control
-      check-box-input"
-      phx-click="update_config"
-      phx-value-config="skip-insert-schema"
-      <%= if @config[:"skip-insert-schema"]=="true", do: "checked", else: "" %>
-      />
-    </div>
-
-    <div class="flex-item">
-      <div class="d-flex w-100 justify-content-between list-group-item-secondary">
-        <h5 class="mb-1">
-          <span aria-label="Set whether to skip inserting the CSVs into the database" data-microtip-size="large" class="popup"
-            data-microtip-position="top" role="tooltip">
-            <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Skip Insert CSV ? </span>
-          </span>
-        </h5>
-      </div>
-      <input
-      type="checkbox"
-      class="form-control check-box-input"
-      phx-click="update_config"
-      phx-value-config="skip-insert-data"
-      <%= if @config[:"skip-insert-data"]=="true", do: "checked", else: "" %>
-      />
-    </div>
-
-    <div class="flex-item">
-      <div class="d-flex w-100 justify-content-between list-group-item-secondary">
-        <h5 class="mb-1">
-          <span aria-label="Set whether to skip validating the import" data-microtip-size="large" class="popup"
-            data-microtip-position="top" role="tooltip">
-            <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
-            <span style="font-size: 1.3em; margin: 5px"> Skip Validations ? </span>
-          </span>
-        </h5>
-      </div>
-      <input
-      type="checkbox"
-      class="form-control check-box-input"
-      phx-click="update_config"
-      phx-value-config="skip-validate-import"
-      <%= if @config[:"skip-validate-import"]=="true", do: "checked", else: "" %>
-      />
-    </div>
 
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-success">
@@ -532,5 +570,4 @@
       />
     </div>
   </div>
-
 <div>
