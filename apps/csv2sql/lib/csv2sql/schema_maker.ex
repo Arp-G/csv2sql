@@ -32,7 +32,7 @@ defmodule Csv2sql.SchemaMaker do
     item = String.trim(item)
     empty = is_empty?(item)
 
-    if(empty) do
+    if empty do
       Map.put(type, :is_empty, type.is_empty && empty)
     else
       is_date = type.is_date && is_date?(item)

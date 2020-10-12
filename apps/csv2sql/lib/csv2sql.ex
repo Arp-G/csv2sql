@@ -14,7 +14,12 @@ defmodule Csv2sql do
     # immediately after the supervision tree is started successfully
     Task.start(fn -> wait_for_finish(sup_pid) end)
 
+    # If error tracker server is not running, start it.
+    # If block executes for first time when the app is started from "dashboard" app
     if !Process.whereis(:error_tracker), do: Csv2sql.ErrorTracker.start_link(:no_args)
+
+    # Regiter the main supervisor pid with error tracker
+    # Error tracker will stop supervisor incase of errors
     Csv2sql.ErrorTracker.register_supervisor(sup_pid)
 
     sup_pid
@@ -65,119 +70,41 @@ defmodule Csv2sql do
         ]
       )
 
-    source_csv_directory =
-      opts[:source_csv_directory] || System.get_env("csv2sql_source_csv_directory") || "."
-
-    schema_file_path =
-      opts[:schema_file_path] || is_blank(System.get_env("csv2sql_schema_file_path")) ||
-        source_csv_directory
-
-    imported_csv_directory =
-      opts[:imported_csv_directory] ||
-        (is_blank(System.get_env("csv2sql_imported_csv_directory")) ||
-           "#{source_csv_directory}/imported")
+    source_csv_directory = opts[:source_csv_directory] || "."
+    schema_file_path = opts[:schema_file_path] || source_csv_directory
+    imported_csv_directory = opts[:imported_csv_directory] || "#{source_csv_directory}/imported"
 
     validated_csv_directory =
-      opts[:validated_csv_directory] ||
-        (is_blank(System.get_env("csv2sql_validated_csv_directory")) ||
-           "#{source_csv_directory}/validated")
+      opts[:validated_csv_directory] || "#{source_csv_directory}/validated"
 
-    make_schema =
-      if opts[:skip_make_schema],
-        do: false,
-        else: if(System.get_env("csv2sql_set_make_schema") == "false", do: false, else: true)
-
-    insert_schema =
-      if opts[:skip_insert_schema],
-        do: false,
-        else: if(System.get_env("csv2sql_set_insert_schema") == "false", do: false, else: true)
-
-    insert_data =
-      if opts[:skip_insert_data],
-        do: false,
-        else: if(System.get_env("csv2sql_set_insert_data") == "false", do: false, else: true)
-
-    validate_import =
-      if opts[:skip_validate_import],
-        do: false,
-        else: if(System.get_env("csv2sql_set_validate") == "false", do: false, else: true)
+    make_schema = if opts[:skip_make_schema], do: false, else: true
+    insert_schema = if opts[:skip_insert_schema], do: false, else: true
+    insert_data = if opts[:skip_insert_data], do: false, else: true
+    validate_import = if opts[:skip_validate_import], do: false, else: true
 
     [db_type, username, password, host, database_name] =
       if opts[:db_connection_string] do
         str = opts[:db_connection_string]
-
         [db_type, username, tmp] = String.split(str, ":")
-
         [password, tmp] = String.split(tmp, "@")
-
         [host, database_name] = String.split(tmp, "/")
-
         [db_type, username, password, host, database_name]
-      else
-        [
-          System.get_env("csv2sql_db_type"),
-          System.get_env("csv2sql_username"),
-          System.get_env("csv2sql_password"),
-          System.get_env("csv2sql_host"),
-          System.get_env("csv2sql_database_name")
-        ]
       end
 
-    connection_socket =
-      opts[:connection_socket] || System.get_env("csv2sql_socket") ||
-        "/var/run/mysqld/mysqld.sock"
+    connection_socket = opts[:connection_socket] || "/var/run/mysqld/mysqld.sock"
 
-    varchar_limit =
-      opts[:varchar_limit] || System.get_env("csv2sql_varchar_limit") |> to_int() ||
-        100
-
-    schema_infer_chunk_size =
-      opts[:schema_infer_chunk_size] ||
-        System.get_env("csv2sql_schema_infer_chunk_size") |> to_int() || 100
-
-    worker_count =
-      opts[:worker_count] || System.get_env("csv2sql_db_worker_count") |> to_int() ||
-        10
-
-    db_worker_count =
-      opts[:db_worker_count] || System.get_env("csv2sql_db_worker_count") |> to_int() ||
-        15
-
-    insertion_chunk_size =
-      opts[:insertion_chunk_size] ||
-        System.get_env("csv2sql_insertion_chunk_size") |> to_int() || 100
-
-    job_count_limit =
-      opts[:job_count_limit] || System.get_env("csv2sql_job_count_limit") |> to_int() ||
-        10
-
-    log =
-      if(opts[:log],
-        do: String.to_atom(opts[:log]),
-        else: false
-      ) ||
-        if(System.get_env("csv2sql_log") == "false") do
-          false
-        else
-          if System.get_env("csv2sql_log"),
-            do: String.to_atom(System.get_env("csv2sql_log")),
-            else: false
-        end
-
-    timeout = opts[:timeout] || System.get_env("csv2sql_timeout") |> to_int() || 60_000
-
-    connect_timeout =
-      opts[:connect_timeout] || System.get_env("csv2sql_connect_timeout") |> to_int() ||
-        60_000
-
-    pool_size = opts[:pool_size] || System.get_env("csv2sql_pool_size") |> to_int() || 20
-
-    queue_target =
-      opts[:queue_target] || System.get_env("csv2sql_queue_target") |> to_int() || 5000
-
-    queue_interval =
-      opts[:queue_interval] || System.get_env("csv2sql_queue_interval") |> to_int() ||
-        1000
+    varchar_limit = opts[:varchar_limit] || 100
+    schema_infer_chunk_size = opts[:schema_infer_chunk_size] || 100
+    worker_count = opts[:worker_count] || 10
+    db_worker_count = opts[:db_worker_count] || 15
+    insertion_chunk_size = opts[:insertion_chunk_size] || 100
+    job_count_limit = opts[:job_count_limit] || 10
+    log = if opts[:log], do: String.to_atom(opts[:log]), else: false
+    timeout = opts[:timeout] || 60_000
+    connect_timeout = opts[:connect_timeout] || 60_000
+    pool_size = opts[:pool_size] || 20
+    queue_target = opts[:queue_target] || 5000
+    queue_interval = opts[:queue_interval] || 1000
 
     repo_config = [
       username: username,
@@ -246,23 +173,5 @@ defmodule Csv2sql do
     if Application.get_env(:csv2sql, Csv2sql.MainServer)[:db_type] == "postgres",
       do: :postgres,
       else: :mysql
-  end
-
-  defp is_blank(item, int \\ false) do
-    if item == nil || item == "",
-      do: false,
-      else: if(int, do: to_int(item), else: item)
-  end
-
-  defp to_int(str) do
-    if is_nil(str) || str == "" do
-      nil
-    else
-      try do
-        String.to_integer(str)
-      rescue
-        _e in ArgumentError -> nil
-      end
-    end
   end
 end
