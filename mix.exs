@@ -4,9 +4,21 @@ defmodule Csv2sql.Umbrella.MixProject do
   def project do
     [
       apps_path: "apps",
+      version: "0.1.0",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      releases: [
+        csv2sql_and_dashboard: [
+          applications: [
+            csv2sql: :permanent,
+            dashboard: :permanent
+          ]
+        ],
+        csv2sql_only: [
+          applications: [csv2sql: :permanent]
+        ]
+      ]
     ]
   end
 
