@@ -4,7 +4,7 @@ defmodule Csv2sql do
     # Load configuration varaibles dynamically for escripts, this is required
     # since configuration variables are set to whatever they where when the
     # escript was build and cannot be changed later
-    update_config(args)
+    dashboard = update_config(args)
 
     # Start supervision tree
     {:ok, sup_pid} = Csv2sql.Application.start(:no_args, :no_args)
@@ -21,6 +21,15 @@ defmodule Csv2sql do
     # Regiter the main supervisor pid with error tracker
     # Error tracker will stop supervisor incase of errors
     Csv2sql.ErrorTracker.register_supervisor(sup_pid)
+
+    unless dashboard do
+      # In escripts as soon as the main() function return, the escript ends,
+      # this allows the escript to keep running, when the app is used without the dashboard.
+      receive do
+        {:wait} ->
+          System.halt(0)
+      end
+    end
 
     sup_pid
   end
@@ -45,6 +54,7 @@ defmodule Csv2sql do
     {opts, _, _} =
       OptionParser.parse(args,
         strict: [
+          dashboard: :boolean,
           schema_file_path: :string,
           source_csv_directory: :string,
           imported_csv_directory: :string,
@@ -112,7 +122,12 @@ defmodule Csv2sql do
       host: host,
       insertion_chunk_size: insertion_chunk_size,
       job_count_limit: job_count_limit,
-      log: log
+      log: log,
+      timeout: timeout,
+      connect_timeout: connect_timeout,
+      pool_size: pool_size,
+      queue_target: queue_target,
+      queue_interval: queue_interval
     ]
 
     repo_config =
@@ -123,11 +138,6 @@ defmodule Csv2sql do
          repo_config ++
            [
              database_name: database_name,
-             timeout: timeout,
-             connect_timeout: connect_timeout,
-             pool_size: pool_size,
-             queue_target: queue_target,
-             queue_interval: queue_interval,
              socket: connection_socket
            ]}
       end
@@ -161,6 +171,8 @@ defmodule Csv2sql do
     ]
 
     Application.put_all_env(current_config)
+
+    opts[:dashboard]
   end
 
   def get_repo() do

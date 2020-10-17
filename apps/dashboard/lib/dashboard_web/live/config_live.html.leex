@@ -65,7 +65,7 @@
     <h2 class="toggle-config-heading"> SKIP A TASK: </h2>
 
     <div class="toggle-config-item">
-      <span aria-label="Set whether you want to skip inserting the schema file that is generated (this option will only work if skip_make_schema=false)" data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
+      <span aria-label="Set whether you want to skip creating the database schema (this option will only work if skip_make_schema=false)" data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
         <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
         <span class="toggle-config-text"> Skip Insert Schema: </span>
       </span>
@@ -144,7 +144,7 @@
       <div class="d-flex w-100 justify-content-between list-group-item-secondary">
         <h5 class="mb-1">
           <span
-            aria-label="The path were the generated schema file will be stored, defaults to the csv source directory, Example: /home/user/Desktop/schema"
+            aria-label="The path were the generated schema file will be created, defaults to the csv source directory, Example: /home/user/Desktop/schema"
             data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> Schema File Path </span>
@@ -229,7 +229,7 @@
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-success">
         <h5 class="mb-1">
-          <span aria-label="mysql username, required field if database access is required" data-microtip-size="large" class="popup"
+          <span aria-label="database username, required field if database access is required" data-microtip-size="large" class="popup"
             data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> <span class="required-config"> * </span> Database Username </span>
@@ -249,7 +249,7 @@
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-success">
         <h5 class="mb-1">
-          <span aria-label="mysql password, required field if database access is required" data-microtip-size="large" class="popup"
+          <span aria-label="database password, required field if database access is required" data-microtip-size="large" class="popup"
             data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> <span class="required-config"> * </span> Database Password </span>
@@ -268,7 +268,7 @@
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-success">
         <h5 class="mb-1">
-          <span aria-label="mysql host, required field if database access is required" data-microtip-size="large" class="popup"
+          <span aria-label="database host, required field if database access is required" data-microtip-size="large" class="popup"
             data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> Database Host </span>
@@ -372,7 +372,7 @@
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-warning">
         <h5 class="mb-1">
-          <span aria-label="The number of workers, Increasing worker count may result in errors"
+          <span aria-label="The number of workers used. Increasing worker count may result in better performance but may lead to errors, decreasing worker count to 1 means, csv2sql will process one file at a time. The number of workers is directly related to the number of files processed simultaneously."
             data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> Worker Count </span>
@@ -393,7 +393,7 @@
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-danger">
         <h5 class="mb-1">
-          <span aria-label="The number of database workers" data-microtip-size="large" class="popup" data-microtip-position="top"
+          <span aria-label="The number of database workers, the max number of processes writing to the database at once" data-microtip-size="large" class="popup" data-microtip-position="top"
             role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> Database Worker Count </span>
@@ -415,7 +415,7 @@
       <div class="d-flex w-100 justify-content-between list-group-item-danger">
         <h5 class="mb-1">
           <span aria-label="Number of records to insert into the database at once
-        Increasing this may result in mysql error for too many placeholders" data-microtip-size="large" class="popup"
+        Increasing this may result in database errors for too many placeholders" data-microtip-size="large" class="popup"
             data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> Insertion Chunk Size </span>
@@ -436,7 +436,7 @@
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-danger">
         <h5 class="mb-1">
-          <span aria-label="Number of chunks to keep in memory (Memory required=insertion_chunk_size * job_count_limit)"
+          <span aria-label="Number of chunks to keep in memory (Memory required=insertion_chunk_size * max_chunks_in_memory)"
             data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
             <span style="font-size: 1.3em; margin: 5px"> Max Chunks in memory </span>
@@ -478,7 +478,7 @@
     <div class="flex-item">
       <div class="d-flex w-100 justify-content-between list-group-item-danger">
         <h5 class="mb-1">
-          <span aria-label="The number of seconds that the mysqld server waits for a connect packet before responding with Bad handshake
+          <span aria-label="The number of seconds that the database server waits for a connect packet before responding with Bad handshake
         The timeout for establishing new connections" data-microtip-size="large" class="popup" data-microtip-position="top"
             role="tooltip">
             <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" /></i>
