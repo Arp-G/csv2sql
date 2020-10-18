@@ -1,8 +1,7 @@
 
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Arp-G/csv2sql/add-observer-genserver/.github/images/csv2sql.png"
-       alt="Csv2Sql image"/>
+  <img src="https://raw.githubusercontent.com/Arp-G/csv2sql/master/.github/images/csv2sql.png" alt="Csv2Sql image"/>
 </p>
 <h3 align="center"> <i>CSV2SQL - Blazing fast csv to database loader! </i> </h3>
 
@@ -54,8 +53,8 @@ Csv2Sql can automatically...
 Csv2sql can be easily used as a command line tool, with lots of customizable options passing by different command line arguments.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Arp-G/csv2sql/add-observer-genserver/.github/images/cmd.gif"
-       alt="Csv2Sql image"/>
+  <img src="https://raw.githubusercontent.com/Arp-G/csv2sql/master/.github/images/cmd.gif"
+       alt="command line app demo"/>
 </p>
   
 <a name="cmdinstall"></a>
@@ -174,8 +173,7 @@ This will create empty table in the database after analyzing the csvs.
 For ease of use csv2sql also has a browser interface which can be used to easily configure the tool and also provides and execent interface that shows what is the progress of the various running tasks, which files are currently being processed, the current cpu and memory usage, etc.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Arp-G/csv2sql/add-observer-genserver/.github/images/dashboard.gif"
-       alt="Csv2Sql image"/>
+  <img src="https://raw.githubusercontent.com/Arp-G/csv2sql/master/.github/images/dashboard.gif" alt="browser interface demo"/>
 </p>
 
 ### Installation and usage: <a name="dashboardinstall"></a>
