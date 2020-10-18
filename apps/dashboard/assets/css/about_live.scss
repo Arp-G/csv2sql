@@ -1,0 +1,130 @@
+
+body {
+    background-color: #333641;
+}
+
+.about-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 80px;
+}
+
+.author {
+    position: absolute;
+    margin-top: 60px;
+    color: white;
+    font-size: 2em;
+    font-variant: small-caps;
+    font-style: italic;
+}
+
+.author-start{
+    left: 41%;
+}
+
+.author-end{
+    left: 56%;
+}
+
+
+.about-links {
+    margin: 200px;
+    font-size: 2.5em;
+    text-align: center;
+    color: white;
+}
+
+.about-links ul {
+    list-style-type: none;
+}
+
+.about-links a {
+    text-decoration: none;
+    color: white;
+}
+
+// Pulsating heart
+#heart-wrapper {
+  position: absolute;
+  left: 45%;
+  margin-left: 50px;
+  margin-top: 50px;
+  animation:pulse 1s infinite;
+}
+
+
+#pulsingheart { 
+  position: relative; 
+  width: 100px; 
+  height: 90px;
+} 
+
+#pulsingheart:before, #pulsingheart:after { 
+  position: absolute; 
+  content: ""; 
+  left: 50px; 
+  top: 0; 
+  width: 50px; 
+  height: 80px; 
+  background: #aa0000; 
+  border-radius: 50px 50px 0 0; 
+  transform: rotate(-45deg);  
+  transform-origin: 0 100%;
+  animation:pulsecolor 1s infinite;
+} 
+
+#pulsingheart:after { 
+  left: 0; 
+  transform: rotate(45deg); 
+  transform-origin :100% 100%;
+  animation:pulsecolor 1s infinite;
+}
+
+@keyframes pulse {
+	10% {transform: scale(1.1)}
+}
+
+@keyframes pulsecolor {
+  10% {background: #dd0000}
+}
+// stylish header text
+
+$avatar-size: 32px;
+
+@font-face {
+	font-family: "ubuntu";
+	font-style: italic;
+	font-weight: 300;
+	src: local("Lato Light Italic"), local("Lato-LightItalic"),
+		url(https://fonts.gstatic.com/s/ubuntucondensed/v8/u-4k0rCzjgs5J7oXnJcM_0kACGMtT-Dfqw.woff2)
+			format("woff2");
+}
+
+.header-wrapper {
+	text-align: center;
+	h1 {
+		color: #fff;
+		font-size: 3em;
+		font-family: "ubuntu";
+		text-transform: uppercase;
+		font-weight: 700;
+		font-family: "Josefin Sans", sans-serif;
+		background: linear-gradient(to right, #e72a3a 10%, #fff 50%, #5bdaff 60%);
+		background-size: auto auto;
+		background-clip: border-box;
+		background-size: 200% auto;
+		color: #fff;
+		background-clip: text;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		animation: textclip 1.5s linear infinite;
+        display: inline-block;
+        font-style: italic;
+	}
+}
+
+@keyframes textclip {
+	to {
+		background-position: 200% center;
+	}
+}
