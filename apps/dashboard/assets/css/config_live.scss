@@ -16,15 +16,9 @@
 }
 
 .toggle-configs {
-  position: absolute;
-  flex-direction: column;
-  right: 2%;
-  border-radius: 6px;
-  box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
-  background-color: #fff;
-  margin: 30px;
-  width: 250px;
-  padding-top: 20px;
+  box-shadow: 0;
+  flex-direction: row;
+  flex-basis: 680px;
 }
 
 .toggle-config-item { 
@@ -58,20 +52,25 @@
 }
 
 .legend-heading, .toggle-config-heading {
-  align-self: center;
+  text-align: center;
   font-weight: bold;
   font-style: italic;
 }
 
+.toggle-config-heading {
+  flex-grow: 2;
+  border: none !important
+}
+
 .legend{
-  position: absolute;
   flex-direction: column;
+  width: 150px;
   margin: 30px;
-  width: 13%;
   border-radius: 6px;
   box-shadow: 0 2px 5px rgba(201,209,230,.5), 0 7px 20px rgba(201,209,230,.75);
   background-color: #fff;
   padding: 1rem;
+  flex-basis: 260px;
 }
 
 .legend-item{
@@ -89,7 +88,6 @@
 }
 
 .legend-color-item{
-  position: absolute;
   right: 10px;
   width: 20px;
   height: 20px;
