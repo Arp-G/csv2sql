@@ -19,7 +19,7 @@
 7. [Known issues, caveats and troubleshooting](#issues)
 8. [Future plans](#future)
 
-  
+
 *Please have a quick look over the [Known issues, caveats and troubleshooting](#issues) section before using the app.*
 
 <a name="what"></a>
@@ -41,7 +41,7 @@ Csv2Sql can automatically...
 
 * It is **completely automatic**, provide a path with hundereds of csvs having size in gigabytes and start the application, it will handle the rest!
 
-* It comes in **2 flavours**, as a **[command line tool](#cmd)** or a **[browser user interface](dashboard)**, and is super easy to configure and use.
+* It comes in **2 flavours**, as a **[command line tool](#cmd)** or a **[browser user interface](#dashboard)**, and is super easy to configure and use.
 
 * While you can have maximum utilization of your cpu to get execellent performance, csv2sql is fully **customizable**, also comes with [lots of options](#cmdargs) which can be changed to fine tune the application based on requirement and to lower down resource usage and database load.
 
@@ -49,14 +49,14 @@ Csv2Sql can automatically...
 
 <a name="cmd"></a>
 ##  Using from command line
- 
+
 Csv2sql can be easily used as a command line tool, with lots of customizable options passing by different command line arguments.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Arp-G/csv2sql/master/.github/images/cmd.gif"
        alt="command line app demo"/>
 </p>
-  
+
 <a name="cmdinstall"></a>
 ### Installation and usage:
 
@@ -74,7 +74,7 @@ sudo apt-get update
 sudo apt-get install esl-erlang
 ```
 
-Download the executable binary from the latest release in this repository  
+Download the executable binary from the latest release in this repository
 and run the executable using: ```./csv2sql --<argument>```
 
 The next section describes all the avialable command line arguments.
@@ -86,7 +86,7 @@ You can pass various command line arguments to Csv2Sql to configure how to proce
 
 A description of all the available command line arguments that can be used are given below:
 
-  
+
 | Flag  | Description  | Default value |
 |:-----------:|----------------------|------|
 | \-\-schema-file-path        | The location were the generated schema file will be stored                                                                                                                                                                             | If no value is supplied it saves the generated schema file in the same directory as the source csv files specified by "\-\-source-csv-directory" flag |
@@ -111,7 +111,7 @@ A description of all the available command line arguments that can be used are g
 | \-\-pool-size               | The pool_size controls how many connections you want to the database.                                                                                                                                                                  | 20                                                                                                                                                  |
 | \-\-queue-target            | The time to wait for a database connection                                                                                                                                                                                             | 5000                                                                                                                                                |
 | \-\-queue-interval          | If all connections checked out during a :queue_interval takes more than :queue_target, then we double the :queue_target.                                                                                                               | 1000                                                                                                                                                |
-  
+
 <a name="cmdexamples"></a>
 ### Examples:
 
@@ -135,9 +135,9 @@ Here "postgres" is the database type.
 
 ---
 ##### Only validate imported csv:
-  
+
   `./csv2sql --skip-make-schema --skip-insert-data --imported-csv-directory "/home/user/Desktop/imported-csvs" --db-connection-string "mysql:root:pass@localhost/test_csv"`
-  
+
 Here we are running simple validation check over a previously imported csvs, this check will NOT compare the actual data but will only compare the row count in the csv and in the database.
 
 ---
@@ -157,18 +157,18 @@ This will create empty table in the database after analyzing the csvs.
 
 `./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --worker-count 1 --db-connection-string "mysql:root:pass@localhost/test_csv"`
 
----  
+---
 ##### Enable logs, to log the queries being executed:
 
 `./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --log debug --db-connection-string "mysql:root:pass@localhost/test_csv"`
 
----  
+---
 ##### Set the number of workers inserting data into the database, lowering the value will lead to slow performance but lesser load on database, a higher value can lead to too many database connection errors:
 
 `./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --db-worker-count 2 --db-connection-string "mysql:root:pass@localhost/test_csv"`
 
 <a name="dashboard"></a>
-## Using csv2sql from your browser 
+## Using csv2sql from your browser
 
 For ease of use csv2sql also has a browser interface which can be used to easily configure the tool and also provides and execent interface that shows what is the progress of the various running tasks, which files are currently being processed, the current cpu and memory usage, etc.
 
@@ -201,11 +201,11 @@ Now go to the `Change configuration` tab, and enter the relevant configuration d
 Whenever your are done, click on the `Start` tab and click on `Start` button below to start the import process.
 
 <a name="sourceinstall"></a>
-## Running the app from source code 
+## Running the app from source code
 
 You must have elixir and mysql/postgresql installed in your system to run Csv2Sql.
 
-To use the app just clone this repository and then install dependencies 
+To use the app just clone this repository and then install dependencies
 by `mix deps.get`
 
 Finally, start the application by ```mix phx.server```
@@ -215,7 +215,7 @@ This runs the phoenix server at [localhost:4000](localhost:4000) which provides 
 Thats all !
 
 <a name="support"></a>
-## Supported data types 
+## Supported data types
 
 Csv2sql currently supports [MySql](https://www.mysql.com/) and [PostgreSQL](https://www.postgresql.org/) database.
 
@@ -233,7 +233,7 @@ Csv2Sql will map data in CSVs into one of the following datatypes:
 | text     |  	TEXT  |  	TEXT     |
 
 All other types of data, will map to either VARCHAR or TEXT.
-  
+
 <a name="issues"></a>
 ## Known issues, caveats and troubleshooting:
 
@@ -252,7 +252,7 @@ In this case, please try running the app again.
 * Csvsql uses the csv file names as table names, make sure that the csv file names are valid table names.
 
 * Make sure your csvs have correct encoding and valid column names to avoid errors.(like a csv having duplicated column names will lead to errors when inserting in to the database).
-  
+
 * If you face database connection timeout errors try reducing the worker and db_worker count in the configurations or change the database timeout, pool size and other related database configurations.
 
 * In case of errors, check your terminal for a clue, or create an issue.
