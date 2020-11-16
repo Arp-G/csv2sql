@@ -4,7 +4,7 @@ defmodule Dashboard.MixProject do
   def project do
     [
       app: :dashboard,
-      version: "0.1.0",
+      version: "0.1.1",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
