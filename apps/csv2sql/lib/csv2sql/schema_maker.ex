@@ -36,7 +36,7 @@ defmodule Csv2sql.SchemaMaker do
       Map.put(type, :is_empty, type.is_empty && empty)
     else
       is_date = type.is_date && is_date?(item)
-      is_timestamp = type.is_timestamp && is_timestamp?(item)
+      is_datetime = type.is_datetime && is_datetime?(item)
       is_integer = type.is_integer && is_integer?(item)
       is_float = type.is_float && is_float?(item)
       is_boolean = type.is_boolean && is_boolean?(item)
@@ -45,7 +45,7 @@ defmodule Csv2sql.SchemaMaker do
       %{
         is_empty: type.is_empty && empty,
         is_date: is_date,
-        is_timestamp: is_timestamp,
+        is_datetime: is_datetime,
         is_boolean: is_boolean,
         is_integer: is_integer,
         is_float: is_float,
@@ -98,6 +98,7 @@ defmodule Csv2sql.SchemaMaker do
     headers = get_headers(path)
     varchar_limit = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
     headers_type_list = List.duplicate(get_type_map(), Enum.count(headers))
+    schema_infer_chunk_size = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_infer_chunk_size]
 
     db_type = Csv2sql.get_db_type()
 
@@ -105,10 +106,8 @@ defmodule Csv2sql.SchemaMaker do
       path
       |> File.stream!()
       |> CSV.parse_stream()
-      |> Stream.chunk_every(
-        Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_infer_chunk_size]
-      )
-      |> Task.async_stream(__MODULE__, :infer_type, [headers_type_list], timeout: :infinity)
+      |> Stream.chunk_every(schema_infer_chunk_size)
+      |> Task.async_stream(__MODULE__, :infer_type, [headers_type_list], timeout: :infinity, ordered: false)
       |> Enum.reduce(headers_type_list, fn {:ok, result}, acc ->
         # Here we get a list of type maps for each chunk of data
         # We need to merge theses type maps obtained from each chunk
@@ -117,7 +116,7 @@ defmodule Csv2sql.SchemaMaker do
           %{
             is_empty: acc_map.is_empty && result_map.is_empty,
             is_date: acc_map.is_date && result_map.is_date,
-            is_timestamp: acc_map.is_timestamp && result_map.is_timestamp,
+            is_datetime: acc_map.is_datetime && result_map.is_datetime,
             is_boolean: acc_map.is_boolean && result_map.is_boolean,
             is_integer: acc_map.is_integer && result_map.is_integer,
             is_float: acc_map.is_float && result_map.is_float,
@@ -154,7 +153,7 @@ defmodule Csv2sql.SchemaMaker do
   defp get_column_types(:mysql, varchar_limit, type) do
     cond do
       type[:is_empty] -> "VARCHAR(#{varchar_limit})"
-      type[:is_timestamp] -> "TIMESTAMP"
+      type[:is_datetime] -> "DATETIME"
       type[:is_date] -> "DATE"
       type[:is_boolean] -> "BIT"
       type[:is_integer] -> "INT"
@@ -179,7 +178,7 @@ defmodule Csv2sql.SchemaMaker do
     %{
       is_empty: true,
       is_date: true,
-      is_timestamp: true,
+      is_datetime: true,
       is_boolean: true,
       is_integer: true,
       is_float: true,
@@ -198,11 +197,23 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_date?(item) do
-    Regex.match?(~r/\d\d\d\d-\d\d-\d\d/, item)
+    Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:custom_date_patterns]
+    |> Enum.any(fn pattern ->
+      case Timex.parse(item, pattern) do
+        {:ok, _} -> true
+        {:error, _} -> false
+      end
+    end)
   end
 
-  defp is_timestamp?(item) do
-    Regex.match?(~r/\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d/, item)
+  defp is_datetime?(item) do
+    Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:custom_datetime_patterns]
+    |> Enum.any(fn pattern ->
+      case Timex.parse(item, pattern) do
+        {:ok, _} -> true
+        {:error, _} -> false
+      end
+    end)
   end
 
   defp is_boolean?(item) do
