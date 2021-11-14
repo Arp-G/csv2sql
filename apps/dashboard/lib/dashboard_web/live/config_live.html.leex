@@ -340,12 +340,12 @@
       </div>
 
       <div class="flex-item">
-        <div class="d-flex w-100 justify-content-between list-group-item-danger">
+        <div class="d-flex w-100 justify-content-between list-group-item-secondary">
           <h5 class="mb-1">
-            <span aria-label="Custom date patterns to identify date in csv files"
+            <span aria-label="Custom date patterns to identify date in csv files(multiple patterns can be specified separated by ;)"
               data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
               <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" ></i>
-              <span style="font-size: 1.3em; margin: 5px"> Custom date patterns </span>
+              <span style="font-size: 1.3em; margin: 5px"> <a href="google.com">Custom date patterns</a> </span>
             </span>
           </h5>
         </div>
@@ -361,9 +361,9 @@
       </div>
 
       <div class="flex-item">
-        <div class="d-flex w-100 justify-content-between list-group-item-danger">
+        <div class="d-flex w-100 justify-content-between list-group-item-secondary">
           <h5 class="mb-1">
-            <span aria-label="Custom datetime patterns to identify datetime in csv files"
+            <span aria-label="Custom datetime patterns to identify datetime in csv files(multiple patterns can be specified separated by ;)"
               data-microtip-size="large" class="popup" data-microtip-position="top" role="tooltip">
               <i class="fa fa-info-circle" aria-hidden="true" style="font-size: 1.5em; margin: 5px" ></i>
               <span style="font-size: 1.3em; margin: 5px"> Custom datetime patterns </span>
@@ -376,7 +376,7 @@
         min="20"
         max="500"
         phx-blur="update_config"
-        phx-value-config="custom-date-patterns"
+        phx-value-config="custom-datetime-patterns"
         value="<%= @config[:"custom-datetime-patterns"] %>"
         />
       </div>

@@ -115,10 +115,12 @@ defmodule Csv2sql.Database do
                   val
 
                 # MYSQL
-                "DATE" -> format_datetime(val, true)
+                "DATE" ->
+                  format_datetime(val, true)
 
                 # MYSQL
-                "DATETIME" -> format_datetime(val, false)
+                "DATETIME" ->
+                  format_datetime(val, false)
 
                 _ ->
                   val
@@ -169,16 +171,29 @@ defmodule Csv2sql.Database do
     schema_maker_configs = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)
 
     is_date
-    |> if(do: schema_maker_configs[:custom_date_patterns], else: schema_maker_configs[:custom_datetime_patterns])
+    |> if(
+      do: schema_maker_configs[:custom_date_patterns],
+      else: schema_maker_configs[:custom_datetime_patterns]
+    )
     |> Enum.find_value(fn pattern ->
       case Timex.parse(datetime, pattern) do
-        {:ok, %DateTime{} = datetime} -> to_date_or_datetime_string(datetime, is_date)
-        {:ok, %NaiveDateTime{} = native_datetime} -> native_datetime |> DateTime.from_naive!("Etc/UTC") |> to_date_or_datetime_string(is_date)
-        {:error, _} -> false
+        {:ok, %DateTime{} = datetime} ->
+          to_date_or_datetime_string(datetime, is_date)
+
+        {:ok, %NaiveDateTime{} = native_datetime} ->
+          native_datetime
+          |> DateTime.from_naive!("Etc/UTC")
+          |> to_date_or_datetime_string(is_date)
+
+        {:error, _} ->
+          false
       end
     end)
   end
 
-  defp to_date_or_datetime_string(datetime, true), do: datetime |> DateTime.to_date() |> Date.to_string() |> String.trim_trailing("Z")
-  defp to_date_or_datetime_string(datetime, false), do: datetime |> DateTime.to_string() |> String.trim_trailing("Z")
+  defp to_date_or_datetime_string(datetime, true),
+    do: datetime |> DateTime.to_date() |> Date.to_string() |> String.trim_trailing("Z")
+
+  defp to_date_or_datetime_string(datetime, false),
+    do: datetime |> DateTime.to_string() |> String.trim_trailing("Z")
 end

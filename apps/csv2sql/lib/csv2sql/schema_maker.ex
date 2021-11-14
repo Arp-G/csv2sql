@@ -98,7 +98,9 @@ defmodule Csv2sql.SchemaMaker do
     headers = get_headers(path)
     varchar_limit = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
     headers_type_list = List.duplicate(get_type_map(), Enum.count(headers))
-    schema_infer_chunk_size = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_infer_chunk_size]
+
+    schema_infer_chunk_size =
+      Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_infer_chunk_size]
 
     db_type = Csv2sql.get_db_type()
 
@@ -107,7 +109,10 @@ defmodule Csv2sql.SchemaMaker do
       |> File.stream!()
       |> CSV.parse_stream()
       |> Stream.chunk_every(schema_infer_chunk_size)
-      |> Task.async_stream(__MODULE__, :infer_type, [headers_type_list], timeout: :infinity, ordered: false)
+      |> Task.async_stream(__MODULE__, :infer_type, [headers_type_list],
+        timeout: :infinity,
+        ordered: false
+      )
       |> Enum.reduce(headers_type_list, fn {:ok, result}, acc ->
         # Here we get a list of type maps for each chunk of data
         # We need to merge theses type maps obtained from each chunk
@@ -153,8 +158,8 @@ defmodule Csv2sql.SchemaMaker do
   defp get_column_types(:mysql, varchar_limit, type) do
     cond do
       type[:is_empty] -> "VARCHAR(#{varchar_limit})"
-      type[:is_datetime] -> "DATETIME"
       type[:is_date] -> "DATE"
+      type[:is_datetime] -> "DATETIME"
       type[:is_boolean] -> "BIT"
       type[:is_integer] -> "INT"
       type[:is_float] -> "DOUBLE"
