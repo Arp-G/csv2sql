@@ -165,7 +165,7 @@ defmodule Csv2sql.Database do
   end
 
   # Warning: Timezone information if any will be ignored while parsing datetime
-  defp format_datetime(datetime, is_date = false) do
+  defp format_datetime(datetime, is_date) do
     schema_maker_configs = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)
 
     is_date
