@@ -198,7 +198,7 @@ defmodule Csv2sql.SchemaMaker do
 
   defp is_date?(item) do
     Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:custom_date_patterns]
-    |> Enum.any(fn pattern ->
+    |> Enum.any?(fn pattern ->
       case Timex.parse(item, pattern) do
         {:ok, _} -> true
         {:error, _} -> false
@@ -208,7 +208,7 @@ defmodule Csv2sql.SchemaMaker do
 
   defp is_datetime?(item) do
     Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:custom_datetime_patterns]
-    |> Enum.any(fn pattern ->
+    |> Enum.any?(fn pattern ->
       case Timex.parse(item, pattern) do
         {:ok, _} -> true
         {:error, _} -> false

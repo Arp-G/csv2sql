@@ -171,7 +171,7 @@ defmodule Csv2sql.Database do
     is_date
     |> if(do: schema_maker_configs[:custom_date_patterns], else: schema_maker_configs[:custom_datetime_patterns])
     |> Enum.find_value(fn pattern ->
-      case Timex.parse(item, pattern) do
+      case Timex.parse(datetime, pattern) do
         {:ok, %DateTime{} = datetime} -> to_date_or_datetime_string(datetime, is_date)
         {:ok, %NaiveDateTime{} = native_datetime} -> native_datetime |> DateTime.from_naive!("Etc/UTC") |> to_date_or_datetime_string(is_date)
         {:error, _} -> false
@@ -182,4 +182,3 @@ defmodule Csv2sql.Database do
   defp to_date_or_datetime_string(datetime, true), do: datetime |> DateTime.to_date() |> Date.to_string() |> String.trim_trailing("Z")
   defp to_date_or_datetime_string(datetime, false), do: datetime |> DateTime.to_string() |> String.trim_trailing("Z")
 end
-
