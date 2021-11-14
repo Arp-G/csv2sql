@@ -37,15 +37,15 @@ defmodule Dashboard.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.5.1"},
-      {:phoenix_live_view, "~> 0.13.0"},
-      {:floki, ">= 0.0.0", only: :test},
-      {:phoenix_html, "~> 2.11"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
+      {:phoenix, "~> 1.6"},
+      {:phoenix_live_view, "~> 0.17.5"},
+      {:floki, "~> 0.32.0"},
+      {:phoenix_html, "~> 3.1"},
+      {:phoenix_live_reload, "~> 1.3", only: :dev},
       {:telemetry_poller, "~> 0.4"},
       {:gettext, "~> 0.11"},
-      {:jason, "~> 1.0"},
-      {:plug_cowboy, "~> 2.0"},
+      {:jason, "~> 1.2"},
+      {:plug_cowboy, "~> 2.5"},
       {:cachex, "~> 3.3"},
       {:csv2sql, in_umbrella: true}
     ]
@@ -59,7 +59,12 @@ defmodule Dashboard.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "cmd npm install --prefix assets"]
+      setup: ["deps.get", "cmd npm install --prefix assets"],
+      "assets.deploy": [
+        "cmd --cd assets npm run deploy",              # Use tailwind cli to build css ouput at "priv/static/assets/app.css"
+                                                       # (Uses --postcss flag with tailwind cli which allows us to add extra postcss plugins via the postcss.config.js)
+        "cmd --cd assets node build.js --deploy",      # Invokes a custom build script for ESBuild to build js
+        "phx.digest"]
     ]
   end
 end

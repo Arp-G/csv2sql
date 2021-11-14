@@ -1,10 +1,14 @@
 /* This file is for your main application css. */
 @import "./phoenix.css";
 @import "../node_modules/nprogress/nprogress.css";
-@import "~bootstrap/scss/bootstrap.scss";
-@import '~microtip/microtip.min.css';
-$fa-font-path: "~font-awesome/fonts/";
-@import "~font-awesome/scss/font-awesome";
+@import "../node_modules/bootstrap/scss/bootstrap.scss";
+@import '../node_modules/microtip/microtip.min.css';
+// $fa-font-path: "@fortawesome/fontawesome-free/webfonts/";
+// @import "@fortawesome/fontawesome-free/scss/fontawesome";
+// @import "@fortawesome/fontawesome-free/scss/regular";
+// @import "@fortawesome/fontawesome-free/scss/solid";
+// @import "@fortawesome/fontawesome-free/scss/brands";
+// @import "@fortawesome/fontawesome-free/scss/v4-shims";
 @import "./checkbox-toggle.scss";
 
 /* LiveView specific classes for your customizations */
