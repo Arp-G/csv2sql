@@ -117,8 +117,8 @@ defmodule Csv2sql do
     pool_size = opts[:pool_size] || 20
     queue_target = opts[:queue_target] || 5000
     queue_interval = opts[:queue_interval] || 1000
-    custom_date_patterns = ["{YYYY}-{0M}-{0D}" | String.split((opts[:custom_date_patterns] || ""), ";")] 
-    custom_datetime_patterns = ["{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s}" | String.split((opts[:custom_date_patterns] || ""), ";")] 
+    custom_date_patterns = ["{YYYY}-{0M}-{0D}" | String.split((opts[:custom_date_patterns] || ""), ";")]
+    custom_datetime_patterns = ["{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s}" | String.split((opts[:custom_date_patterns] || ""), ";")]
 
     repo_config = [
       username: username,

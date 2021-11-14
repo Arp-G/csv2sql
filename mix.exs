@@ -27,6 +27,8 @@ defmodule Csv2sql.Umbrella.MixProject do
   end
 
   defp deps do
-    [{:credo, "~> 1.5.0-rc.2", only: [:dev, :test], runtime: false}]
+    [
+      #{:credo, "~> 1.5.0-rc.2", only: [:dev, :test], runtime: false}
+    ]
   end
 end

@@ -57,6 +57,8 @@ defmodule DashboardWeb.Helper.ConfigHelper do
       "schema-file-path": "",
       "source-csv-directory": "",
       "imported-csv-directory": "",
+      "custom-date-patterns": "",
+      "custom-datetime-patterns": "",
       "validated-csv-directory": "",
       "skip-make-schema": nil,
       "skip-insert-schema": nil,
