@@ -76,7 +76,9 @@ defmodule Csv2sql do
           connect_timeout: :integer,
           pool_size: :integer,
           queue_target: :integer,
-          queue_interval: :integer
+          queue_interval: :integer,
+          custom_date_patterns: :string,
+          custom_datetime_patterns: :string
         ]
       )
 
@@ -115,6 +117,8 @@ defmodule Csv2sql do
     pool_size = opts[:pool_size] || 20
     queue_target = opts[:queue_target] || 5000
     queue_interval = opts[:queue_interval] || 1000
+    custom_date_patterns = ["{YYYY}-{0M}-{0D}" | String.split((opts[:custom_date_patterns] || ""), ";")]
+    custom_datetime_patterns = ["{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s}" | String.split((opts[:custom_datetime_patterns] || ""), ";")]
 
     repo_config = [
       username: username,
@@ -148,7 +152,9 @@ defmodule Csv2sql do
          [
            varchar_limit: varchar_limit,
            schema_file_path: schema_file_path,
-           schema_infer_chunk_size: schema_infer_chunk_size
+           schema_infer_chunk_size: schema_infer_chunk_size,
+           custom_date_patterns: custom_date_patterns,
+           custom_datetime_patterns: custom_datetime_patterns
          ]},
         {Csv2sql.MainServer,
          [

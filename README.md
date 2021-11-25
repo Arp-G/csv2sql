@@ -10,12 +10,13 @@
 2. [Why Csv2sql ?](#why)
 3. [Using from Command Line](#cmd)
 	1. [Installation and usage](#cmdinstall)
-	2. [Availlable command line arguments](#cmdargs)
+	2. [Available command line arguments](#cmdargs)
 	3. [Examples of usage](#cmdexamples)
 4. [Using the browser based interface](#dashboard)
 	1. [Installation and usage](#dashboardinstall)
 5. [Running from source](#sourceinstall)
 6. [Supported data types](#support)
+7. [Handling custom date/datetime formats](#datetime)
 7. [Known issues, caveats and troubleshooting](#issues)
 8. [Future plans](#future)
 
@@ -37,15 +38,15 @@ Csv2Sql can automatically...
 <a name="why"></a>
 ## Why Csv2sql ?
 
-* Utilizing the power of moden multi core processors, csv2sql does most of its tasks in **parallel**, this makes it super fast and more efficient than other tools.
+* Utilizing the power of modern multi core processors, csv2sql does most of its tasks in **parallel**, this makes it super fast and more efficient than other tools.
 
-* It is **completely automatic**, provide a path with hundereds of csvs having size in gigabytes and start the application, it will handle the rest!
+* It is **completely automatic**, provide a path with hundreds of csvs having size in gigabytes and start the application, it will handle the rest!
 
 * It comes in **2 flavours**, as a **[command line tool](#cmd)** or a **[browser user interface](#dashboard)**, and is super easy to configure and use.
 
-* While you can have maximum utilization of your cpu to get execellent performance, csv2sql is fully **customizable**, also comes with [lots of options](#cmdargs) which can be changed to fine tune the application based on requirement and to lower down resource usage and database load.
+* While you can have maximum utilization of your cpu to get excellent performance, csv2sql is fully **customizable**, also comes with [lots of options](#cmdargs) which can be changed to fine tune the application based on requirement and to lower down resource usage and database load.
 
-* Csv2Sql supports **partial operations**, so if you only want to generate a schema file from the csvs without touching the database or you want to only insert data from the csvs into already created tables without creating the tables again or just validate already imported data, Csv2Sql has got you covere !
+* Csv2Sql supports **partial operations**, so if you only want to generate a schema file from the csvs without touching the database or you want to only insert data from the csvs into already created tables without creating the tables again or just validate already imported data, Csv2Sql has got you covered !
 
 <a name="cmd"></a>
 ##  Using from command line
@@ -77,7 +78,7 @@ sudo apt-get install esl-erlang
 Download the executable binary from the latest release in this repository
 and run the executable using: ```./csv2sql --<argument>```
 
-The next section describes all the avialable command line arguments.
+The next section describes all the available command line arguments.
 
 <a name="cmdargs"></a>
 ### Using command line args
@@ -87,39 +88,41 @@ You can pass various command line arguments to Csv2Sql to configure how to proce
 A description of all the available command line arguments that can be used are given below:
 
 
-| Flag  | Description  | Default value |
+| Flag| Description| Default value|
 |:-----------:|----------------------|------|
-| \-\-schema-file-path        | The location were the generated schema file will be stored                                                                                                                                                                             | If no value is supplied it saves the generated schema file in the same directory as the source csv files specified by "\-\-source-csv-directory" flag |
-| **\-\-source-csv-directory**    | **The source directory where the csvs are located**                                                                                                                                                                                        | **Defaults to the current directory from which the program is run**                                                                                                                       |
-| **\-\-db-connection-string**    | **A connection string to connect ot the database, in the format: "<database_type>:<database_username>:<database_password>@<database_host>/<database_name>"**                                                                                                                                                                 | **This is a compulsary argument if database access is required**                                                                                                                     |
-| \-\-imported-csv-directory  | The directory were the csvs will be moved after importing to database, make sure it is present and is empty                                                                                                                            | (source-csv-directory)/imported                                                                                                                     |
-| \-\-validated-csv-directory | The directory were the csvs will be moved after they are validated, make sure it is present and is empty                                                                                                                               | (source-csv-directory)/validated                                                                                                                    |
-| \-\-skip-make-schema        | Skip infering schema and makign a schema file                                                                                                                                                                                          | false                                                                                                                                               |
-| \-\-skip-insert-schema      | Skip inserting the infered schema in the database. Usefull if the table structures are already present and you only wish to insert data from the csv files.(This will be true automatically if skip-make-schema is used)               | false                                                                                                                                               |
-| \-\-skip-insert-data        | Skip inserting data from the csvs                                                                                                                                                                                                      | false                                                                                                                                               |
-| \-\-skip-validate-import    | Skip validating the imported data                                                                                                                                                                                                      | false                                                                                                                                             in                  | None, this is compulsary if the operations specified requires database access                                                                       |
-| \-\-connection-socket       | The mysql socket file path                                                                                                                                                                                                             | /var/run/mysqld/mysqld.sock                                                                                                                         |
-| \-\-varchar-limit           | The value of varchar type, and the limit after which a string is considered a text and not a varchar                                                                                                                                   | 100                                                                                                                                                 |
-| \-\-schema-infer-chunk-size | The chunk size to use when the schema fora CSV will be inferred parallelly. For example, a chunk size 100 means the CSV will be read 100 rows at a time and separate processes will be used to infer the schema for each 100-row chunk | 100                                                                                                                                                 |
-| \-\-worker-count            | The number of workers, directly related to how many CSVs will be processed parallelly                                                                                                                                                  | 10                                                                                                                                                  |
-| \-\-db-worker-count         | The number of database workers, lowering the value will lead to slow performance but lesser load on database, a higher value can lead to too many database connection errors.                                                          | 15                                                                                                                                                  |
-| \-\-insertion-chunk-size    | Number of records to insert into the database at once, increasing this may result in mysql error for too many placeholders                                                                                                             | 100                                                                                                                                                 |
-| \-\-job-count-limit         | Number of chunks to keep in memory (Memory required=insertion_chunk_size * job_count_limit)                                                                                                                                            | 10                                                                                                                                                  |
-| \-\-log                     | Enable ecto logs, to log the queries being executed, possible values are :debug, :info, :warn                                                                                                                                          | false                                                                                                                                               |
-| \-\-timeout                 | The time in milliseconds to wait for the query call to finish                                                                                                                                                                          | 60000                                                                                                                                               |
-| \-\-connect-timeout         | The number of seconds that the mysqld server waits for a connect packet before responding with Bad handshake                                                                                                                           | 60000                                                                                                                                               |
-| \-\-pool-size               | The pool_size controls how many connections you want to the database.                                                                                                                                                                  | 20                                                                                                                                                  |
-| \-\-queue-target            | The time to wait for a database connection                                                                                                                                                                                             | 5000                                                                                                                                                |
-| \-\-queue-interval          | If all connections checked out during a :queue_interval takes more than :queue_target, then we double the :queue_target.                                                                                                               | 1000                                                                                                                                                |
+|\-\-schema-file-path|The location were the generated schema file will be stored|If no value is supplied it saves the generated schema file in the same directory as the source csv files specified by "\-\-source-csv-directory" flag|
+|**\-\-source-csv-directory**|**The source directory where the csvs are located**|**Defaults to the current directory from which the program is run**|
+| **\-\-db-connection-string**|**A connection string to connect ot the database, in the format: "<database_type>:<database_username>:<database_password>@<database_host>/<database_name>"**|**This is a compulsory argument if database access is required**|
+|\-\-imported-csv-directory|The directory were the csvs will be moved after importing to database, make sure it is present and is empty|(source-csv-directory)/imported|
+|\-\-validated-csv-directory|The directory were the csvs will be moved after they are validated, make sure it is present and is empty|(source-csv-directory)/validated|
+|\-\-skip-make-schema|Skip inferring schema and making a schema file|false|
+|\-\-skip-insert-schema| Skip inserting the inferred schema in the database. Useful if the table structures are already present and you only wish to insert data from the csv files.(This will be true automatically if skip-make-schema is used)|false|
+|\-\-skip-insert-data|Skip inserting data from the csvs|false|
+|\-\-skip-validate-import|Skip validating the imported data|false|None, this is compulsory if the operations specified requires database access|
+|\-\-connection-socket|The mysql socket file path|/var/run/mysqld/mysqld.sock|
+|\-\-varchar-limit|The value of varchar type, and the limit after which a string is considered a text and not a varchar|100|
+|\-\-custom-date-patterns|[Custom patterns](#datetime) to identify arbitrary date formats|None|
+|\-\-custom-datetime-patterns|[Custom patterns](#datetime) to identify arbitrary datetime formats| None|
+|\-\-schema-infer-chunk-size|The chunk size to use when the schema fora CSV will be inferred parallelly. For example, a chunk size 100 means the CSV will be read 100 rows at a time and separate processes will be used to infer the schema for each 100-row chunk|100|
+|\-\-worker-count|The number of workers, directly related to how many CSVs will be processed parallelly|10|
+|\-\-db-worker-count|The number of database workers, lowering the value will lead to slow performance but lesser load on database, a higher value can lead to too many database connection errors.|15|
+|\-\-insertion-chunk-size|Number of records to insert into the database at once, increasing this may result in mysql error for too many placeholders|100|
+|\-\-job-count-limit|Number of chunks to keep in memory (Memory required=insertion_chunk_size * job_count_limit)|10|
+|\-\-log|Enable ecto logs, to log the queries being executed, possible values are :debug, :info, :warn|false|
+|\-\-timeout|The time in milliseconds to wait for the query call to finish|60000|
+|\-\-connect-timeout|The number of seconds that the mysqld server waits for a connect packet before responding with Bad handshake|60000|
+|\-\-pool-size|The pool_size controls how many connections you want to the database.|20|
+|\-\-queue-target|The time to wait for a database connection|5000|
+| \-\-queue-interval|If all connections checked out during a :queue_interval takes more than :queue_target, then we double the :queue_target.|1000|
 
 <a name="cmdexamples"></a>
 ### Examples:
 
-##### Load csvs to database, this will infer the schema, insert the infered schemas to the database, insert the data and then validate data for all the csvs
+##### Load csvs to database, this will infer the schema, insert the inferred schemas to the database, insert the data and then validate data for all the csvs
 
 `./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --db-connection-string "mysql:root:pass@localhost/test_csv"`
 
-Here "mysq|" is the database type, "root" is the mysql username, "pass" is the mysql password, "localhost" is the database host and "test_csv" is the database name where the data will be imported.
+Here "mysql" is the database type, "root" is the mysql username, "pass" is the mysql password, "localhost" is the database host and "test_csv" is the database name where the data will be imported.
 
 ---
 ##### Import schema only:
@@ -170,7 +173,7 @@ This will create empty table in the database after analyzing the csvs.
 <a name="dashboard"></a>
 ## Using csv2sql from your browser
 
-For ease of use csv2sql also has a browser interface which can be used to easily configure the tool and also provides and execent interface that shows what is the progress of the various running tasks, which files are currently being processed, the current cpu and memory usage, etc.
+For ease of use csv2sql also has a browser interface which can be used to easily configure the tool and also provides an interface that shows what is the progress of the various running tasks, which files are currently being processed, the current cpu and memory usage, etc.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Arp-G/csv2sql/master/.github/images/dashboard.gif" alt="browser interface demo"/>
@@ -219,13 +222,13 @@ Thats all !
 
 Csv2sql currently supports [MySql](https://www.mysql.com/) and [PostgreSQL](https://www.postgresql.org/) database.
 
-Csv2Sql will map data in CSVs into one of the following datatypes:
+Csv2Sql will map data in CSVs into one of the following data types:
 
 
 |   Type   | mysql| postgres |
 |----------|------|----------|
-| date     |  For values matching pattern like \d\d\d\d-\d\d-\d\d    |  NOT SUPPORTED, will map to VARCHAR|
-| timestamp|   For values matching pattern like \d\d\d\d-\d\d-\d\d  \d\d:\d\d:\d\d, (WARNING: fractional seconds or timezone information will be lost if present)   |  NOT SUPPORTED, will map to VARCHAR|
+| date     |  For values matching pattern like YYYY-MM-DD or [custom patterns](#datetime)    |  NOT SUPPORTED, will map to VARCHAR|
+| datetime |   For values matching pattern like YYYY-MM-DD hh:mm:ss or [custom patterns](#datetime)  , (WARNING: fractional seconds or timezone information will be lost if present)   |  NOT SUPPORTED, will map to VARCHAR|
 | boolean  |   Maps values 0/1 or true/false to [BIT](https://dev.mysql.com/doc/refman/8.0/en/bit-type.html) type   |  	Maps values 0/1 or true/false to [BOOLEAN](https://www.postgresql.org/docs/9.5/datatype-boolean.html) type     |
 | integer  |  	[INT](https://dev.mysql.com/doc/refman/8.0/en/integer-types.html)  |  	[INT](https://www.postgresql.org/docs/9.5/datatype-numeric.html#DATATYPE-INT)     |
 | float    |  	 [DOUBLE](https://dev.mysql.com/doc/refman/8.0/en/floating-point-types.html) |  	  [NUMERIC(1000, 100)](https://www.postgresql.org/docs/9.5/datatype-numeric.html#DATATYPE-NUMERIC-DECIMAL)   |
@@ -234,9 +237,51 @@ Csv2Sql will map data in CSVs into one of the following datatypes:
 
 All other types of data, will map to either VARCHAR or TEXT.
 
+<a name="datetime"></a>
+## Handling custom date/datetime formats
+
+By default csv2sql will identify date or datetime of the following patterns `YYYY-MM-DD` and `YYYY-MM-DD hh:mm:ss` respectively.
+If a csv file contains date or datetime in some other format then they will be imported as varchar by default however by specifying custom
+patterns we can import such data of arbitrary formats as date or datetime.
+
+csv2sql uses the [Timex](https://github.com/bitwalker/timex) library to parse date/datetime.
+In order to specify custom patterns for date or datetime use the `--custom-date-patterns` or `--custom-datetime-patterns` arguments
+followed by a string having one or more patterns separated by `;`
+
+When using the Web UI for csv2sql enter these pattern strings in the config page under "Custom date patterns" or "Custom datetime patterns".
+
+The patterns should be compatible with Timex directives specified [here](https://hexdocs.pm/timex/Timex.Format.DateTime.Formatters.Default.html#module-list-of-all-directives).
+
+#### Good to know/Caveats
+
+* Fractional seconds or timezone information is not handled when importing datetime data.
+* When multiple custom patterns are specified for large csvs the import process might be slower due to the additional overhead of matching patterns.
+* Always double check the patterns specified and verify imported date or datetime data
+
+#### Examples
+
+To parse datetime like `11/14/2021 3:43:28 PM` a pattern like `{0M}/{0D}/{YYYY} {h12}:{m}:{s} {AM}` can be specified
+
+The complete command might look like...
+
+`./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --db-connection-string "mysql:root:pass@localhost/test_csv" --custom-datetime-patterns "{0M}/{0D}/{YYYY} {h12}:{m}:{s} {AM}"`
+
+Consider a CSV with date or datetime having multiple formats like...
+
+|Example Date|Date Pattern|Example Datetime|Datetime Pattern|
+|--|--|--|--|
+|2021-11-14|{YYYY}-{0M}-{0D}|2021-11-14T15:43:28|{YYYY}-{0M}-{0D}T{0h24}:{m}:{s}|
+|11-14-2021|{0M}-{0D}-{YYYY}|11-14-2021 15:43:28|{0M}-{0D}-{YYYY} {0h24}:{m}:{s}|
+|11/14/2021|{0M}/{0D}/{YYYY}|11/14/2021 3:43:28 PM|{0M}/{0D}/{YYYY} {h12}:{m}:{s} {AM}|
+
+The pattern strings to parse the above csv would look like...
+
+`--custom-date-patterns {YYYY}-{0M}-{0D};{0M}-{0D}-{YYYY}`
+`--custom-datetime-patterns {YYYY}-{0M}-{0D}T{0h24}:{m}:{s};{0M}-{0D}-{YYYY} {0h24}:{m}:{s};{0M}/{0D}/{YYYY} {h12}:{m}:{s} {AM}`
+
+
 <a name="issues"></a>
 ## Known issues, caveats and troubleshooting:
-
 
 * Sometimes the app might fail when run for the first time with some error like..
 

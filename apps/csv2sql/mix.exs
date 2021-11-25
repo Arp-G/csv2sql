@@ -40,7 +40,8 @@ defmodule Csv2sql.MixProject do
       {:ecto, "~> 3.4"},
       {:ecto_sql, "~> 3.1"},
       {:cli_spinners, "~> 0.1.0"},
-      {:sizeable, "~> 1.0"}
+      {:sizeable, "~> 1.0"},
+      {:timex, "~> 3.7"}
     ]
   end
 end
