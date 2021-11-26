@@ -101,8 +101,6 @@ A description of all the available command line arguments that can be used are g
 |\-\-skip-validate-import|Skip validating the imported data|false|None, this is compulsory if the operations specified requires database access|
 |\-\-connection-socket|The mysql socket file path|/var/run/mysqld/mysqld.sock|
 |\-\-varchar-limit|The value of varchar type, and the limit after which a string is considered a text and not a varchar|100|
-|\-\-custom-date-patterns|[Custom patterns](#datetime) to identify arbitrary date formats|None|
-|\-\-custom-datetime-patterns|[Custom patterns](#datetime) to identify arbitrary datetime formats| None|
 |\-\-schema-infer-chunk-size|The chunk size to use when the schema fora CSV will be inferred parallelly. For example, a chunk size 100 means the CSV will be read 100 rows at a time and separate processes will be used to infer the schema for each 100-row chunk|100|
 |\-\-worker-count|The number of workers, directly related to how many CSVs will be processed parallelly|10|
 |\-\-db-worker-count|The number of database workers, lowering the value will lead to slow performance but lesser load on database, a higher value can lead to too many database connection errors.|15|
@@ -245,12 +243,13 @@ If a csv file contains date or datetime in some other format then they will be i
 patterns we can import such data of arbitrary formats as date or datetime.
 
 csv2sql uses the [Timex](https://github.com/bitwalker/timex) library to parse date/datetime.
-In order to specify custom patterns for date or datetime use the `--custom-date-patterns` or `--custom-datetime-patterns` arguments
-followed by a string having one or more patterns separated by `;`
+You can specify multiple custom patterns for date or datetime as a string having one or more patterns separated by `;`
 
 When using the Web UI for csv2sql enter these pattern strings in the config page under "Custom date patterns" or "Custom datetime patterns".
 
 The patterns should be compatible with Timex directives specified [here](https://hexdocs.pm/timex/Timex.Format.DateTime.Formatters.Default.html#module-list-of-all-directives).
+
+(Custom patterns are only supported when using the web ui and are not available in the cli version of the application)
 
 #### Good to know/Caveats
 
@@ -262,9 +261,9 @@ The patterns should be compatible with Timex directives specified [here](https:/
 
 To parse datetime like `11/14/2021 3:43:28 PM` a pattern like `{0M}/{0D}/{YYYY} {h12}:{m}:{s} {AM}` can be specified
 
-The complete command might look like...
+The custom pattern needed is like...
 
-`./csv2sql --source-csv-directory "/home/user/Desktop/csvs" --db-connection-string "mysql:root:pass@localhost/test_csv" --custom-datetime-patterns "{0M}/{0D}/{YYYY} {h12}:{m}:{s} {AM}"`
+`{0M}/{0D}/{YYYY} {h12}:{m}:{s} {AM}`
 
 Consider a CSV with date or datetime having multiple formats like...
 
@@ -276,8 +275,11 @@ Consider a CSV with date or datetime having multiple formats like...
 
 The pattern strings to parse the above csv would look like...
 
-`--custom-date-patterns {YYYY}-{0M}-{0D};{0M}-{0D}-{YYYY}`
-`--custom-datetime-patterns {YYYY}-{0M}-{0D}T{0h24}:{m}:{s};{0M}-{0D}-{YYYY} {0h24}:{m}:{s};{0M}/{0D}/{YYYY} {h12}:{m}:{s} {AM}`
+For date
+`{YYYY}-{0M}-{0D};{0M}-{0D}-{YYYY}`
+
+For datetime
+`{YYYY}-{0M}-{0D}T{0h24}:{m}:{s};{0M}-{0D}-{YYYY} {0h24}:{m}:{s};{0M}/{0D}/{YYYY} {h12}:{m}:{s} {AM}`
 
 
 <a name="issues"></a>
