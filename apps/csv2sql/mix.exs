@@ -34,7 +34,7 @@ defmodule Csv2sql.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:nimble_csv, "~> 0.7.0"},
+      {:nimble_csv, "~> 1.2"},
       {:myxql, "~> 0.3.4"},
       {:postgrex, ">= 0.0.0"},
       {:ecto, "~> 3.4"},

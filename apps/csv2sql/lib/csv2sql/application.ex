@@ -1,6 +1,5 @@
 defmodule Csv2sql.Application do
   use Application
-
   def start(_type, _args) do
     repo_supervisor =
       if Application.get_env(:csv2sql, Csv2sql.MainServer)[:set_validate] ||
