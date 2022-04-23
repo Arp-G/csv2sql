@@ -1,53 +1,7 @@
 defmodule Csv2sql do
-  def main(args) do
-    Csv2sql.Helpers.greet()
-    # Load configuration varaibles dynamically for escripts, this is required
-    # since configuration variables are set to whatever they where when the
-    # escript was build and cannot be changed later
-    dashboard = update_config(args)
-
+  def start(args) do
     # Start supervision tree
     {:ok, sup_pid} = Csv2sql.Application.start(:no_args, :no_args)
-
-    # Wait for finish and stop supervion tree
-    # This is done in separate Task to reply back to the caller(dashbaord GUI)
-    # immediately after the supervision tree is started successfully
-    Task.start(fn -> wait_for_finish(sup_pid) end)
-
-    # If error tracker server is not running, start it.
-    # If block executes for first time when the app is started from "dashboard" app
-    if !Process.whereis(:error_tracker), do: Csv2sql.ErrorTracker.start_link(:no_args)
-
-    # Regiter the main supervisor pid with error tracker
-    # Error tracker will stop supervisor incase of errors
-    Csv2sql.ErrorTracker.register_supervisor(sup_pid)
-
-    unless dashboard do
-      # In escripts as soon as the main() function return, the escript ends,
-      # this allows the escript to keep running, when the app is used without the dashboard.
-      receive do
-        {:wait} ->
-          System.halt(0)
-      end
-    end
-
-    sup_pid
-  end
-
-  defp wait_for_finish(sup_pid) do
-    Csv2sql.Observer.get_stage()
-    |> case do
-      :error ->
-        nil
-
-      :finish ->
-        # Finish and stop supervisors after a second
-        :timer.sleep(1000)
-        Supervisor.stop(sup_pid)
-
-      _ ->
-        wait_for_finish(sup_pid)
-    end
   end
 
   defp update_config(args) do
