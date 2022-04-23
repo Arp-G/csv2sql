@@ -53,9 +53,7 @@ defmodule Csv2sql.Helpers do
        `88b    ooo  oo     .d8P      `888'         .oP     .o    oo     .d8P `88b    d88b     888       o
         `Y8bood8P'  88888888P'        `8'          8888888888    88888888P'   `Y8bood8P'Ybd' o888ooooood8
 
-       ---------------------------------------------------------  #{white()}Made with #{red()}❤️#{
-         white()
-       }  by Arpan.
+       ---------------------------------------------------------  #{white()}Made with #{red()}❤️#{white()}  by Arpan.
        """ <> reset())
     |> IO.puts()
   end

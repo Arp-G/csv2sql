@@ -10,7 +10,8 @@ defmodule Csv2sql.DataTransfer do
   def process_file(file) do
     Helpers.print_msg("Begin data tranfer for file: " <> Path.basename(file))
 
-    insertion_chunk_size = Application.get_env(:csv2sql, Csv2sql.get_repo())[:insertion_chunk_size]
+    insertion_chunk_size =
+      Application.get_env(:csv2sql, Csv2sql.get_repo())[:insertion_chunk_size]
 
     file
     |> File.stream!()
@@ -22,7 +23,6 @@ defmodule Csv2sql.DataTransfer do
 
     wait_for_file_transfer(file)
   end
-
 
   # Wait until all chunks for the current file in the job queue has been processed
   # `:timer.sleep(300)` waits for the last chunk in queue to get inserted that is
@@ -40,7 +40,6 @@ defmodule Csv2sql.DataTransfer do
       Helpers.print_msg("Finished processing file: " <> Path.basename(file), :green)
     end
   end
-
 
   # Wait until job queue has space for the next chunk
   # by recursively calling itself.

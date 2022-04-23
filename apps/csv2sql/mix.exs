@@ -29,7 +29,9 @@ defmodule Csv2sql.MixProject do
       {:ecto, "~> 3.7"},
       {:ecto_sql, "~> 3.7"},
       {:sizeable, "~> 1.0"},
+      {:shorter_maps, "~> 2.2"},
       {:timex, "~> 3.7"},
+      {:typed_struct, "~> 0.3.0"},
 
       # For dev
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},

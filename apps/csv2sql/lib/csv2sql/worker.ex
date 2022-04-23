@@ -73,9 +73,7 @@ defmodule Csv2sql.Worker do
 
     File.rename!(
       file,
-      "#{Application.get_env(:csv2sql, MainServer)[:imported_csv_directory]}/#{
-        Path.basename(file)
-      }"
+      "#{Application.get_env(:csv2sql, MainServer)[:imported_csv_directory]}/#{Path.basename(file)}"
     )
   end
 end
