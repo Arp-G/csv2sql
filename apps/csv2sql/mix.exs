@@ -6,6 +6,8 @@ defmodule Csv2sql.MixProject do
       app: :csv2sql,
       version: "0.1.0",
       elixir: "~> 1.13",
+      # directories to find source files
+      elixirc_path: elixirc_paths(Mix.env),
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
@@ -14,9 +16,8 @@ defmodule Csv2sql.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
-      # Comment this out to avoid application start before loading config when running the app from escript
-      # mod: {Csv2sql.Application, []}
+      extra_applications: [:logger],
+      mod: {Csv2sql.Application, []}
     ]
   end
 
@@ -38,4 +39,7 @@ defmodule Csv2sql.MixProject do
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib","test/support"]
+  defp elixirc_paths(_),     do: ["lib"]
 end
