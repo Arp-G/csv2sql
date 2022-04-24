@@ -24,33 +24,35 @@ defmodule Csv2sql.Config.Parser do
     log: :string
   ]
 
-  # def test do
-  #   input = [
-  #     "--source-directory",
-  #     "/tmp",
-  #     "--db-url",
-  #     "testdb123",
-  #     "--validate-import",
-  #     "true",
-  #     "--log",
-  #     "error",
-  #     "--datetime-patterns",
-  #     "yyyy;mmmm;{YYYY}-{0M}-{0D};yyyy",
-  #     "--db-worker-count",
-  #     "78",
-  #     "--insertion-chunk-size",
-  #     "34",
-  #     "--db-type",
-  #     "postgres",
-  #     "--varchar-limit",
-  #     "140"
-  #   ]
+  def test do
+    input = [
+      "--source-directory",
+      "/tmp",
+      "--db-url",
+      "root:root1@localhost/mysql?socket=/var/run/mysqld/mysqld.sock",
+      "--validate-import",
+      "true",
+      "--log",
+      "error",
+      "--datetime-patterns",
+      "yyyy;mmmm;{YYYY}-{0M}-{0D};yyyy",
+      "--db-worker-count",
+      "78",
+      "--insertion-chunk-size",
+      "34",
+      "--db-type",
+      "mysql",
+      "--varchar-limit",
+      "140",
+      "--log",
+      "debug"
+    ]
 
-  #   {:cont, args} = input |> parse()
+    {:cont, args} = input |> parse()
 
-  #   Csv2sql.Config.Loader.load(args)
-  #   Application.get_all_env(:csv2sql)
-  # end
+    Csv2sql.Config.Loader.load(args)
+    Application.get_all_env(:csv2sql)
+  end
 
   @spec parse(list(String.t())) :: {:cont, map()} | {:stop, String.t()}
   def parse(argv) do
