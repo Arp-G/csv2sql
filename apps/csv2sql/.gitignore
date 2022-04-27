@@ -31,3 +31,9 @@ schema.sql
 # Formatting file
 .formatter.exs
 
+# Env files
+.env*
+
+# Keep sample files in version control
+!.env*.sample
+

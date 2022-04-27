@@ -9,7 +9,9 @@ defmodule Csv2sql.MixProject do
       # directories to find source files
       elixirc_path: elixirc_paths(Mix.env),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: aliases(),
+      compilers: [:unused] ++ Mix.compilers()
     ]
   end
 
@@ -36,10 +38,15 @@ defmodule Csv2sql.MixProject do
 
       # For dev
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false}
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:mix_unused, "~> 0.3.0", only: [:dev, :test], runtime: false}
     ]
   end
 
   defp elixirc_paths(:test), do: ["lib","test/support"]
   defp elixirc_paths(_),     do: ["lib"]
+
+  defp aliases do
+    []
+  end
 end
