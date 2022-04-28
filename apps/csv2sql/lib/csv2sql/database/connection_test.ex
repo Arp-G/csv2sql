@@ -24,7 +24,7 @@ defmodule Csv2sql.Database.ConnectionTest do
   def check_db_connection(caller, args), do: test_connection(caller, args)
 
   @spec attempt_connection(connect_args()) :: :noconnect | :nosuspend | :ok
-  def attempt_connection(~M{db_url, db_type, caller}) do
+  def attempt_connection(~M{db_url, db_type}) do
     repo = Database.get_repo(db_type)
 
     {:ok, conn} =
@@ -42,9 +42,9 @@ defmodule Csv2sql.Database.ConnectionTest do
     try do
       # Ping DB
       Ecto.Adapters.SQL.query!(repo, "SELECT 1")
-      Process.send(caller, {:connected, conn}, [])
+      {:connected, conn}
     rescue
-      e in DBConnection.ConnectionError -> Process.send(caller, {:error, e}, [])
+      e in DBConnection.ConnectionError -> {:error, e}
     end
   end
 
@@ -71,7 +71,7 @@ defmodule Csv2sql.Database.ConnectionTest do
         Csv2sql.Database.ConnectionSupervisor,
         __MODULE__,
         :attempt_connection,
-        [~M{db_url, db_type, caller: self()}]
+        [~M{db_url, db_type}]
       )
 
     {:reply, :ok, ~M{state | ref: task.ref, caller}}
@@ -83,7 +83,8 @@ defmodule Csv2sql.Database.ConnectionTest do
 
   # The task completed successfully
   @impl GenServer
-  def handle_info({:connected, db_conn}, %{ref: ref, caller: caller}) when is_reference(ref) do
+  def handle_info({task_ref, {:connected, db_conn}}, %{ref: ref, caller: caller})
+      when is_reference(ref) and task_ref == ref do
     Process.send(caller, {:connected, db_conn}, [])
 
     # We don't care about the DOWN message now, so let's demonitor and flush it
@@ -94,7 +95,8 @@ defmodule Csv2sql.Database.ConnectionTest do
 
   # The task failed
   @impl GenServer
-  def handle_info({:error, e}, %{ref: ref, caller: caller}) when is_reference(ref) do
+  def handle_info({task_ref, {:error, e}}, %{ref: ref, caller: caller})
+      when is_reference(ref) and task_ref == ref do
     # We don't care about the DOWN message now, so demonitor and flush it
     Process.demonitor(ref, [:flush])
     handle_error(caller, e)
