@@ -23,7 +23,8 @@ defmodule Csv2sql.Database.ConnectionTest do
   @spec check_db_connection(pid(), map()) :: {:error, :on_going | String.t()}
   def check_db_connection(caller, args), do: test_connection(caller, args)
 
-  @spec attempt_connection(connect_args()) :: :noconnect | :nosuspend | :ok
+  @spec attempt_connection(connect_args()) ::
+          {:connected, pid()} | {:error, DBConnection.ConnectionError.t()}
   def attempt_connection(~M{db_url, db_type}) do
     repo = Database.get_repo(db_type)
 
