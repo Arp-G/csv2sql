@@ -7,7 +7,7 @@ defmodule Csv2sql.MixProject do
       version: "0.1.0",
       elixir: "~> 1.13",
       # directories to find source files
-      elixirc_path: elixirc_paths(Mix.env),
+      elixirc_path: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
@@ -43,10 +43,17 @@ defmodule Csv2sql.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib","test/support"]
-  defp elixirc_paths(_),     do: ["lib"]
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp aliases do
-    []
+    [
+      ctest: &custom_test_command/1
+    ]
+  end
+
+  def custom_test_command(_) do
+    # System.shell("source .env.test && MIX_ENV=test mix test --trace --warnings-as-errors --cover", into: IO.stream())
+    System.cmd("mix", ["test", "--trace", "--warnings-as-errors", "--cover"], env: [{"MIX_ENV", "test"}], into: IO.stream())
   end
 end

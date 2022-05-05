@@ -1,5 +1,5 @@
 defmodule Csv2sql.Config.ParserTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias Csv2sql.Config.Parser
 
   describe "parse/1" do
