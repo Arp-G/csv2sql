@@ -11,7 +11,8 @@ defmodule Csv2sql.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      compilers: [:unused] ++ Mix.compilers()
+      compilers: [:unused] ++ Mix.compilers(),
+      test_coverage: [tool: ExCoveralls]
     ]
   end
 
@@ -37,6 +38,7 @@ defmodule Csv2sql.MixProject do
       {:typed_struct, "~> 0.3.0"},
 
       # For dev
+      {:excoveralls, "~> 0.14.4", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:mix_unused, "~> 0.3.0", only: [:dev, :test], runtime: false}
@@ -54,6 +56,9 @@ defmodule Csv2sql.MixProject do
 
   def custom_test_command(_) do
     # System.shell("source .env.test && MIX_ENV=test mix test --trace --warnings-as-errors --cover", into: IO.stream())
-    System.cmd("mix", ["test", "--trace", "--warnings-as-errors", "--cover"], env: [{"MIX_ENV", "test"}], into: IO.stream())
+    System.cmd("mix", ["test", "--trace", "--warnings-as-errors", "--cover"],
+      env: [{"MIX_ENV", "test"}],
+      into: IO.stream()
+    )
   end
 end

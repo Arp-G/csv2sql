@@ -45,7 +45,8 @@ defmodule Csv2sql.Database.ConnectionTest do
       Ecto.Adapters.SQL.query!(repo, "SELECT 1")
       {:connected, conn}
     rescue
-      e in DBConnection.ConnectionError -> {:error, e}
+      e in DBConnection.ConnectionError ->
+        {:error, e}
     end
   end
 
@@ -66,7 +67,8 @@ defmodule Csv2sql.Database.ConnectionTest do
       do: {:reply, {:error, :on_going}, state}
 
   @impl GenServer
-  def handle_call({:check_db_connection, ~M{db_url, db_type, caller}}, _from, %{ref: nil} = state) do
+  def handle_call({:check_db_connection, ~M{db_url, db_type, caller}}, _from, %{ref: nil} = state)
+      when not is_nil(db_url) do
     task =
       Task.Supervisor.async_nolink(
         Csv2sql.Database.ConnectionSupervisor,
