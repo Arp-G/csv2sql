@@ -38,7 +38,8 @@ defmodule Csv2sql.MixProject do
       {:typed_struct, "~> 0.3.0"},
 
       # For dev
-      {:excoveralls, "~> 0.14.4", only: [:dev, :test], runtime: false},
+      {:benchee, "~> 1.1", only: :dev},
+      {:excoveralls, "~> 0.14.4", only: [:dev, :test]},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:mix_unused, "~> 0.3.0", only: [:dev, :test], runtime: false}

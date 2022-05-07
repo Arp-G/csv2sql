@@ -1,4 +1,5 @@
 defmodule WithDbSetup do
+  @moduledoc false
   use ExUnit.CaseTemplate
 
   setup :prep_db

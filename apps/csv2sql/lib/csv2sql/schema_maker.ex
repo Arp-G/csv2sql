@@ -7,8 +7,7 @@ defmodule Csv2sql.SchemaMaker do
   """
   def make_schema(file_path) do
     [drop_query, create_query] =
-      file_path
-      |> get_types()
+      get_types()
       |> get_ddl_queries(file_path)
 
     query = """
@@ -63,7 +62,7 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp get_ddl_queries(types, file_path) do
-    db_type = Csv2sql.get_db_type()
+    db_type = :mysql
 
     database =
       if db_type == :postgres,
@@ -94,15 +93,15 @@ defmodule Csv2sql.SchemaMaker do
     ["DROP TABLE IF EXISTS #{database}#{table_name};", "#{create_table}"]
   end
 
-  defp get_types(path) do
+  def get_types() do
+    path = "/home/arpan/Desktop/personal_profiles_202205071213.csv"
     headers = get_headers(path)
-    varchar_limit = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
+    varchar_limit = 200
     headers_type_list = List.duplicate(get_type_map(), Enum.count(headers))
 
-    schema_infer_chunk_size =
-      Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:schema_infer_chunk_size]
+    schema_infer_chunk_size = 400
 
-    db_type = Csv2sql.get_db_type()
+    db_type = :mysql
 
     types =
       path
@@ -139,7 +138,7 @@ defmodule Csv2sql.SchemaMaker do
       end)
       |> header_map_to_list(headers)
 
-    Observer.set_schema(path, types)
+    # Observer.set_schema(path, types)
 
     types
   end
@@ -202,7 +201,7 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_date?(item) do
-    Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:custom_date_patterns]
+    ["{YYYY}-{0M}-{0D}"]
     |> Enum.any?(fn pattern ->
       case Timex.parse(item, pattern) do
         {:ok, _} -> true
@@ -212,7 +211,7 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_datetime?(item) do
-    Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:custom_datetime_patterns]
+    ["{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s}"]
     |> Enum.any?(fn pattern ->
       case Timex.parse(item, pattern) do
         {:ok, _} -> true
