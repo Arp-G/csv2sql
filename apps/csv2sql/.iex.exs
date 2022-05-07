@@ -18,3 +18,5 @@ measure1 = fn func ->
   }
 )
 end
+
+# measure2.(fn -> Csv2sql.SchemaMaker.get_types  end, fn -> Csv2sql.TypeDeducer.get_types end)

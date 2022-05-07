@@ -36,6 +36,7 @@ defmodule Csv2sql.MixProject do
       {:shorter_maps, "~> 2.2"},
       {:timex, "~> 3.7"},
       {:typed_struct, "~> 0.3.0"},
+      {:flow, "~> 1.2"},
 
       # For dev
       {:benchee, "~> 1.1", only: :dev},

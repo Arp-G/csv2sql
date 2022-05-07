@@ -94,12 +94,12 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   def get_types() do
-    path = "/home/arpan/Desktop/personal_profiles_202205071213.csv"
+    path = "#{File.cwd!}/priv/src/test1.csv"
     headers = get_headers(path)
     varchar_limit = 200
     headers_type_list = List.duplicate(get_type_map(), Enum.count(headers))
 
-    schema_infer_chunk_size = 400
+    schema_infer_chunk_size = 100
 
     db_type = :mysql
 
@@ -201,7 +201,7 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_date?(item) do
-    ["{YYYY}-{0M}-{0D}"]
+    Csv2sql.Helpers.Misc.get_config(:date_patterns)
     |> Enum.any?(fn pattern ->
       case Timex.parse(item, pattern) do
         {:ok, _} -> true
@@ -211,7 +211,7 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_datetime?(item) do
-    ["{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s}"]
+    Csv2sql.Helpers.Misc.get_config(:datetime_patterns)
     |> Enum.any?(fn pattern ->
       case Timex.parse(item, pattern) do
         {:ok, _} -> true
@@ -256,7 +256,7 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_text?(item) do
-    varchar_limit = Application.get_env(:csv2sql, Csv2sql.SchemaMaker)[:varchar_limit]
+    varchar_limit = Csv2sql.Helpers.Misc.get_config(:varchar_limit)
     if String.length(item) > varchar_limit, do: true, else: false
   end
 

@@ -1,20 +1,20 @@
-defmodule Csv2sql.TypeDeducer.TypeCheckers do
+defmodule Csv2sql.TypeDeducer.TypeChecker do
   @moduledoc """
     Type checkers to infer data type of a database column
     using its preivous inferred type and current item type
   """
   use Csv2sql.Types
   import Csv2sql.Helpers.Misc, only: [get_config: 1]
-  import ShorterMaps
 
   @spec check_type(binary(), type_map()) :: type_map()
   # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   def check_type(item, existing_type_map) do
     item = String.trim(item)
 
-    if is_empty?(item),
-      do: Map.put(existing_type_map, :is_empty, existing_type_map.is_empty && true),
-      else: %{
+    if is_empty?(item) do
+      Map.put(existing_type_map, :is_empty, existing_type_map.is_empty && true)
+    else
+      %{
         is_empty: existing_type_map.is_empty && is_empty?(item),
         is_date: existing_type_map.is_date && is_date?(item),
         is_datetime: existing_type_map.is_datetime && is_datetime?(item),
@@ -23,6 +23,7 @@ defmodule Csv2sql.TypeDeducer.TypeCheckers do
         is_float: existing_type_map.is_float && is_float?(item),
         is_text: existing_type_map.is_text || is_text?(item)
       }
+    end
   end
 
   defp is_empty?(""), do: true
