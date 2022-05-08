@@ -4,9 +4,9 @@ defmodule Csv2sql.TypeDeducer.TypeChecker do
     using its preivous inferred type and current item type
   """
   use Csv2sql.Types
-  import Csv2sql.Helpers.Misc, only: [get_config: 1]
+  alias Csv2sql.Helpers
 
-  @spec check_type(binary(), type_map()) :: type_map()
+  @spec check_type(String.t(), type_map()) :: type_map()
   # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   def check_type(item, existing_type_map) do
     item = String.trim(item)
@@ -30,12 +30,12 @@ defmodule Csv2sql.TypeDeducer.TypeChecker do
   defp is_empty?(_), do: false
 
   defp is_date?(item) do
-    get_config(:date_patterns)
+    Helpers.get_config(:date_patterns)
     |> Enum.any?(fn pattern -> parse_datetime_pattern(item, pattern) end)
   end
 
   defp is_datetime?(item) do
-    get_config(:datetime_patterns)
+    Helpers.get_config(:datetime_patterns)
     |> Enum.any?(fn pattern -> parse_datetime_pattern(item, pattern) end)
   end
 
@@ -73,7 +73,7 @@ defmodule Csv2sql.TypeDeducer.TypeChecker do
   end
 
   defp is_text?(item) do
-    varchar_limit = get_config(:varchar_limit)
+    varchar_limit = Helpers.get_config(:varchar_limit)
     if String.length(item) > varchar_limit, do: true, else: false
   end
 

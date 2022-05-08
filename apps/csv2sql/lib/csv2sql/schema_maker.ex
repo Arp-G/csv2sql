@@ -7,7 +7,7 @@ defmodule Csv2sql.SchemaMaker do
   """
   def make_schema(file_path) do
     [drop_query, create_query] =
-      get_types()
+      get_types("anc")
       |> get_ddl_queries(file_path)
 
     query = """
@@ -93,8 +93,7 @@ defmodule Csv2sql.SchemaMaker do
     ["DROP TABLE IF EXISTS #{database}#{table_name};", "#{create_table}"]
   end
 
-  def get_types() do
-    path = "#{File.cwd!}/priv/src/test1.csv"
+  def get_types(path) do
     headers = get_headers(path)
     varchar_limit = 200
     headers_type_list = List.duplicate(get_type_map(), Enum.count(headers))
@@ -201,7 +200,7 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_date?(item) do
-    Csv2sql.Helpers.Misc.get_config(:date_patterns)
+    Csv2sql.Helpers.get_config(:date_patterns)
     |> Enum.any?(fn pattern ->
       case Timex.parse(item, pattern) do
         {:ok, _} -> true
@@ -211,7 +210,7 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_datetime?(item) do
-    Csv2sql.Helpers.Misc.get_config(:datetime_patterns)
+    Csv2sql.Helpers.get_config(:datetime_patterns)
     |> Enum.any?(fn pattern ->
       case Timex.parse(item, pattern) do
         {:ok, _} -> true
@@ -256,7 +255,7 @@ defmodule Csv2sql.SchemaMaker do
   end
 
   defp is_text?(item) do
-    varchar_limit = Csv2sql.Helpers.Misc.get_config(:varchar_limit)
+    varchar_limit = Csv2sql.Helpers.get_config(:varchar_limit)
     if String.length(item) > varchar_limit, do: true, else: false
   end
 

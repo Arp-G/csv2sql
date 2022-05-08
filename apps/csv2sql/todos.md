@@ -20,3 +20,35 @@
 
 * Validation
   - A separate GenStage/Flow pipeline to validate the data.
+
+
+
+
+
+Done:
+
+* Config Management
+Better config parsing, use separate config structs, better code organization in modules, typespecs, 90%+ test coverage
+
+* Csv Type inference
+  Better type inference and cpu utilization(10% increased cpu usage), using Flow
+  For 818 MB csv with 34959673 rows with older apporoach it took 126 seconds vs 120 seconds with new approach.
+  Introduced flow and parallalized reduction of types maps for different chunks
+  better code organization, typespecs and 90%+ test coverage.
+
+  The little improvement in peroformance becomes significant for larger csv files
+
+  Details:
+    Name             ips        average  deviation         median         99th %
+    func_2       0.00831       2.01 min     ±0.00%       2.01 min       2.01 min
+    func_1       0.00788       2.12 min     ±0.00%       2.12 min       2.12 min
+
+    Comparison: 
+    func_2       0.00831
+    func_1       0.00788 - 1.06x slower +0.110 min
+
+    Memory usage statistics: 
+
+    Name      Memory usage
+    func_2      0.00001 GB
+    func_1        38.00 GB - 3284106.23x memory usage +38.00 GB
