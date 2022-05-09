@@ -25,7 +25,7 @@ defmodule Csv2sql.Database.Postgres do
   @spec db_name :: String.t()
   def db_name do
     %Postgrex.Result{rows: [[db_name]]} =
-      Ecto.Adapters.SQL.query!(get_repo(:mysql), "SELECT current_database();")
+      Ecto.Adapters.SQL.query!(get_repo(:postgres), "SELECT current_database();")
 
     if db_name == "" || is_nil(db_name), do: raise("Postgres database name not found")
 
