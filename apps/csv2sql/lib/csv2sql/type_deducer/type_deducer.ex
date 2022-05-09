@@ -7,7 +7,10 @@ defmodule Csv2sql.TypeDeducer do
   use Csv2sql.Types
   alias Csv2sql.{TypeDeducer.TypeChecker, Database, Helpers}
 
-  @spec get_types(binary) :: %{String.t() => type_map()}
+  # Read ahead 10,000 lines when reading csv files
+  @csv_read_ahead 10_000
+
+  @spec get_types(binary) :: csv_col_types_list()
   def get_types(csv_file_path) do
     headers = Helpers.get_csv_headers(csv_file_path)
 
@@ -16,7 +19,7 @@ defmodule Csv2sql.TypeDeducer do
 
     types =
       csv_file_path
-      |> File.stream!(read_ahead: 10_000)
+      |> File.stream!(read_ahead: @csv_read_ahead)
       |> CSV.parse_stream()
       |> Stream.chunk_every(Helpers.get_config(:schema_infer_chunk_size))
       # By default Flow work with batches of 500 items that is 500 chunks in this case
@@ -39,7 +42,7 @@ defmodule Csv2sql.TypeDeducer do
       |> Enum.to_list()
       |> List.flatten()
       |> Enum.zip(headers)
-      |> Enum.into(%{}, fn {column_type_map, column_name} ->
+      |> Enum.into(Keyword.new(), fn {column_type_map, column_name} ->
         {column_name, Database.get_db_type(column_type_map)}
       end)
 

@@ -30,6 +30,9 @@ Done:
 * Config Management
 Better config parsing, use separate config structs, better code organization in modules, typespecs, 90%+ test coverage
 
+* TODO configs:
+  * Auto drop table if exists
+
 * Csv Type inference
   Better type inference and cpu utilization(10% increased cpu usage), using Flow
   For 818 MB csv with 34959673 rows with older apporoach it took 126 seconds vs 120 seconds with new approach.

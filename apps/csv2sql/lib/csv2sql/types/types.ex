@@ -14,6 +14,8 @@ defmodule Csv2sql.Types do
               is_float: boolean(),
               is_text: boolean()
             }
+
+      @type csv_col_types_list() :: list({String.t(), String.t()})
     end
   end
 end

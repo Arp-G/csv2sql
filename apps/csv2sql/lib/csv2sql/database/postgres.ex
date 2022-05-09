@@ -31,4 +31,8 @@ defmodule Csv2sql.Database.Postgres do
 
     db_name
   end
+
+  @impl Csv2sql.Database
+  @spec column_name_delimiter :: <<_::8>>
+  def column_name_delimiter, do: "\""
 end
