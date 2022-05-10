@@ -42,7 +42,7 @@ defmodule Csv2sql.Database.ConnectionTest do
 
     try do
       # Ping DB
-      Ecto.Adapters.SQL.query!(repo, "SELECT 1")
+      Database.run_query!(repo, "SELECT 1")
       {:connected, conn}
     rescue
       e in DBConnection.ConnectionError ->

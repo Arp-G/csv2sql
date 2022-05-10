@@ -22,7 +22,7 @@
   - A separate GenStage/Flow pipeline to validate the data.
 
 
-
+Tag test with DB and test these tests for both postgres and mysql.
 
 
 Done:
@@ -46,11 +46,11 @@ Better config parsing, use separate config structs, better code organization in 
     func_2       0.00831       2.01 min     ±0.00%       2.01 min       2.01 min
     func_1       0.00788       2.12 min     ±0.00%       2.12 min       2.12 min
 
-    Comparison: 
+    Comparison:
     func_2       0.00831
     func_1       0.00788 - 1.06x slower +0.110 min
 
-    Memory usage statistics: 
+    Memory usage statistics:
 
     Name      Memory usage
     func_2      0.00001 GB

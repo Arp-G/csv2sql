@@ -27,7 +27,7 @@ defmodule Csv2sql.Database.ConnectionTestTest do
                assert :ok == ConnectionTest.check_db_connection(self())
                assert_receive {:error, _}, @db_wait_time
              end) =~
-               "(DBConnection.ConnectionError) (badhost:3306) non-existing domain - :nxdomain"
+               "badhost"
     end
   end
 
@@ -46,6 +46,7 @@ defmodule Csv2sql.Database.ConnectionTestTest do
                ConnectionTest.check_db_connection(self(), args)
     end
 
+    @tag :multi_db_test
     test "when db url is incorrect can handle further connection check calls" do
       args =
         Application.get_env(:csv2sql, :config)
@@ -55,7 +56,7 @@ defmodule Csv2sql.Database.ConnectionTestTest do
                assert :ok == ConnectionTest.check_db_connection(self(), args)
                assert_receive {:error, _}, @db_wait_time
              end) =~
-               "(DBConnection.ConnectionError) (localhost:3306) connection refused"
+               "Access denied" || "invalid_password"
 
       # Can handle further calls
       assert :ok ==

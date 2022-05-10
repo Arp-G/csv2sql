@@ -6,6 +6,13 @@ defmodule Csv2sql.Database do
   alias Csv2sql.Helpers
 
   # Public functions
+  @spec run_query!(atom(), String.t()) :: db_result_types()
+  def run_query!(repo, query) do
+    Helpers.get_config(:db_type)
+    |> get_repo()
+    |> Ecto.Adapters.SQL.query!(query)
+  end
+
   @spec get_repo(:mysql | :postgres) :: Csv2sql.MySQLRepo | Csv2sql.PostgresRepo
   def get_repo(:mysql), do: Csv2sql.MySQLRepo
   def get_repo(:postgres), do: Csv2sql.PostgreSQLRepo
