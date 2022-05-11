@@ -1,13 +1,16 @@
 require Logger
 Code.require_file("support/with_db_setup.exs", __DIR__)
 
-Logger.info("Run non-db tests")
-# Run tests without db involvement
-ExUnit.start(exclude: :multi_db_test)
+for db <- [:mysql, :postgres] do
+  configs = ".env.#{db}.test" |> File.read!() |> Dotenv.parse_contents()
+  loader_config = %{
+    db_type: configs["DB_TYPE"],
+    db_url: configs["DB_URL"],
+    log_level: configs["LOG_LEVEL"],
+    source_directory: configs["SOURCE_DIRECTORY"]
+  }
 
-# Run tests with db involvement
-for db <- ["mysql", "postgres"] do
-  Logger.info("Run db tests for #{db}")
-  Application.put_env(:csv2sql, :test_db_type, db)
-  ExUnit.start(exclude: :test, include: :multi_db_test)
+  Application.put_env(:csv2sql, :"#{db}_config", loader_config)
 end
+
+ExUnit.start()
