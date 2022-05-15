@@ -9,9 +9,7 @@ defmodule Csv2sql.TypeDeducer.TypeChecker do
   @spec check_type(String.t(), type_map()) :: type_map()
   # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   def check_type(item, existing_type_map) do
-    item = String.trim(item)
-
-    if is_empty?(item) do
+    if item |> String.trim() |> is_empty?() do
       Map.put(existing_type_map, :is_empty, existing_type_map.is_empty && true)
     else
       %{

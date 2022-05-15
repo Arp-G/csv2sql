@@ -1,34 +1,13 @@
-defmodule WithDbSetup do
+defmodule Csv2sql.Support.TestHelper do
   @moduledoc false
   use ExUnit.CaseTemplate
 
   using do
     quote do
-      require WithDbSetup
-      import WithDbSetup
+      require unquote(__MODULE__)
+      import unquote(__MODULE__)
     end
   end
-
-  # setup :prep_db
-
-  # def prep_db(args) do
-  #   # Get db type configs
-  #   test_db_config = Application.get_env(:csv2sql, :mysql_config)
-
-  #   # require IEx; IEx.pry
-
-  #   # IO.puts("PREP FOR #{test_db_type} DB")
-  #   # IO.inspect(test_db_config)
-  #   # IO.puts("\n")
-
-  #   # Custom args passed via tags
-  #   db_args = Map.get(args, :db_args, %{})
-
-  #   # Merge custom args with db type configs and load it into application env
-  #   test_db_config
-  #   |> Map.merge(db_args)
-  #   |> Csv2sql.Config.Loader.load()
-  # end
 
   defmacro db_test(message, tags \\ Macro.escape(%{}), do: block) do
     quote bind_quoted: [message: message, tags: tags], unquote: true do
@@ -56,5 +35,16 @@ defmodule WithDbSetup do
         unquote(block)
       end
     end
+  end
+
+  def load_default_config do
+    # Load some default configs, so that non-db dependent tests work
+    %{
+      db_type: "msql",
+      db_url: "user@password:localhost:3306/dbname",
+      log_level: "debug",
+      source_directory: "./priv/src"
+    }
+    |> Csv2sql.Config.Loader.load()
   end
 end

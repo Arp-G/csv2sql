@@ -24,7 +24,7 @@ defmodule Csv2sql.Database.Postgres do
   @impl Csv2sql.Database
   @spec db_name :: String.t()
   def db_name do
-    %Postgrex.Result{rows: [[db_name]]} = Database.run_query!("SELECT DATABASE();")
+    %Postgrex.Result{rows: [[db_name]]} = run_query!("SELECT DATABASE();")
 
     if db_name == "" || is_nil(db_name), do: raise("Postgres database name not found")
 

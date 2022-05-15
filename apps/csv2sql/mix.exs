@@ -59,7 +59,7 @@ defmodule Csv2sql.MixProject do
 
   def custom_test_command(_) do
     # System.shell("source .env.test && MIX_ENV=test mix test --trace --warnings-as-errors --cover", into: IO.stream())
-    System.cmd("mix", ["test", "--trace", "--warnings-as-errors", "--cover"],
+    System.cmd("mix", ["coveralls.html", "--trace", "--warnings-as-errors"],
       env: [{"MIX_ENV", "test"}],
       into: IO.stream()
     )
