@@ -44,14 +44,19 @@ defmodule Csv2sql.Database.ConnectionTest do
         {:error, {:already_started, conn}} -> conn
       end
 
-    try do
-      # Ping DB
-      Database.run_query!(repo, "SELECT 1")
-      {:connected, conn}
-    rescue
-      e in DBConnection.ConnectionError ->
-        {:error, e}
-    end
+    return_value =
+      try do
+        # Ping DB
+        Database.run_query!(repo, "SELECT 1")
+        {:connected, conn}
+      rescue
+        e in DBConnection.ConnectionError ->
+          {:error, e}
+      end
+
+    # Stop DB process after connection check
+    repo.stop(:infinity)
+    return_value
   end
 
   @spec start_link(any) :: :ignore | {:error, any} | {:ok, pid}

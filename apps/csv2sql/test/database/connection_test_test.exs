@@ -9,6 +9,13 @@ defmodule Csv2sql.Database.ConnectionTestTest do
   describe "check_db_connection/1" do
     db_test "when db url is valid returns connected message" do
       assert :ok == ConnectionTest.check_db_connection(self())
+      assert_receive {:connected, pid}, @db_wait_time
+
+      # DB process is stopped after connection check
+      refute Process.alive?(pid)
+
+      # Can retry db connect check after successfull connection
+      assert :ok == ConnectionTest.check_db_connection(self())
       assert_receive {:connected, _}, @db_wait_time
     end
 
