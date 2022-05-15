@@ -12,6 +12,12 @@ defmodule Csv2sql.Database.ConnectionTestTest do
       assert_receive {:connected, _}, @db_wait_time
     end
 
+    db_test "when repos are already started returns connected message" do
+      start_repos()
+      assert :ok == ConnectionTest.check_db_connection(self())
+      assert_receive {:connected, _}, @db_wait_time
+    end
+
     db_test "when called multiple times returns :on_going and returns only one response" do
       assert :ok == ConnectionTest.check_db_connection(self())
       assert {:error, :on_going} == ConnectionTest.check_db_connection(self())

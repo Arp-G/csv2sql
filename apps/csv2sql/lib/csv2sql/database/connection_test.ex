@@ -28,7 +28,7 @@ defmodule Csv2sql.Database.ConnectionTest do
   def attempt_connection(~M{db_url, db_type}) do
     repo = Database.get_repo(db_type)
 
-    {:ok, conn} =
+    conn =
       repo.start_link(
         url: db_url,
         pool_size: 1,
@@ -39,6 +39,10 @@ defmodule Csv2sql.Database.ConnectionTest do
         # Don't try to restart if connection failed
         max_restarts: 0
       )
+      |> case do
+        {:ok, conn} -> conn
+        {:error, {:already_started, conn}} -> conn
+      end
 
     try do
       # Ping DB

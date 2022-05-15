@@ -1,6 +1,7 @@
 defmodule Csv2sql.Support.TestHelper do
   @moduledoc false
   use ExUnit.CaseTemplate
+  import ShorterMaps
 
   using do
     quote do
@@ -46,5 +47,18 @@ defmodule Csv2sql.Support.TestHelper do
       source_directory: "./priv/src"
     }
     |> Csv2sql.Config.Loader.load()
+  end
+
+  def start_repos do
+    Enum.each([:mysql, :postgres], fn db ->
+      # Start database Repos
+      repo = Csv2sql.Database.get_repo(db)
+      ~M{db_url} = Application.get_env(:csv2sql, :"#{db}_config")
+
+      case repo.start_link(url: "ecto://#{db_url}") do
+        {:ok, conn} -> conn
+        {:error, {:already_started, conn}} -> conn
+      end
+    end)
   end
 end
