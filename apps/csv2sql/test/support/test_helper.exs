@@ -7,6 +7,7 @@ defmodule Csv2sql.Support.TestHelper do
     quote do
       require unquote(__MODULE__)
       import unquote(__MODULE__)
+      import ShorterMaps
     end
   end
 

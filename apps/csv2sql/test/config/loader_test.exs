@@ -218,7 +218,7 @@ defmodule Csv2sql.Config.LoaderTest do
 
     test "ignores invalid insertion chunk size" do
       @default_config
-      |> Map.put(:insertion_chunk_size, 10_00000)
+      |> Map.put(:insertion_chunk_size, 1_000_000)
       |> Loader.load()
 
       assert match?(%{insertion_chunk_size: 100}, Application.get_env(:csv2sql, :config))

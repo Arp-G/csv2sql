@@ -37,3 +37,6 @@ schema.sql
 # Keep sample files in version control
 !.env*.sample
 
+# Test csv files
+/priv/test_csvs
+

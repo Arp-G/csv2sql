@@ -136,10 +136,9 @@ defmodule Csv2sql.DatabaseTest do
 
       cols =
         col_type_defs
-        |> Enum.map(fn {col_name, type} ->
+        |> Enum.map_join(", ", fn {col_name, type} ->
           "#{column_name_delimiter}#{col_name}#{column_name_delimiter} #{type}"
         end)
-        |> Enum.join(", ")
 
       assert Database.get_create_table_ddl("priv/src/test.csv", db_name, col_type_defs) ==
                "CREATE TABLE #{db_name}.test (#{cols});"

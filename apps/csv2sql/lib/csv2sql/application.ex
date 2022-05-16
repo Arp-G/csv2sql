@@ -1,4 +1,8 @@
 defmodule Csv2sql.Application do
+  @moduledoc """
+    Main application module for csv2sql
+  """
+
   use Application
 
   def start(_type, _args) do

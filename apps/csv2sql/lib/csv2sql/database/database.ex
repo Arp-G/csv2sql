@@ -38,8 +38,9 @@ defmodule Csv2sql.Database do
 
     column_defs =
       column_types
-      |> Enum.map(fn {column_name, column_type} -> "#{qq}#{column_name}#{qq} #{column_type}" end)
-      |> Enum.join(", ")
+      |> Enum.map_join(", ", fn {column_name, column_type} ->
+        "#{qq}#{column_name}#{qq} #{column_type}"
+      end)
 
     "CREATE TABLE #{db_name}.#{table_name} (#{column_defs});"
   end

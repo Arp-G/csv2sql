@@ -26,8 +26,6 @@ defmodule Csv2sql.Config.TypeCheckerTest do
     {"{0M}/{0D}/{YYYY} {h12}**{AM}/{s}/{m}", "09/11/20 7**PM/45/15"}
   ]
 
-  import ShorterMaps
-
   describe "check_type/2" do
     setup do
       load_default_config()
