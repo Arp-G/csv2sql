@@ -29,7 +29,7 @@ defmodule Csv2sql.TypeDeducerTest do
         {"created_at", if(db_type == :mysql, do: "DATETIME", else: "TIMESTAMP")}
       ]
 
-      assert Csv2sql.TypeDeducer.get_types(csv_file_path) == col_type_defs
+      assert Csv2sql.TypeDeducer.get_count_and_types(csv_file_path) == {5, col_type_defs}
     end
   end
 end

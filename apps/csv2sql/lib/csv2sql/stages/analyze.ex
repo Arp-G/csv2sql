@@ -1,52 +1,56 @@
 defmodule Csv2sql.Stages.Analyze do
-  alias Csv2sql.{TypeDeducer, File, Helpers}
+  use Csv2sql.Types
+  alias Csv2sql.{TypeDeducer, Helpers}
+  import ShorterMaps
 
-  def run do
-    source_directory = Helpers.get_config(:source_directory)
-  end
-
+  @spec get_files :: files_map()
   def get_files do
-    Helpers.get_config(:source_directory)
-    |> File.ls!()
-    |> Flow.from_enumerable()
-    |> Flow.reject(fn file ->
-      extension =
-        file
-        |> String.trim()
-        |> String.slice(-4..-1)
-        |> String.downcase()
+    source_direcotry = Helpers.get_config(:source_directory)
 
-      extension != ".csv"
-    end)
-    |> Flow.reduce(fn -> %{} end, &get_file_stats/2)
-    |> Flow.departition(
-        fn -> initial_column_type_list end,
-        &merge_type_maps/2,
-        & &1
-      )
+    files_list =
+      source_direcotry
+      |> File.ls!()
+      |> Enum.filter(&is_csv?/1)
+      |> Enum.map(fn file ->
+        path = "#{source_direcotry}#{file}"
+
+        %Csv2sql.File{
+          name: String.slice(file, 0..-5),
+          path: path,
+          status: :pending
+        }
+      end)
+
+    # TODO: Init observer with files list
+
+    [files_map] =
+      files_list
+      |> Flow.from_enumerable()
+      |> Flow.map(fn file ->
+        file = %Csv2sql.File{file | status: :analyze}
+        # TODO: Update Obersver with file status :pending -> :analyze
+        get_file_stats(file)
+      end)
+      |> Flow.reduce(fn -> %{} end, fn file, files_map -> Map.put(files_map, file.path, file) end)
+      |> Flow.departition(fn -> %{} end, &Map.merge/2, & &1)
+      |> Enum.to_list()
+
+    # TODO: Send files to genstage for insertion
+
+    files_map
   end
 
-  @doc """
-  Get row count in csv file
-  """
-  def get_count_from_csv(file) do
-    file
-    |> File.stream!()
-    |> CSV.parse_stream()
-    |> Enum.count()
+  defp get_file_stats(~M{%Csv2sql.File path} = file) do
+    ~M{size} = File.stat!(path)
+    {row_count, column_types} = TypeDeducer.get_count_and_types(path)
+
+    ~M{%Csv2sql.File file | size, row_count, column_types}
   end
 
-  def get_file_stats(file, files_map) do
-    path = "#{Helpers.get_config(:source_directory)}/#{file}"
-
-    file_struct=%Csv2sql.File{
-      name: String.slice(file, 0..-5),
-      path: path,
-      size: size,
-      row_count: get_count_from_csv(path),
-      status: :pending
-    }
-
-    Map.put(files_map, path, file_struct)
+  defp is_csv?(filepath) do
+    filepath
+    |> String.trim()
+    |> String.slice(-4..-1)
+    |> String.downcase() == ".csv"
   end
 end

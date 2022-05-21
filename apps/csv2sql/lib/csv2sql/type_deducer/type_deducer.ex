@@ -10,14 +10,14 @@ defmodule Csv2sql.TypeDeducer do
   # Read ahead 10,000 lines when reading csv files
   @csv_read_ahead 10_000
 
-  @spec get_types(binary) :: csv_col_types_list()
-  def get_types(csv_file_path) do
+  @spec get_count_and_types(binary) :: {non_neg_integer(), csv_col_types_list()}
+  def get_count_and_types(csv_file_path) do
     headers = Helpers.get_csv_headers(csv_file_path)
 
     # Initial type maps for every csv column
     initial_column_type_list = get_initial_type_map(headers)
 
-    types =
+    [{row_count, column_type_map}] =
       csv_file_path
       |> File.stream!(read_ahead: @csv_read_ahead)
       |> CSV.parse_stream()
@@ -26,27 +26,36 @@ defmodule Csv2sql.TypeDeducer do
       # Set max demand to 1 to avoid blocking if data not available
       |> Flow.from_enumerable(max_demand: 1)
       # Infer type for chunk: returns array of type maps for that chunk
-      |> Flow.map(fn rows -> infer_type_for_chunk(rows, initial_column_type_list) end)
+      |> Flow.map(fn rows ->
+        {Enum.count(rows), infer_type_for_chunk(rows, initial_column_type_list)}
+      end)
       # Reduce overy array of type maps for every chunk to produce a final array of type maps for the chunk
       # Here we are reducing parallely accross multiple stages or partitions thus leading to a separate reduction result from each stage/partition
       |> Flow.reduce(
-        fn -> initial_column_type_list end,
-        &merge_type_maps/2
+        fn -> {0, initial_column_type_list} end,
+        fn {count_sum, existing_type_maps}, {count, new_type_maps} ->
+          {count_sum + count, merge_type_maps(existing_type_maps, new_type_maps)}
+        end
       )
       # Departition to combine results from every reduction stage/partition, to get a single type map list
       |> Flow.departition(
-        fn -> initial_column_type_list end,
-        &merge_type_maps/2,
+        fn -> {0, initial_column_type_list} end,
+        fn {count_sum, existing_type_maps}, {count, new_type_maps} ->
+          {count_sum + count, merge_type_maps(existing_type_maps, new_type_maps)}
+        end,
         & &1
       )
       |> Enum.to_list()
       |> List.flatten()
+
+    types =
+      column_type_map
       |> Enum.zip(headers)
       |> Enum.into(Keyword.new(), fn {column_type_map, column_name} ->
         {column_name, Database.get_db_type(column_type_map)}
       end)
 
-    types
+    {row_count, types}
   end
 
   defp infer_type_for_chunk(rows_chunk, headers_type_list) do
