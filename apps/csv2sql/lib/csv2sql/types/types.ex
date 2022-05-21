@@ -18,6 +18,8 @@ defmodule Csv2sql.Types do
       @type csv_col_types_list() :: list({String.t(), String.t()})
 
       @type db_result_types() :: MyXQL.Result.t() | Postgrex.Result.t()
+
+      @type file_status() :: :pending | :analyze | :loading | :verifying | :done | :failure
     end
   end
 end
