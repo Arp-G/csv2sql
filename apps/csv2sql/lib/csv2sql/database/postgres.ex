@@ -28,7 +28,8 @@ defmodule Csv2sql.Database.Postgres do
 
     if db_name == "" || is_nil(db_name), do: raise("Postgres database name not found")
 
-    db_name
+    # TODO: Get schema name from user maybe?
+    "#{db_name}.public"
   end
 
   @impl Csv2sql.Database

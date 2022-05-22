@@ -1,10 +1,10 @@
 defmodule Csv2sql.Stages.Analyze do
   use Csv2sql.Types
-  alias Csv2sql.{TypeDeducer, Helpers}
+  alias Csv2sql.{TypeDeducer, Database, Helpers}
   import ShorterMaps
 
-  @spec get_files :: files_map()
-  def get_files do
+  @spec analyze_files :: :ok
+  def analyze_files do
     source_direcotry = Helpers.get_config(:source_directory)
 
     files_list =
@@ -23,21 +23,25 @@ defmodule Csv2sql.Stages.Analyze do
 
     # TODO: Init observer with files list
 
-    [files_map] =
-      files_list
-      |> Flow.from_enumerable()
-      |> Flow.map(fn file ->
-        file = %Csv2sql.File{file | status: :analyze}
-        # TODO: Update Obersver with file status :pending -> :analyze
-        get_file_stats(file)
-      end)
-      |> Flow.reduce(fn -> %{} end, fn file, files_map -> Map.put(files_map, file.path, file) end)
-      |> Flow.departition(fn -> %{} end, &Map.merge/2, & &1)
-      |> Enum.to_list()
+    Database.start_repo()
 
-    # TODO: Send files to genstage for insertion
+    files_list
+    |> Flow.from_enumerable()
+    |> Flow.map(fn file ->
+      file = %Csv2sql.File{file | status: :analyze}
+      # TODO: Update Obersver with file status :pending -> :analyze
+      file = get_file_stats(file)
 
-    files_map
+      file.path
+      |> Database.get_create_table_ddl(Database.get_db_name(), file.column_types)
+      |> Database.run_query!()
+
+      # file = %Csv2sql.File{file | status: :loading}
+      # TODO: Update Obersver with file status :analyze -> :loading
+
+      # TODO: Send to genstage
+    end)
+    |> Flow.run()
   end
 
   defp get_file_stats(~M{%Csv2sql.File path} = file) do

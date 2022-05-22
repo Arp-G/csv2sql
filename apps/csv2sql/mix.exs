@@ -37,6 +37,7 @@ defmodule Csv2sql.MixProject do
       {:timex, "~> 3.7"},
       {:typed_struct, "~> 0.3.0"},
       {:flow, "~> 1.2"},
+      {:stream_split, "~> 0.1.0"},
 
       # For dev and/or test
       {:dotenv, github: "avdi/dotenv_elixir", only: [:test]},

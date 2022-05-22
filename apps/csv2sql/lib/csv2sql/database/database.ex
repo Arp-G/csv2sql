@@ -6,6 +6,17 @@ defmodule Csv2sql.Database do
   alias Csv2sql.Helpers
 
   # Public functions
+  def start_repo() do
+    repo =
+      Helpers.get_config(:db_type)
+      |> get_repo()
+
+    repo.start_link(
+      url: Helpers.get_config(:db_url),
+      pool_size: 10
+    )
+  end
+
   @spec run_query!(String.t()) :: db_result_types()
   def run_query!(query) do
     Helpers.get_config(:db_type)
