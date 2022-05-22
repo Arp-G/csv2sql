@@ -14,7 +14,7 @@ defmodule Csv2sql.File do
     field(:size, non_neg_integer(), default: 0)
     field(:row_count, non_neg_integer(), default: 0)
     field(:rows_processed, non_neg_integer(), default: 0)
-    field(:column_types, map(), enforce: false)
+    field(:column_types, csv_col_types_list(), enforce: false)
     field(:status, file_status(), default: :pending)
   end
 end

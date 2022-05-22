@@ -22,6 +22,8 @@ defmodule Csv2sql.Types do
       @type file_status() :: :pending | :analyze | :loading | :verifying | :done | :failure
 
       @type files_map() :: %{String.t() => File.t()}
+
+      @type supported_db_data_types() :: String.t() | number() | boolean() | Date.t() | DateTime.t() | nil
     end
   end
 end

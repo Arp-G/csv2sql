@@ -24,6 +24,7 @@ defmodule Csv2sql.Stages.Analyze do
     # TODO: Init observer with files list
 
     Database.start_repo()
+    Csv2sql.Loader.ConsumerSupervisor.start_link()
 
     files_list
     |> Flow.from_enumerable()
@@ -39,7 +40,15 @@ defmodule Csv2sql.Stages.Analyze do
       # file = %Csv2sql.File{file | status: :loading}
       # TODO: Update Obersver with file status :analyze -> :loading
 
-      # TODO: Send to genstage
+      # Start a producer for the file
+      {:ok, pid} = Csv2sql.Loader.Producer.start_link(file)
+
+      GenStage.sync_subscribe(Csv2sql.Loader.ConsumerSupervisor,
+        cancel: :temporary,
+        max_demand: System.schedulers_online(),
+        to: pid
+        # selector: fn %{key: key} -> String.starts_with?(key, "foo-") end TODO: Might be usefull for order later
+      )
     end)
     |> Flow.run()
   end

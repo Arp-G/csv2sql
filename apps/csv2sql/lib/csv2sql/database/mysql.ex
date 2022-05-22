@@ -4,6 +4,7 @@ defmodule Csv2sql.Database.MySql do
   """
   use Csv2sql.Types
   import Csv2sql.Database
+  alias Csv2sql.Helpers
   @behaviour Csv2sql.Database
 
   @impl Csv2sql.Database
@@ -16,7 +17,7 @@ defmodule Csv2sql.Database.MySql do
       type_map[:is_boolean] -> "BIT"
       type_map[:is_integer] -> "INT"
       type_map[:is_float] -> "DOUBLE"
-      type_map[:is_text] -> "TEXT"
+      type_map[:is_text] -> "LONGTEXT"
       true -> "VARCHAR(#{varchar_limit()})"
     end
   end
@@ -34,4 +35,18 @@ defmodule Csv2sql.Database.MySql do
   @impl Csv2sql.Database
   @spec column_name_delimiter :: <<_::8>>
   def column_name_delimiter, do: "`"
+
+  @impl Csv2sql.Database
+  @spec encode(String.t(), String.t()) :: supported_db_data_types()
+  def encode(type, data) do
+    case type do
+      <<"VARCHAR"::binary, _offset::binary>> -> data
+      "LONGTEXT" -> data
+      "INT" -> String.to_integer(data)
+      "BIT" -> if data == "0" || data == "false", do: 0, else: 1
+      "DATE" -> Helpers.format_datetime(data, true)
+      "DATETIME" -> Helpers.format_datetime(data, false)
+      _ -> data
+    end
+  end
 end

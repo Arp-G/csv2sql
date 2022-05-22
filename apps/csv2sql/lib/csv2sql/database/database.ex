@@ -4,6 +4,7 @@ defmodule Csv2sql.Database do
   """
   use Csv2sql.Types
   alias Csv2sql.Helpers
+  import ShorterMaps
 
   # Public functions
   def start_repo() do
@@ -13,7 +14,8 @@ defmodule Csv2sql.Database do
 
     repo.start_link(
       url: Helpers.get_config(:db_url),
-      pool_size: 10
+      pool_size: 10,
+      log: Helpers.get_config(:log)
     )
   end
 
@@ -60,10 +62,25 @@ defmodule Csv2sql.Database do
   def get_drop_table_ddl(file_path, db_name),
     do: "DROP TABLE IF EXISTS #{db_name}.#{get_table_name(file_path)};"
 
+  def insert_data_chunk(~M{%Csv2sql.File name, column_types}, data_chunk) do
+    encoded_data_chunk = encode_data_chunk(column_types, data_chunk)
+    repo = Helpers.get_config(:db_type) |> get_repo()
+
+    try do
+      repo.insert_all(name, encoded_data_chunk)
+    catch
+      x, _reason ->
+        IO.inspect(encoded_data_chunk |> Enum.at(9))
+        throw(x)
+    end
+  end
+
   # Callbacks to implement
   @callback type_mapping(type_map()) :: String.t()
 
   @callback db_name() :: String.t()
+
+  @callback encode(String.t(), String.t()) :: supported_db_data_types()
 
   @callback column_name_delimiter :: <<_::8>>
 
@@ -80,4 +97,22 @@ defmodule Csv2sql.Database do
     |> String.trim_trailing()
     |> String.trim_trailing(".csv")
   end
+
+  defp encode_data_chunk(column_types, data_chunk) do
+    data_chunk
+    |> Enum.map(fn row ->
+      Enum.zip_with(
+        column_types,
+        row,
+        fn {header, type}, data ->
+          {header, encode(type, data)}
+        end
+      )
+    end)
+  end
+
+  defp encode(<<"VARCHAR"::binary, _offset::binary>>, ""), do: ""
+  defp encode("TEXT", ""), do: nil
+  defp encode(_type, ""), do: nil
+  defp encode(type, data), do: get_db_module().encode(type, data)
 end

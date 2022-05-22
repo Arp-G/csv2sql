@@ -4,6 +4,7 @@ defmodule Csv2sql.Database.Postgres do
   """
   use Csv2sql.Types
   import Csv2sql.Database
+  alias Csv2sql.Helpers
   @behaviour Csv2sql.Database
 
   @impl Csv2sql.Database
@@ -35,4 +36,35 @@ defmodule Csv2sql.Database.Postgres do
   @impl Csv2sql.Database
   @spec column_name_delimiter :: <<_::8>>
   def column_name_delimiter, do: "\""
+
+  @impl Csv2sql.Database
+  @spec encode(String.t(), String.t()) :: supported_db_data_types()
+  def encode(type, data) do
+    case type do
+      <<"VARCHAR"::binary, _offset::binary>> ->
+        data
+
+      "TEXT" ->
+        data
+
+      "INT" ->
+        String.to_integer(data)
+
+      <<"NUMERIC"::binary, _offset::binary>> ->
+        {data, ""} = Float.parse(data)
+        data
+
+      "BOOLEAN" ->
+        if data == "0" || data == "false", do: false, else: true
+
+      "DATE" ->
+        Helpers.format_datetime(data, true)
+
+      "DATETIME" ->
+        Helpers.format_datetime(data, false)
+
+      _ ->
+        data
+    end
+  end
 end
