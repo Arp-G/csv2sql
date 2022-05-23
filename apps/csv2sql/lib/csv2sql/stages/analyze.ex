@@ -45,6 +45,7 @@ defmodule Csv2sql.Stages.Analyze do
 
       GenStage.sync_subscribe(Csv2sql.Loader.ConsumerSupervisor,
         cancel: :temporary,
+        min_demand: 1,
         max_demand: System.schedulers_online(),
         to: pid
         # selector: fn %{key: key} -> String.starts_with?(key, "foo-") end TODO: Might be usefull for order later
