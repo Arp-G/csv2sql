@@ -63,13 +63,14 @@ defmodule Csv2sql.DatabaseTest do
         is_boolean: "BIT",
         is_integer: "INT",
         is_float: "DOUBLE",
-        is_text: "TEXT"
+        is_text: "LONGTEXT"
       }
 
       db_type_mappings =
         if db_type == :postgres,
           do:
             Map.merge(db_type_mappings, %{
+              is_text: "TEXT",
               is_datetime: "TIMESTAMP",
               is_boolean: "BOOLEAN",
               is_float: "NUMERIC(1000, 100)"
@@ -156,6 +157,10 @@ defmodule Csv2sql.DatabaseTest do
 
   defp get_db_name() do
     "ecto://" <> db_url = Csv2sql.Helpers.get_config(:db_url)
-    db_url |> String.split("/") |> Enum.at(1) |> String.split("?") |> Enum.at(0)
+    db_name = db_url |> String.split("/") |> Enum.at(1) |> String.split("?") |> Enum.at(0)
+
+    if Csv2sql.Helpers.get_config(:db_type) == :postgres,
+      do: "#{db_name}.public",
+      else: db_name
   end
 end

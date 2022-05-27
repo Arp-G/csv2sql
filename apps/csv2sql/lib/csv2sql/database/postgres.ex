@@ -60,7 +60,7 @@ defmodule Csv2sql.Database.Postgres do
       "DATE" ->
         Helpers.format_datetime(data, true)
 
-      "DATETIME" ->
+      "TIMESTAMP" ->
         Helpers.format_datetime(data, false)
 
       _ ->

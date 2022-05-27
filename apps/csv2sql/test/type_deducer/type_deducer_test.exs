@@ -11,7 +11,7 @@ defmodule Csv2sql.TypeDeducerTest do
       datetime_patterns = [
         "{YYYY}-{0M}-{0D} {h24}:{m}:{s}",
         "{0M}-{0D}-{YYYY} {h12}{am}-{m}",
-        "{0M}/{0D}/{YYYY} {h12}**{AM}/{s}/{m}"
+        "{0M}/{0D}/{YY} {h12}**{AM}/{s}/{m}"
       ]
 
       Application.put_env(
@@ -23,7 +23,7 @@ defmodule Csv2sql.TypeDeducerTest do
       col_type_defs = [
         {"id", "INT"},
         {"name", "VARCHAR(120)"},
-        {"description", "TEXT"},
+        {"description", if(db_type == :mysql, do: "LONGTEXT", else: "TEXT")},
         {"salary", if(db_type == :mysql, do: "DOUBLE", else: "NUMERIC(1000, 100)")},
         {"permanent", if(db_type == :mysql, do: "BIT", else: "BOOLEAN")},
         {"created_at", if(db_type == :mysql, do: "DATETIME", else: "TIMESTAMP")}

@@ -1,5 +1,6 @@
-defmodule Csv2sql.Loader.ConsumerSupervisor do
+defmodule Csv2sql.DbLoader.ConsumerSupervisor do
   use ConsumerSupervisor
+  alias Csv2sql.DbLoader
 
   def start_link() do
     ConsumerSupervisor.start_link(__MODULE__, nil, name: __MODULE__)
@@ -8,8 +9,8 @@ defmodule Csv2sql.Loader.ConsumerSupervisor do
   def init(_args) do
     children = [
       %{
-        id: Csv2sql.Loader.Consumer,
-        start: {Csv2sql.Loader.Consumer, :start_link, []},
+        id: DbLoader.Consumer,
+        start: {DbLoader.Consumer, :start_link, []},
         restart: :transient
       }
     ]

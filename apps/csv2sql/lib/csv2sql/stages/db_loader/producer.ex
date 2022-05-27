@@ -1,4 +1,4 @@
-defmodule Csv2sql.Loader.Producer do
+defmodule Csv2sql.DbLoader.Producer do
   @moduledoc """
     TODO: Write a nice doc explaining this module
   """
@@ -32,21 +32,6 @@ defmodule Csv2sql.Loader.Producer do
     {:producer, Map.put(state, :csv_stream, csv_stream)}
   end
 
-  #   handle_demand(demand :: pos_integer(), state :: term()) ::
-  #   {:noreply, [event], new_state}
-  #   | {:noreply, [event], new_state, :hibernate}
-  #   | {:stop, reason, new_state}
-  # when new_state: term(), reason: term(), event: term()
-
-  # This is invoked when a consumer requires new events but the producer does not have any in its buffer
-  # so demand for new events need to be handled, here fetch new events and return them.
-  # def handle_demand(demand, ~M{file, csv_stream, preloaded_data} = state) do
-  #   {to_dispatch, remainder_stream} = StreamSplit.take_and_drop(csv_stream, demand)
-  #   to_dispatch = Enum.map(to_dispatch, fn chunk -> {file, chunk} end)
-  #   require IEx; IEx.pry
-  #   {:noreply, to_dispatch, Map.put(state, :csvStream, remainder_stream)}
-  # end
-
   def handle_demand(demand, ~M{file, csv_stream, preloaded_data} = state) do
     {to_dispatch, new_state} =
       if length(preloaded_data) >= demand do
@@ -68,7 +53,6 @@ defmodule Csv2sql.Loader.Producer do
     {new_preloads, csv_stream} =
       if length(preloaded_data) < @preload_count do
         deficit = @preload_count - length(preloaded_data)
-        IO.inspect("Preloading more data for #{deficit}")
         StreamSplit.take_and_drop(csv_stream, deficit)
       else
         {[], csv_stream}

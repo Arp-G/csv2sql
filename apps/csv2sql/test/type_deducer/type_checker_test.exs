@@ -23,7 +23,7 @@ defmodule Csv2sql.Config.TypeCheckerTest do
   @datetime_patterns_to_tests [
     {"{YYYY}-{0M}-{0D} {h24}:{m}:{s}", "2020-01-01 22:15:45"},
     {"{0M}-{0D}-{YYYY} {h12}{am}-{m}", "09-11-2001 7am-15"},
-    {"{0M}/{0D}/{YYYY} {h12}**{AM}/{s}/{m}", "09/11/20 7**PM/45/15"}
+    {"{0M}/{0D}/{YY} {h12}**{AM}/{s}/{m}", "09/11/20 7**PM/45/15"}
   ]
 
   describe "check_type/2" do

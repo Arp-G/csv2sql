@@ -44,9 +44,19 @@ defmodule Csv2sql.Database.MySql do
       "LONGTEXT" -> data
       "INT" -> String.to_integer(data)
       "BIT" -> if data == "0" || data == "false", do: 0, else: 1
-      "DATE" -> Helpers.format_datetime(data, true)
-      "DATETIME" -> Helpers.format_datetime(data, false)
+      "DATE" -> Helpers.format_datetime(data, true) |> to_date_string()
+      "DATETIME" -> Helpers.format_datetime(data, false) |> to_datetime_string()
       _ -> data
     end
   end
+
+  defp to_date_string(%DateTime{} = datetime),
+    do: datetime |> DateTime.to_date() |> to_datetime_string()
+
+  defp to_date_string(val), do: val
+
+  defp to_datetime_string(%DateTime{} = datetime),
+    do: datetime |> DateTime.to_string() |> String.trim_trailing("Z")
+
+  defp to_datetime_string(val), do: val
 end

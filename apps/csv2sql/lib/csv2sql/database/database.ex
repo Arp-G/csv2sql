@@ -14,7 +14,7 @@ defmodule Csv2sql.Database do
 
     repo.start_link(
       url: Helpers.get_config(:db_url),
-      pool_size: 10,
+      pool_size: 15,
       log: Helpers.get_config(:log)
     )
   end
@@ -66,13 +66,8 @@ defmodule Csv2sql.Database do
     encoded_data_chunk = encode_data_chunk(column_types, data_chunk)
     repo = Helpers.get_config(:db_type) |> get_repo()
 
-    try do
-      repo.insert_all(name, encoded_data_chunk)
-    catch
-      x, _reason ->
-        IO.inspect(encoded_data_chunk |> Enum.at(9))
-        throw(x)
-    end
+    # Todo: Handle and log insertion errors gracefully
+    repo.insert_all(name, encoded_data_chunk)
   end
 
   # Callbacks to implement
