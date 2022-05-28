@@ -12,7 +12,7 @@ defmodule Csv2sql.Config do
     field :schema_path, String.t(), enforce: false
     field :insert_schema, boolean(), default: true
     field :insert_data, boolean(), default: true
-    field :validate_import, boolean(), default: true
+    field :validate_import, boolean(), default: false
     field :date_patterns, list(String.t()), default: []
     field :datetime_patterns, list(String.t()), default: []
     field :schema_infer_chunk_size, non_neg_integer(), default: 100

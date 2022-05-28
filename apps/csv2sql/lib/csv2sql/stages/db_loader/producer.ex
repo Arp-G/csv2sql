@@ -27,6 +27,7 @@ defmodule Csv2sql.DbLoader.Producer do
       file.path
       |> File.stream!(read_ahead: @csv_read_ahead)
       |> CSV.parse_stream()
+      |> with_index()
       |> Stream.chunk_every(Helpers.get_config(:insertion_chunk_size))
 
     {:producer, Map.put(state, :csv_stream, csv_stream)}
@@ -62,4 +63,7 @@ defmodule Csv2sql.DbLoader.Producer do
 
     {:noreply, [], ~M{state | csv_stream, preloaded_data}}
   end
+
+  defp with_index(stream),
+    do: if(Helpers.get_config(:validate_import), do: stream |> Stream.with_index(1), else: stream)
 end

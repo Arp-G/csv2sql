@@ -67,4 +67,8 @@ defmodule Csv2sql.Database.Postgres do
         data
     end
   end
+
+  @impl Csv2sql.Database
+  @spec get_ordering_column_type :: String.t()
+  def get_ordering_column_type(), do: "INT"
 end

@@ -50,6 +50,10 @@ defmodule Csv2sql.Database.MySql do
     end
   end
 
+  @impl Csv2sql.Database
+  @spec get_ordering_column_type :: String.t()
+  def get_ordering_column_type(), do: "INT UNSIGNED"
+
   defp to_date_string(%DateTime{} = datetime),
     do: datetime |> DateTime.to_date() |> to_datetime_string()
 

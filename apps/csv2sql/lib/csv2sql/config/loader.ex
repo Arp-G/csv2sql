@@ -49,7 +49,9 @@ defmodule Csv2sql.Config.Loader do
 
     insert_schema = to_bool(args[:insert_schema])
     insert_data = to_bool(args[:insert_data])
-    validate_import = to_bool(args[:validate_import])
+
+    validate_import =
+      if is_nil(args[:validate_import]), do: false, else: to_bool(args[:dashboard])
 
     db_config =
       if insert_schema || insert_data || validate_import, do: load_db_config(args), else: %{}

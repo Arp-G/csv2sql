@@ -6,6 +6,8 @@ defmodule Csv2sql.Database do
   alias Csv2sql.Helpers
   import ShorterMaps
 
+  @ordering_column_name "CSV_ORDERING_ID"
+
   # Public functions
   def start_repo() do
     repo =
@@ -48,6 +50,7 @@ defmodule Csv2sql.Database do
   def get_create_table_ddl(file_path, db_name, column_types) do
     table_name = get_table_name(file_path)
     qq = get_db_module().column_name_delimiter()
+    column_types = get_ordering_id_column(column_types)
 
     column_defs =
       column_types
@@ -79,6 +82,8 @@ defmodule Csv2sql.Database do
 
   @callback column_name_delimiter :: <<_::8>>
 
+  @callback get_ordering_column_type :: String.t()
+
   # Private helpers
   defp get_db(:mysql), do: Csv2sql.Database.MySql
   defp get_db(:postgres), do: Csv2sql.Database.Postgres
@@ -95,14 +100,12 @@ defmodule Csv2sql.Database do
 
   defp encode_data_chunk(column_types, data_chunk) do
     data_chunk
-    |> Enum.map(fn row ->
-      Enum.zip_with(
-        column_types,
-        row,
-        fn {header, type}, data ->
-          {header, encode(type, data)}
-        end
-      )
+    |> Enum.map(fn
+      {row, ordering} ->
+        [{@ordering_column_name, ordering} | zip_types_with_row(column_types, row)]
+
+      row ->
+        zip_types_with_row(column_types, row)
     end)
   end
 
@@ -110,4 +113,20 @@ defmodule Csv2sql.Database do
   defp encode("TEXT", ""), do: nil
   defp encode(_type, ""), do: nil
   defp encode(type, data), do: get_db_module().encode(type, data)
+
+  defp get_ordering_id_column(column_types) do
+    if Helpers.get_config(:validate_import),
+      do: [{@ordering_column_name, get_db_module().get_ordering_column_type()} | column_types],
+      else: column_types
+  end
+
+  defp zip_types_with_row(column_types, row) do
+    Enum.zip_with(
+      column_types,
+      row,
+      fn {header, type}, data ->
+        {header, encode(type, data)}
+      end
+    )
+  end
 end
