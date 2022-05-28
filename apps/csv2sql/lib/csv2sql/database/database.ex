@@ -3,7 +3,7 @@ defmodule Csv2sql.Database do
     Database specific functions
   """
   use Csv2sql.Types
-  alias Csv2sql.Helpers
+  alias Csv2sql.{Config, Helpers}
   import ShorterMaps
 
   @ordering_column_name "CSV_ORDERING_ID"
@@ -44,7 +44,18 @@ defmodule Csv2sql.Database do
   def get_db_type(type_map), do: get_db_module().type_mapping(type_map)
 
   @spec get_db_name() :: String.t()
-  def get_db_name(), do: get_db_module().db_name()
+  def get_db_name() do
+    with %Config{db_name: db_name} = config when is_nil(db_name) <-
+           Application.get_env(:csv2sql, :config) do
+      db_name = get_db_module().db_name()
+      # Cache the value
+      Application.put_env(:csv2sql, :config, %Config{config | db_name: db_name})
+      db_name
+    else
+      %Config{db_name: db_name} ->
+        db_name
+    end
+  end
 
   @spec get_create_table_ddl(String.t(), String.t(), csv_col_types_list()) :: String.t()
   def get_create_table_ddl(file_path, db_name, column_types) do

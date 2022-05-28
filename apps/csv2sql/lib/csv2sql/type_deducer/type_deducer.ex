@@ -24,7 +24,7 @@ defmodule Csv2sql.TypeDeducer do
       |> Stream.chunk_every(Helpers.get_config(:schema_infer_chunk_size))
       # By default Flow work with batches of 500 items that is 500 chunks in this case
       # Set max demand to 1 to avoid blocking if data not available
-      |> Flow.from_enumerable(max_demand: 1)
+      |> Flow.from_enumerable(max_demand: 1, stages: Helpers.get_config(:worker_count))
       # Infer type for chunk: returns array of type maps for that chunk
       |> Flow.map(fn rows ->
         {Enum.count(rows), infer_type_for_chunk(rows, initial_column_type_list)}

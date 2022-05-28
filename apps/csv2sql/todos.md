@@ -1,3 +1,12 @@
+gracefully termination of producers
+benchmarking against previous solution and "load in file" (previous point is pre-requisite) - test with and without preload in producer
+db connect required?
+observer module
+validator
+error tracker module and gracefull termination in case of various type of errors
+fix csv - dup col names, invalid col names, encoding issue, etc
+tests, docs, comments, dialyzer
+
 # Todo List
 
 * Move the config parsing into a separate testable module, setup proper default values

@@ -17,19 +17,23 @@ defmodule Csv2sql.Stages.Analyze do
     DbLoader.ConsumerSupervisor.start_link()
 
     files_list
-    |> Flow.from_enumerable()
+    |> Flow.from_enumerable(
+      max_demand: 1,
+      # Number of files processed at once
+      stages: Helpers.get_config(:worker_count)
+    )
     |> Flow.map(&process_file/1)
     |> Flow.run()
   end
 
   defp get_csv_files do
-    source_direcotry = Helpers.get_config(:source_directory)
+    source_directory = Helpers.get_config(:source_directory)
 
-    source_direcotry
+    source_directory
     |> File.ls!()
     |> Enum.filter(&is_csv?/1)
     |> Enum.map(fn file ->
-      path = "#{source_direcotry}#{file}"
+      path = "#{source_directory}#{file}"
 
       %Csv2sql.File{
         name: String.slice(file, 0..-5),
@@ -41,7 +45,7 @@ defmodule Csv2sql.Stages.Analyze do
 
   defp process_file(%Csv2sql.File{} = file) do
     file = %Csv2sql.File{file | status: :analyze}
-    # TODO: Update Obersver with file status :pending -> :analyze
+    # TODO: Update Observer with file status :pending -> :analyze
     # Obtain file schema and other stats
     file = get_file_stats(file)
 
@@ -49,7 +53,7 @@ defmodule Csv2sql.Stages.Analyze do
     |> Database.get_create_table_ddl(Database.get_db_name(), file.column_types)
     |> Database.run_query!()
 
-    # TODO: Update Obersver with file status :analyze -> :loading
+    # TODO: Update Observer with file status :analyze -> :loading
 
     # Start a producer for the file
     {:ok, pid} = DbLoader.Producer.start_link(file)
@@ -59,9 +63,9 @@ defmodule Csv2sql.Stages.Analyze do
       DbLoader.ConsumerSupervisor,
       cancel: :temporary,
       min_demand: 0,
-      max_demand: System.schedulers_online(),
+      # Number of consumers loading data in database
+      max_demand: Helpers.get_config(:db_worker_count),
       to: pid
-      # selector: fn %{key: key} -> String.starts_with?(key, "foo-") end TODO: Might be usefull for order later
     )
   end
 

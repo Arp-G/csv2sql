@@ -24,6 +24,7 @@ defmodule Csv2sql.Config.Loader do
 
   @max_db_worker_count 100
   @min_db_worker_count 1
+  @default_db_worker_count 10
 
   @max_insertion_chunk_size 1000
   @insertion_chunk_size 100
@@ -51,7 +52,7 @@ defmodule Csv2sql.Config.Loader do
     insert_data = to_bool(args[:insert_data])
 
     validate_import =
-      if is_nil(args[:validate_import]), do: false, else: to_bool(args[:dashboard])
+      if is_nil(args[:validate_import]), do: false, else: to_bool(args[:validate_import])
 
     db_config =
       if insert_schema || insert_data || validate_import, do: load_db_config(args), else: %{}
@@ -100,7 +101,7 @@ defmodule Csv2sql.Config.Loader do
        when db_worker_count >= @min_db_worker_count and db_worker_count <= @max_db_worker_count,
        do: db_worker_count
 
-  defp get_db_worker_count(_), do: nil
+  defp get_db_worker_count(_), do: @default_db_worker_count
 
   defp get_insertion_chunk_size(~M{insertion_chunk_size})
        when insertion_chunk_size >= @min_insertion_chunk_size and

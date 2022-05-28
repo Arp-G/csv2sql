@@ -20,6 +20,7 @@ defmodule Csv2sql.Config do
 
     # Database related configs
     field :db_type, atom(), enforce: false
+    field :db_name, String.t(), enforce: false
     field :db_url, String.t(), enforce: false
     field :varchar_limit, non_neg_integer(), default: 100
     field :db_worker_count, non_neg_integer()

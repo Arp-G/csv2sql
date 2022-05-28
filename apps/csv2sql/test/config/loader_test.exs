@@ -61,7 +61,7 @@ defmodule Csv2sql.Config.LoaderTest do
                datetime_patterns: ["{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s}"],
                db_type: :mysql,
                db_url: "ecto://user@pass:host/db",
-               db_worker_count: nil,
+               db_worker_count: 10,
                insert_data: true,
                insert_schema: true,
                insertion_chunk_size: 100,
@@ -69,7 +69,7 @@ defmodule Csv2sql.Config.LoaderTest do
                schema_infer_chunk_size: 100,
                schema_path: current_dir,
                source_directory: current_dir,
-               validate_import: true,
+               validate_import: false,
                varchar_limit: 100,
                worker_count: 32
              } == Application.get_env(:csv2sql, :config)
@@ -118,6 +118,7 @@ defmodule Csv2sql.Config.LoaderTest do
         insertion_chunk_size: 200
       })
       |> Loader.load()
+
 
       ~M{%Csv2sql.Config db_type, db_url, insertion_chunk_size, date_patterns, datetime_patterns, log, varchar_limit} =
         Application.get_env(:csv2sql, :config)
