@@ -19,7 +19,7 @@ defmodule Csv2sql.Types do
 
       @type db_result_types() :: MyXQL.Result.t() | Postgrex.Result.t()
 
-      @type file_status() :: :pending | :analyze | :loading | :verifying | :done | :failure
+      @type file_status() :: :pending | :analyze | :loading | :done | :failure
 
       @type files_map() :: %{String.t() => File.t()}
 

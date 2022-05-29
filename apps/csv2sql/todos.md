@@ -12,6 +12,9 @@ Single file: faster 1.5x
 Bulk test: 5~7 sec faster
 preloading in producer had no affect; removed it
 
+"2022-05-29 15:51:14.546662Z analyzing files"                  
+"2022-05-29 16:04:23.202254Z FINISH producer for \"/home/arpan/dev/csv2sql/apps/csv2sql/priv/src/test3.csv\""
+
 # Todo List
 
 * Move the config parsing into a separate testable module, setup proper default values

@@ -7,6 +7,7 @@ defmodule Csv2sql.Application do
 
   def start(_type, _args) do
     children = [
+      Csv2sql.ProgressTracker,
       {Registry, keys: :unique, name: Csv2sql.Loader.ProducerRegistry},
       {Task.Supervisor, name: Csv2sql.Database.ConnectionSupervisor},
       Csv2sql.Database.ConnectionTest

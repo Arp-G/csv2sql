@@ -119,7 +119,6 @@ defmodule Csv2sql.Config.LoaderTest do
       })
       |> Loader.load()
 
-
       ~M{%Csv2sql.Config db_type, db_url, insertion_chunk_size, date_patterns, datetime_patterns, log, varchar_limit} =
         Application.get_env(:csv2sql, :config)
 

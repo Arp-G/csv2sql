@@ -10,14 +10,13 @@ defmodule Csv2sql.DbLoader.Producer do
 
   # Read ahead 10,000 lines when reading csv files
   @csv_read_ahead 10_000
-  @preload_count 5
 
   def start_link(file) do
     IO.inspect("#{DateTime.utc_now()} Start producer for #{inspect(file.path)}")
 
     GenStage.start_link(
       __MODULE__,
-      ~M{file, preloaded_data: []},
+      ~M{file},
       name: {:via, Registry, {Csv2sql.Loader.ProducerRegistry, file.path}}
     )
   end
@@ -33,12 +32,12 @@ defmodule Csv2sql.DbLoader.Producer do
     {:producer, Map.put(state, :csv_stream, csv_stream)}
   end
 
-  def handle_demand(demand, ~M{file, csv_stream, preloaded_data} = state) do
+  def handle_demand(demand, ~M{file, csv_stream} = state) do
     {csv_chunks, remainder_stream} = StreamSplit.take_and_drop(csv_stream, demand)
     new_state = %{state | csv_stream: remainder_stream}
 
-    if to_dispatch == [] do
-      # TODO: Inform observers that we are done
+    if csv_chunks == [] do
+      IO.inspect("#{DateTime.utc_now()} FINISH producer for #{inspect(file.path)}")
       {:stop, :normal, new_state}
     else
       to_dispatch = Enum.map(csv_chunks, fn chunk -> {file, chunk} end)

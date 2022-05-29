@@ -3,7 +3,7 @@ defmodule Csv2sql.Database do
     Database specific functions
   """
   use Csv2sql.Types
-  alias Csv2sql.{Config, Helpers}
+  alias Csv2sql.{Config, ProgressTracker, Helpers}
   import ShorterMaps
 
   @ordering_column_name "CSV_ORDERING_ID"
@@ -14,9 +14,11 @@ defmodule Csv2sql.Database do
       Helpers.get_config(:db_type)
       |> get_repo()
 
+    # TODO: start with proper options
     repo.start_link(
       url: Helpers.get_config(:db_url),
-      pool_size: 15, # TODO: Let user specify pool size in url
+      # TODO: Let user specify pool size in url
+      pool_size: 15,
       log: Helpers.get_config(:log)
     )
   end
@@ -76,12 +78,15 @@ defmodule Csv2sql.Database do
   def get_drop_table_ddl(file_path, db_name),
     do: "DROP TABLE IF EXISTS #{db_name}.#{get_table_name(file_path)};"
 
-  def insert_data_chunk(~M{%Csv2sql.File name, column_types}, data_chunk) do
+  def insert_data_chunk(~M{%Csv2sql.File name, path, column_types}, data_chunk) do
     encoded_data_chunk = encode_data_chunk(column_types, data_chunk)
     repo = Helpers.get_config(:db_type) |> get_repo()
 
     # Todo: Handle and log insertion errors gracefully
     repo.insert_all(name, encoded_data_chunk)
+
+    # Todo: Don't update count in case of failures
+    ProgressTracker.update_row_count(path, length(data_chunk))
   end
 
   # Callbacks to implement
