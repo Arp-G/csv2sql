@@ -7,6 +7,11 @@ error tracker module and gracefull termination in case of various type of errors
 fix csv - dup col names, invalid col names, encoding issue, etc
 tests, docs, comments, dialyzer
 
+Benchmarking results:
+Single file: faster 1.5x
+Bulk test: 5~7 sec faster
+preloading in producer had no affect; removed it
+
 # Todo List
 
 * Move the config parsing into a separate testable module, setup proper default values

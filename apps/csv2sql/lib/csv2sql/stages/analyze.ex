@@ -5,6 +5,7 @@ defmodule Csv2sql.Stages.Analyze do
 
   @spec analyze_files :: :ok
   def analyze_files do
+    IO.puts "#{DateTime.utc_now()} START"
     # Prepare file structs for all csvs in the source directory
     files_list = get_csv_files()
 
