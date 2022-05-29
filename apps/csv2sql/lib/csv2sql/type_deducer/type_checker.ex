@@ -15,7 +15,9 @@ defmodule Csv2sql.TypeDeducer.TypeChecker do
       %{
         is_empty: existing_type_map.is_empty && is_empty?(item),
         is_date: existing_type_map.is_date && is_date?(item),
-        is_datetime: existing_type_map.is_datetime && is_datetime?(item),
+        is_datetime:
+          Helpers.get_config(:parse_datetime) && existing_type_map.is_datetime &&
+            is_datetime?(item),
         is_boolean: existing_type_map.is_boolean && is_boolean?(item),
         is_integer: existing_type_map.is_integer && is_integer?(item),
         is_float: existing_type_map.is_float && is_float?(item),

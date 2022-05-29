@@ -17,12 +17,13 @@ defmodule Csv2sql.Config do
     field :datetime_patterns, list(String.t()), default: []
     field :schema_infer_chunk_size, non_neg_integer(), default: 100
     field :worker_count, non_neg_integer()
+    field :parse_datetime, boolean(), default: true
 
     # Database related configs
     field :db_type, atom(), enforce: false
     field :db_name, String.t(), enforce: false
     field :db_url, String.t(), enforce: false
-    field :varchar_limit, non_neg_integer(), default: 100
+    field :varchar_limit, non_neg_integer(), default: 200
     field :db_worker_count, non_neg_integer()
     field :insertion_chunk_size, non_neg_integer()
     field :log, boolean(), default: false

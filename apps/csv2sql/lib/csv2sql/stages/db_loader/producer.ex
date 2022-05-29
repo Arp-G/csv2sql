@@ -13,8 +13,6 @@ defmodule Csv2sql.DbLoader.Producer do
   @preload_count 5
 
   def start_link(file) do
-    IO.inspect("Start producer for #{inspect(file.path)}")
-
     GenStage.start_link(
       __MODULE__,
       ~M{file, preloaded_data: []},
@@ -47,7 +45,13 @@ defmodule Csv2sql.DbLoader.Producer do
 
     # TODO: try to get rid of this
     to_dispatch = Enum.map(to_dispatch, fn chunk -> {file, chunk} end)
-    {:noreply, to_dispatch, new_state}
+
+    if to_dispatch == [] do
+      # TODO: Inform observers that we are done
+      {:stop, :normal, new_state}
+    else
+      {:noreply, to_dispatch, new_state}
+    end
   end
 
   def handle_info(:preload_more, ~M{csv_stream, preloaded_data} = state) do

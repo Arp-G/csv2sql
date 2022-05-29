@@ -16,7 +16,7 @@ defmodule Csv2sql.Database do
 
     repo.start_link(
       url: Helpers.get_config(:db_url),
-      pool_size: 15,
+      pool_size: 15, # TODO: Let user specify pool size in url
       log: Helpers.get_config(:log)
     )
   end

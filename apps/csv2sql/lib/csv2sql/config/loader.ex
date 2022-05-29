@@ -58,12 +58,13 @@ defmodule Csv2sql.Config.Loader do
       if insert_schema || insert_data || validate_import, do: load_db_config(args), else: %{}
 
     worker_count = get_worker_count(args)
+    parse_datetime = to_bool(args[:parse_datetime])
     schema_infer_chunk_size = get_schema_infer_chunk_size(args)
     db_worker_count = get_db_worker_count(args)
 
     config = ~M{
          dashboard, source_directory, schema_path, insert_schema, insert_data,
-         validate_import, worker_count, db_worker_count, schema_infer_chunk_size
+         validate_import, worker_count, parse_datetime, db_worker_count, schema_infer_chunk_size
         }
 
     struct(Config, Map.merge(config, db_config))
