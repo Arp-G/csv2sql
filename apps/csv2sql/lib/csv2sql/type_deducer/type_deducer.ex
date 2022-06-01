@@ -6,6 +6,7 @@ defmodule Csv2sql.TypeDeducer do
   alias NimbleCSV.RFC4180, as: CSV
   use Csv2sql.Types
   alias Csv2sql.{TypeDeducer.TypeChecker, Database, Helpers}
+  require Logger
 
   # Read ahead 10,000 lines when reading csv files
   @csv_read_ahead 10_000
@@ -47,6 +48,8 @@ defmodule Csv2sql.TypeDeducer do
       )
       |> Enum.to_list()
       |> List.flatten()
+
+    headers = fix_duplicate_column_names(csv_file_path, headers)
 
     types =
       column_type_map
@@ -91,5 +94,35 @@ defmodule Csv2sql.TypeDeducer do
         is_text: acc_map.is_text || current_map.is_text
       }
     end
+  end
+
+  defp fix_duplicate_column_names(csv_file_path, columns) do
+    {updated_column_names, _acc} =
+      Enum.map_reduce(columns, %{}, fn column, count_map ->
+        {_cur_value, count_map} =
+          Map.get_and_update(count_map, column, fn
+            nil -> {nil, 0}
+            count -> {nil, count + 1}
+          end)
+
+        updated_column_name =
+          count_map
+          |> Map.get(column, 0)
+          |> get_duplicate_column_name(column, csv_file_path)
+
+        {updated_column_name, count_map}
+      end)
+
+    updated_column_names
+  end
+
+  defp get_duplicate_column_name(count, column, _csv_file_path) when count == 0, do: column
+
+  defp get_duplicate_column_name(count, column, csv_file_path) do
+    Logger.warn(
+      "Renamed duplicate column \"#{column}\" to \"#{column}_#{count}\" in #{csv_file_path}"
+    )
+
+    "#{column}_#{count}"
   end
 end
