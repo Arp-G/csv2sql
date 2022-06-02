@@ -5,6 +5,7 @@ defmodule Csv2sql.Database do
   use Csv2sql.Types
   alias Csv2sql.{Config, ProgressTracker, Helpers}
   import ShorterMaps
+  require Logger
 
   @ordering_column_name "CSV_ORDERING_ID"
 
@@ -62,7 +63,7 @@ defmodule Csv2sql.Database do
   @spec get_create_table_ddl(String.t(), String.t(), csv_col_types_list()) :: String.t()
   def get_create_table_ddl(file_path, db_name, column_types) do
     table_name = get_table_name(file_path)
-    qq = get_db_module().column_name_delimiter()
+    qq = get_db_module().delimiter()
     column_types = get_ordering_id_column(column_types)
 
     column_defs =
@@ -71,7 +72,8 @@ defmodule Csv2sql.Database do
         "#{qq}#{column_name}#{qq} #{column_type}"
       end)
 
-    "CREATE TABLE #{db_name}.#{table_name} (#{column_defs});"
+    # TODO: test for upper case, special character and spaces in table names
+    "CREATE TABLE #{db_name}.#{qq}#{table_name}#{qq} (#{column_defs});"
   end
 
   @spec get_drop_table_ddl(String.t(), String.t()) :: String.t()
@@ -89,6 +91,20 @@ defmodule Csv2sql.Database do
     ProgressTracker.update_row_count(path, length(data_chunk))
   end
 
+  # TODO: This does not handle csv parse errors due to control characters, etc
+  def encode_binary(str) do
+    # TODO: Add config for this
+    # TODO: Check if utf8mb4 is supported https://github.com/tallakt/codepagex/issues/27
+    # def encode_binary(str), do: for(<<c <- str>>, c in 0..127, into: "", do: <<c>>)
+    {:ok, str, replaced} =
+      Codepagex.to_string(str, :iso_8859_1, Codepagex.replace_nonexistent(""))
+
+    # This can slow down things
+    if replaced > 0, do: Logger.warn("Replaced #{replaced} characters in binary data")
+
+    str
+  end
+
   # Callbacks to implement
   @callback type_mapping(type_map()) :: String.t()
 
@@ -96,7 +112,7 @@ defmodule Csv2sql.Database do
 
   @callback encode(String.t(), String.t()) :: supported_db_data_types()
 
-  @callback column_name_delimiter :: <<_::8>>
+  @callback delimiter :: <<_::8>>
 
   @callback get_ordering_column_type :: String.t()
 
@@ -109,9 +125,8 @@ defmodule Csv2sql.Database do
   defp get_table_name(file_path) do
     file_path
     |> Path.basename()
-    |> String.downcase()
     |> String.trim_trailing()
-    |> String.trim_trailing(".csv")
+    |> String.replace(~r/.csv$/i, "")
   end
 
   defp encode_data_chunk(column_types, data_chunk) do

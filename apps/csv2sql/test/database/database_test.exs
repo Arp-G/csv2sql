@@ -133,12 +133,12 @@ defmodule Csv2sql.DatabaseTest do
         {"created_at", if(db_type == :mysql, do: "DATETIME", else: "TIMESTAMP")}
       ]
 
-      column_name_delimiter = if(db_type == :mysql, do: "`", else: "\"")
+      delimiter = if(db_type == :mysql, do: "`", else: "\"")
 
       cols =
         col_type_defs
         |> Enum.map_join(", ", fn {col_name, type} ->
-          "#{column_name_delimiter}#{col_name}#{column_name_delimiter} #{type}"
+          "#{delimiter}#{col_name}#{delimiter} #{type}"
         end)
 
       assert Database.get_create_table_ddl("priv/src/test.csv", db_name, col_type_defs) ==

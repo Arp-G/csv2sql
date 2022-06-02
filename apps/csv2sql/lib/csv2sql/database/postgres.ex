@@ -34,18 +34,18 @@ defmodule Csv2sql.Database.Postgres do
   end
 
   @impl Csv2sql.Database
-  @spec column_name_delimiter :: <<_::8>>
-  def column_name_delimiter, do: "\""
+  @spec delimiter :: <<_::8>>
+  def delimiter, do: "\""
 
   @impl Csv2sql.Database
   @spec encode(String.t(), String.t()) :: supported_db_data_types()
   def encode(type, data) do
     case type do
       <<"VARCHAR"::binary, _offset::binary>> ->
-        data
+        encode_binary(data)
 
       "TEXT" ->
-        data
+        encode_binary(data)
 
       "INT" ->
         String.to_integer(data)
