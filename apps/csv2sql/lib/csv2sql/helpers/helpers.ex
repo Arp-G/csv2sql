@@ -7,6 +7,11 @@ defmodule Csv2sql.Helpers do
   @spec get_config(any) :: any
   def get_config(key), do: Application.get_env(:csv2sql, :config) |> Map.get(key)
 
+  def db_access_required() do
+    ~M{%Csv2sql.Config insert_schema, insert_data } = Application.get_env(:csv2sql, :config)
+    insert_schema || insert_data
+  end
+
   @spec get_csv_headers(binary) :: list(String.t())
   def get_csv_headers(file_path) when is_binary(file_path) do
     [headers] =

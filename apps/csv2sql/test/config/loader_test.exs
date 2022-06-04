@@ -23,7 +23,7 @@ defmodule Csv2sql.Config.LoaderTest do
         schema_infer_chunk_size: 250,
         schema_path: current_dir,
         source_directory: current_dir,
-        validate_import: true,
+        ordered: true,
         varchar_limit: 150,
         worker_count: 22
       })
@@ -45,7 +45,7 @@ defmodule Csv2sql.Config.LoaderTest do
                schema_infer_chunk_size: 250,
                schema_path: current_dir,
                source_directory: current_dir,
-               validate_import: true,
+               ordered: true,
                varchar_limit: 150,
                worker_count: 22
              } == Application.get_env(:csv2sql, :config)
@@ -69,7 +69,7 @@ defmodule Csv2sql.Config.LoaderTest do
                schema_infer_chunk_size: 100,
                schema_path: current_dir,
                source_directory: current_dir,
-               validate_import: false,
+               ordered: false,
                varchar_limit: 100,
                worker_count: 32
              } == Application.get_env(:csv2sql, :config)
@@ -111,7 +111,7 @@ defmodule Csv2sql.Config.LoaderTest do
       |> Map.merge(%{
         insert_schema: false,
         insert_data: false,
-        validate_import: false,
+        ordered: false,
         db_url: "some_url",
         log: "debug",
         varchar_limit: 200,
@@ -131,7 +131,7 @@ defmodule Csv2sql.Config.LoaderTest do
       assert log == false
     end
 
-    for config <- ~w(insert_schema insert_data validate_import)a do
+    for config <- ~w(insert_schema insert_data ordered)a do
       test "when only \"#{config}\" is set, loads db config" do
         config = unquote(config)
 
@@ -139,7 +139,7 @@ defmodule Csv2sql.Config.LoaderTest do
         |> Map.merge(%{
           insert_schema: false,
           insert_data: false,
-          validate_import: false,
+          ordered: false,
           db_type: "mysql",
           db_url: "some_url",
           log: "debug",

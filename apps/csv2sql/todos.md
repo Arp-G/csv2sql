@@ -12,7 +12,7 @@ Single file: faster 1.5x
 Bulk test: 5~7 sec faster
 preloading in producer had no affect; removed it
 
-"2022-05-29 15:51:14.546662Z analyzing files"                  
+"2022-05-29 15:51:14.546662Z analyzing files"
 "2022-05-29 16:04:23.202254Z FINISH producer for \"/home/arpan/dev/csv2sql/apps/csv2sql/priv/src/test3.csv\""
 
 # Todo List
@@ -72,3 +72,7 @@ Better config parsing, use separate config structs, better code organization in 
     Name      Memory usage
     func_2      0.00001 GB
     func_1        38.00 GB - 3284106.23x memory usage +38.00 GB
+
+Windows terminal with nmake:
+
+from run: cmd /K "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" amd64

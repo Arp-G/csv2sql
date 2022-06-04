@@ -45,7 +45,7 @@ defmodule Csv2sql.Config.ParserTest do
                 schema_path: "test/data/schema",
                 insert_schema: "false",
                 insert_data: "false",
-                validate_import: "true",
+                ordered: "true",
                 date_patterns: "{YYYY}-{0M}-{0D}",
                 datetime_patterns: "{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s}",
                 schema_infer_chunk_size: 140,

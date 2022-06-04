@@ -46,5 +46,5 @@ defmodule Csv2sql.DbLoader.Producer do
   end
 
   defp with_index(stream),
-    do: if(Helpers.get_config(:validate_import), do: stream |> Stream.with_index(1), else: stream)
+    do: if(Helpers.get_config(:ordered), do: stream |> Stream.with_index(1), else: stream)
 end

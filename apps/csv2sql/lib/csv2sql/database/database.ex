@@ -73,13 +73,15 @@ defmodule Csv2sql.Database do
       end)
 
     # TODO: test for upper case, special character and spaces in table names
-    "CREATE TABLE #{db_name}.#{qq}#{table_name}#{qq} (#{column_defs});"
+    # WARN: "IF NOT EXISTS" is only supported > postgres 9.1
+    "CREATE TABLE IF NOT EXISTS #{db_name}.#{qq}#{table_name}#{qq} (#{column_defs});"
   end
 
   @spec get_drop_table_ddl(String.t(), String.t()) :: String.t()
   def get_drop_table_ddl(file_path, db_name),
     do: "DROP TABLE IF EXISTS #{db_name}.#{get_table_name(file_path)};"
 
+  @spec insert_data_chunk(Csv2sql.File.t(), list) :: :ok
   def insert_data_chunk(~M{%Csv2sql.File name, path, column_types}, data_chunk) do
     encoded_data_chunk = encode_data_chunk(column_types, data_chunk)
     repo = Helpers.get_config(:db_type) |> get_repo()
@@ -93,16 +95,24 @@ defmodule Csv2sql.Database do
 
   # TODO: This does not handle csv parse errors due to control characters, etc
   def encode_binary(str) do
-    # TODO: Add config for this
-    # TODO: Check if utf8mb4 is supported https://github.com/tallakt/codepagex/issues/27
-    # def encode_binary(str), do: for(<<c <- str>>, c in 0..127, into: "", do: <<c>>)
-    {:ok, str, replaced} =
-      Codepagex.to_string(str, :iso_8859_1, Codepagex.replace_nonexistent(""))
+    if Helpers.get_config(:remove_illegal_characters) do
+      # Use process resgistry to get file name
+      # TODO: Add config for this
+      # TODO: Check if utf8mb4 is supported https://github.com/tallakt/codepagex/issues/27
+      # Encoding issue possible chars: https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
+      # def encode_binary(str), do: for(<<c <- str>>, c in 0..127, into: "", do: <<c>>)
+      {:ok, str, replaced} =
+        Codepagex.to_string(str, :iso_8859_1, Codepagex.replace_nonexistent(""), 0)
 
-    # This can slow down things
-    if replaced > 0, do: Logger.warn("Replaced #{replaced} characters in binary data")
+      # TODO: fix this can slow down things
+      # Use better logger backend for structured logging
+      if replaced > 0,
+        do: Logger.warn("[#{Process.get(:file)}] Replaced #{replaced} characters in binary data")
 
-    str
+      str
+    else
+      str
+    end
   end
 
   # Callbacks to implement
@@ -146,7 +156,7 @@ defmodule Csv2sql.Database do
   defp encode(type, data), do: get_db_module().encode(type, data)
 
   defp get_ordering_id_column(column_types) do
-    if Helpers.get_config(:validate_import),
+    if Helpers.get_config(:ordered),
       do: [{@ordering_column_name, get_db_module().get_ordering_column_type()} | column_types],
       else: column_types
   end

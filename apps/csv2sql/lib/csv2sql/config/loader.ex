@@ -37,8 +37,10 @@ defmodule Csv2sql.Config.Loader do
   def worker_count(), do: System.schedulers_online() * 2
 
   defp prepare_configs(args) do
-    dashboard = if is_nil(args[:dashboard]), do: false, else: to_bool(args[:dashboard])
-    source_directory = args[:source_directory] || File.cwd!()
+    dashboard = to_bool(args[:dashboard], false)
+
+    # TODO: add tests
+    source_directory = String.trim_trailing(args[:source_directory] || File.cwd!(), "/") <> "/"
 
     unless File.dir?(source_directory),
       do: raise("Could not find source directory: #{source_directory}")
@@ -51,20 +53,20 @@ defmodule Csv2sql.Config.Loader do
     insert_schema = to_bool(args[:insert_schema])
     insert_data = to_bool(args[:insert_data])
 
-    validate_import =
-      if is_nil(args[:validate_import]), do: false, else: to_bool(args[:validate_import])
+    ordered = to_bool(args[:ordered], false)
 
-    db_config =
-      if insert_schema || insert_data || validate_import, do: load_db_config(args), else: %{}
+    db_config = if insert_schema || insert_data, do: load_db_config(args), else: %{}
 
     worker_count = get_worker_count(args)
     parse_datetime = to_bool(args[:parse_datetime])
     schema_infer_chunk_size = get_schema_infer_chunk_size(args)
     db_worker_count = get_db_worker_count(args)
+    remove_illegal_characters = to_bool(args[:remove_illegal_characters], false)
 
     config = ~M{
          dashboard, source_directory, schema_path, insert_schema, insert_data,
-         validate_import, worker_count, parse_datetime, db_worker_count, schema_infer_chunk_size
+         ordered, worker_count, parse_datetime, db_worker_count, schema_infer_chunk_size,
+         remove_illegal_characters
         }
 
     struct(Config, Map.merge(config, db_config))
@@ -81,6 +83,8 @@ defmodule Csv2sql.Config.Loader do
     varchar_limit = get_varchar_limit(args)
     insertion_chunk_size = get_insertion_chunk_size(args)
 
+    drop_existing_tables = to_bool(args[:drop_existing_tables], false)
+
     log = strip_string(args[:log])
     log = if log in ~w(info warn debug), do: String.to_atom(log), else: false
 
@@ -89,7 +93,7 @@ defmodule Csv2sql.Config.Loader do
     datetime_patterns =
       [@datetime_pattern | get_pattern_list(args[:datetime_patterns])] |> Enum.uniq()
 
-    ~M{db_type, db_url, varchar_limit, insertion_chunk_size, log, date_patterns, datetime_patterns}
+    ~M{db_type, db_url, varchar_limit, insertion_chunk_size, log, date_patterns, datetime_patterns, drop_existing_tables}
   end
 
   defp get_worker_count(~M{worker_count})
@@ -135,11 +139,15 @@ defmodule Csv2sql.Config.Loader do
   defp strip_string(str) when is_binary(str), do: str |> String.downcase() |> String.trim()
   defp strip_string(_arg), do: nil
 
-  defp to_bool(nil), do: true
-  defp to_bool(true), do: true
-  defp to_bool(false), do: false
-  defp to_bool(str) when is_binary(str), do: strip_string(str) != "false"
-  defp to_bool(_arg), do: true
+  defp to_bool(val, default \\ true) do
+    cond do
+      val == nil -> default
+      val == true -> true
+      val == false -> false
+      is_binary(val) -> strip_string(val) != "false"
+      true -> default
+    end
+  end
 
   defp get_pattern_list(pattern_str) when is_binary(pattern_str) and pattern_str != "",
     do: String.split(pattern_str, ";")

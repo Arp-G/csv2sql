@@ -11,7 +11,7 @@ defmodule Csv2sql.Config.Parser do
     schema_path: :string,
     insert_schema: :string,
     insert_data: :string,
-    validate_import: :string,
+    ordered: :string,
     date_patterns: :string,
     datetime_patterns: :string,
     schema_infer_chunk_size: :integer,

@@ -5,7 +5,7 @@ defmodule Csv2sql.Stages.Analyze do
 
   @spec analyze_files :: :ok
   def analyze_files do
-    IO.inspect "#{DateTime.utc_now} analyzing files"
+    IO.inspect("#{DateTime.utc_now()} analyzing files")
     # Prepare file structs for all csvs in the source directory
     files_list = get_csv_files()
 
@@ -13,10 +13,13 @@ defmodule Csv2sql.Stages.Analyze do
     ProgressTracker.init_files(files_list)
 
     # Start Repository
-    Database.start_repo()
+    if Helpers.db_access_required(), do: Database.start_repo()
 
     # Start Consumer Supervisor
-    DbLoader.ConsumerSupervisor.start_link()
+    if Helpers.get_config(:insert_data), do: DbLoader.ConsumerSupervisor.start_link()
+
+    # Remove existing schema file if present
+    get_schema_path() |> File.rm()
 
     files_list
     |> Flow.from_enumerable(
@@ -57,22 +60,43 @@ defmodule Csv2sql.Stages.Analyze do
     # Update progress tracker with file data
     ProgressTracker.update_file(file)
 
-    file.path
-    |> Database.get_create_table_ddl(Database.get_db_name(), file.column_types)
-    |> Database.run_query!()
+    if Helpers.get_config(:insert_schema) do
+      drop_query =
+        if Helpers.get_config(:drop_existing_tables) do
+          ddl_query = Database.get_drop_table_ddl(file.path, Database.get_db_name())
 
-    # Start a producer for the file
-    {:ok, pid} = DbLoader.Producer.start_link(file)
+          Database.run_query!(ddl_query)
 
-    # Subscribe consumers to the producer
-    GenStage.sync_subscribe(
-      DbLoader.ConsumerSupervisor,
-      cancel: :temporary,
-      min_demand: 0,
-      # Number of consumers loading data in database
-      max_demand: Helpers.get_config(:db_worker_count),
-      to: pid
-    )
+          ddl_query
+        end
+
+      ddl_query =
+        Database.get_create_table_ddl(file.path, Database.get_db_name(), file.column_types)
+
+      Database.run_query!(ddl_query)
+
+      query =
+        ["\n", drop_query, ddl_query]
+        |> Enum.reject(&is_nil/1)
+        |> Enum.join("\n")
+
+      File.write(get_schema_path(), query, [:append])
+    end
+
+    if Helpers.get_config(:insert_data) do
+      # Start a producer for the file
+      {:ok, pid} = DbLoader.Producer.start_link(file)
+
+      # Subscribe consumers to the producer
+      GenStage.sync_subscribe(
+        DbLoader.ConsumerSupervisor,
+        cancel: :temporary,
+        min_demand: 0,
+        # Number of consumers loading data in database
+        max_demand: Helpers.get_config(:db_worker_count),
+        to: pid
+      )
+    end
   end
 
   defp get_file_stats(~M{%Csv2sql.File path} = file) do
@@ -88,4 +112,6 @@ defmodule Csv2sql.Stages.Analyze do
     |> String.slice(-4..-1)
     |> String.downcase() == ".csv"
   end
+
+  defp get_schema_path(), do: "#{Helpers.get_config(:source_directory)}/schema.sql"
 end
