@@ -63,9 +63,9 @@ defmodule Csv2sql.ProgressTracker do
   def handle_call(:add_subscriber, from, ~M{%State subscribers} = state),
     do: {:reply, :ok, %State{state | subscribers: [subscribers | from]}}
 
-  def handle_call({:report_error, error}, _from, ~M{%State subscribers} = state) do
+  def handle_cast({:report_error, error}, ~M{%State subscribers} = state) do
     Enum.each(subscribers, fn subscriber -> Process.send(subscriber, {:error, error}, []) end)
-    {:reply, state, %State{state | status: {:error, error}}}
+    {:noreply, %State{state | status: {:error, error}}}
   end
 
   def handle_cast({:update_file, _file}, ~M{%State status: :error} = state), do: {:noreply, state}
