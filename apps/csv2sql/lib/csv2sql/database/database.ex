@@ -11,15 +11,14 @@ defmodule Csv2sql.Database do
 
   # Public functions
   def start_repo() do
-    repo =
-      Helpers.get_config(:db_type)
-      |> get_repo()
+    repo = Helpers.get_config(:db_type) |> get_repo()
 
     # TODO: start with proper options
+    # Check using Csv2sql.Database.get_repo(:mysql).config
     repo.start_link(
       url: Helpers.get_config(:db_url),
       # TODO: Let user specify pool size in url
-      pool_size: 15,
+      # pool_size: 15,
       log: Helpers.get_config(:log)
     )
   end
@@ -78,8 +77,10 @@ defmodule Csv2sql.Database do
   end
 
   @spec get_drop_table_ddl(String.t(), String.t()) :: String.t()
-  def get_drop_table_ddl(file_path, db_name),
-    do: "DROP TABLE IF EXISTS #{db_name}.#{get_table_name(file_path)};"
+  def get_drop_table_ddl(file_path, db_name) do
+    qq = get_db_module().delimiter()
+    "DROP TABLE IF EXISTS #{db_name}.#{qq}#{get_table_name(file_path)}#{qq};"
+  end
 
   @spec insert_data_chunk(Csv2sql.File.t(), list) :: :ok
   def insert_data_chunk(~M{%Csv2sql.File name, path, column_types}, data_chunk) do
