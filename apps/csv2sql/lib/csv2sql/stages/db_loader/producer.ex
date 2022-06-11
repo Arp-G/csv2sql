@@ -24,7 +24,7 @@ defmodule Csv2sql.DbLoader.Producer do
   def init(~M{file} = state) do
     csv_stream =
       file.path
-      |> File.stream!(read_ahead: @csv_read_ahead)
+      |> File.stream!([:trim_bom, read_ahead: @csv_read_ahead])
       |> CSV.parse_stream()
       |> with_index()
       |> Stream.chunk_every(Helpers.get_config(:insertion_chunk_size))
