@@ -1,3 +1,5 @@
+SG DB load times: "2022-06-11 05:52:10.243225Z analyzing files" -> "2022-06-11 06:03:39.411448
+
 gracefully termination of producers
 benchmarking against previous solution and "load in file" (previous point is pre-requisite) - test with and without preload in producer
 db connect required?

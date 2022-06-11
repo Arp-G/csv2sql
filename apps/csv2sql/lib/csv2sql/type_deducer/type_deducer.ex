@@ -20,7 +20,7 @@ defmodule Csv2sql.TypeDeducer do
 
     [{row_count, column_type_map}] =
       csv_file_path
-      |> File.stream!(read_ahead: @csv_read_ahead)
+      |> File.stream!([:trim_bom, read_ahead: @csv_read_ahead])
       |> CSV.parse_stream()
       |> Stream.chunk_every(Helpers.get_config(:schema_infer_chunk_size))
       # By default Flow work with batches of 500 items that is 500 chunks in this case

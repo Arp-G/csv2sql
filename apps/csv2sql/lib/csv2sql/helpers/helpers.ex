@@ -16,7 +16,7 @@ defmodule Csv2sql.Helpers do
   def get_csv_headers(file_path) when is_binary(file_path) do
     [headers] =
       file_path
-      |> File.stream!()
+      |> File.stream!([:trim_bom])
       |> Stream.take(1)
       |> NimbleCSV.RFC4180.parse_stream(skip_headers: false)
       |> Enum.to_list()

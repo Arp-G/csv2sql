@@ -8,6 +8,7 @@ defmodule Csv2sql.Database do
   require Logger
 
   @ordering_column_name "CSV_ORDERING_ID"
+  @default_db_pool_size 20
 
   # Public functions
   def start_repo() do
@@ -15,11 +16,17 @@ defmodule Csv2sql.Database do
       Helpers.get_config(:db_type)
       |> get_repo()
 
-    # TODO: start with proper options
+    db_url = Helpers.get_config(:db_url)
+    ~M{%URI query} = URI.parse(db_url)
+
+    pool_size =
+      (query || "")
+      |> URI.decode_query()
+      |> Map.get("pool_size", @default_db_pool_size)
+
     repo.start_link(
       url: Helpers.get_config(:db_url),
-      # TODO: Let user specify pool size in url
-      pool_size: 15,
+      pool_size: pool_size,
       log: Helpers.get_config(:log)
     )
   end
