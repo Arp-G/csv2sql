@@ -4,13 +4,10 @@ defmodule Csv2sql.DbLoader.Consumer do
       try do
         Process.put(:file, file.path)
         Csv2sql.Database.insert_data_chunk(file, data_chunk)
-      rescue
-        exception ->
-          Csv2sql.ProgressTracker.report_error(exception)
-          reraise exception, __STACKTRACE__
-          # catch
-          #   _, reason ->
-          #     Csv2sql.ProgressTracker.report_error(reason)
+      catch
+        _, reason ->
+          Csv2sql.ProgressTracker.report_error(reason)
+          throw(reason)
       end
     end)
   end

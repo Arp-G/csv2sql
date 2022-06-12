@@ -5,30 +5,36 @@ defmodule Csv2sql.Stages.Analyze do
 
   @spec analyze_files :: :ok
   def analyze_files do
-    IO.inspect("#{DateTime.utc_now()} analyzing files")
-    # Prepare file structs for all csvs in the source directory
-    files_list = get_csv_files()
+    try do
+      IO.inspect("#{DateTime.utc_now()} analyzing files")
+      # Prepare file structs for all csvs in the source directory
+      files_list = get_csv_files()
 
-    # Init progress tracker with files list
-    ProgressTracker.init_files(files_list)
+      # Init progress tracker with files list
+      ProgressTracker.init_files(files_list)
 
-    # Start Repository
-    if Helpers.db_access_required(), do: Database.start_repo()
+      # Start Repository
+      if Helpers.db_access_required(), do: Database.start_repo()
 
-    # Start Consumer Supervisor
-    if Helpers.get_config(:insert_data), do: DbLoader.ConsumerSupervisor.start_link()
+      # Start Consumer Supervisor
+      if Helpers.get_config(:insert_data), do: DbLoader.ConsumerSupervisor.start_link()
 
-    # Remove existing schema file if present
-    get_schema_path() |> File.rm()
+      # Remove existing schema file if present
+      get_schema_path() |> File.rm()
 
-    files_list
-    |> Flow.from_enumerable(
-      max_demand: 1,
-      # Number of files processed at once
-      stages: Helpers.get_config(:worker_count)
-    )
-    |> Flow.map(&process_file/1)
-    |> Flow.run()
+      files_list
+      |> Flow.from_enumerable(
+        max_demand: 1,
+        # Number of files processed at once
+        stages: Helpers.get_config(:worker_count)
+      )
+      |> Flow.map(&process_file/1)
+      |> Flow.run()
+    catch
+      _, reason ->
+        Csv2sql.ProgressTracker.report_error(reason)
+        throw(reason)
+    end
   end
 
   defp get_csv_files do
@@ -49,53 +55,59 @@ defmodule Csv2sql.Stages.Analyze do
   end
 
   defp process_file(%Csv2sql.File{} = file) do
-    file = %Csv2sql.File{file | status: :analyze}
+    try do
+      file = %Csv2sql.File{file | status: :analyze}
 
-    # Inform progress tracker, file is being processed
-    ProgressTracker.update_file(file)
+      # Inform progress tracker, file is being processed
+      ProgressTracker.update_file(file)
 
-    # Obtain file schema, row_count and other file stats
-    file = get_file_stats(file)
+      # Obtain file schema, row_count and other file stats
+      file = get_file_stats(file)
 
-    # Update progress tracker with file data
-    ProgressTracker.update_file(file)
+      # Update progress tracker with file data
+      ProgressTracker.update_file(file)
 
-    if Helpers.get_config(:insert_schema) do
-      drop_query =
-        if Helpers.get_config(:drop_existing_tables) do
-          ddl_query = Database.get_drop_table_ddl(file.path, Database.get_db_name())
+      if Helpers.get_config(:insert_schema) do
+        drop_query =
+          if Helpers.get_config(:drop_existing_tables) do
+            ddl_query = Database.get_drop_table_ddl(file.path, Database.get_db_name())
 
-          Database.run_query!(ddl_query)
+            Database.run_query!(ddl_query)
 
-          ddl_query
+            ddl_query
+          end
+
+        ddl_query =
+          Database.get_create_table_ddl(file.path, Database.get_db_name(), file.column_types)
+
+        Database.run_query!(ddl_query)
+
+        query =
+          ["\n", drop_query, ddl_query]
+          |> Enum.reject(&is_nil/1)
+          |> Enum.join("\n")
+
+        File.write(get_schema_path(), query, [:append])
+
+        if Helpers.get_config(:insert_data) do
+          # Start a producer for the file
+          {:ok, pid} = DbLoader.Producer.start_link(file)
+
+          # Subscribe consumers to the producer
+          GenStage.sync_subscribe(
+            DbLoader.ConsumerSupervisor,
+            cancel: :temporary,
+            min_demand: 0,
+            # Number of consumers loading data in database
+            max_demand: Helpers.get_config(:db_worker_count),
+            to: pid
+          )
         end
-
-      ddl_query =
-        Database.get_create_table_ddl(file.path, Database.get_db_name(), file.column_types)
-
-      Database.run_query!(ddl_query)
-
-      query =
-        ["\n", drop_query, ddl_query]
-        |> Enum.reject(&is_nil/1)
-        |> Enum.join("\n")
-
-      File.write(get_schema_path(), query, [:append])
-    end
-
-    if Helpers.get_config(:insert_data) do
-      # Start a producer for the file
-      {:ok, pid} = DbLoader.Producer.start_link(file)
-
-      # Subscribe consumers to the producer
-      GenStage.sync_subscribe(
-        DbLoader.ConsumerSupervisor,
-        cancel: :temporary,
-        min_demand: 0,
-        # Number of consumers loading data in database
-        max_demand: Helpers.get_config(:db_worker_count),
-        to: pid
-      )
+      end
+    catch
+      _, reason ->
+        Csv2sql.ProgressTracker.report_error(reason)
+        throw(reason)
     end
   end
 

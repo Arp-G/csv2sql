@@ -99,19 +99,13 @@ defmodule Csv2sql.Database do
     ProgressTracker.update_row_count(path, length(data_chunk))
   end
 
-  # TODO: This does not handle csv parse errors due to control characters, etc
   def encode_binary(str) do
     if Helpers.get_config(:remove_illegal_characters) do
-      # Use process resgistry to get file name
-      # TODO: Add config for this
       # TODO: Check if utf8mb4 is supported https://github.com/tallakt/codepagex/issues/27
-      # Encoding issue possible chars: https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
-      # def encode_binary(str), do: for(<<c <- str>>, c in 0..127, into: "", do: <<c>>)
       {:ok, str, replaced} =
         Codepagex.to_string(str, :iso_8859_1, Codepagex.replace_nonexistent(""), 0)
 
       # TODO: fix this can slow down things
-      # Use better logger backend for structured logging
       if replaced > 0,
         do: Logger.warn("[#{Process.get(:file)}] Replaced #{replaced} characters in binary data")
 
