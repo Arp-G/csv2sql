@@ -10,12 +10,25 @@ fix csv - dup col names, invalid col names, encoding issue, etc
 tests, docs, comments, dialyzer
 
 Benchmarking results:
-Single file: faster 1.5x
-Bulk test: 5~7 sec faster
-preloading in producer had no affect; removed it
+  Old vs new csv2sql:
+  Single file: faster 1.5x
+  Bulk test: 5~7 sec faster
+  preloading in producer had no affect; removed it
 
-"2022-05-29 15:51:14.546662Z analyzing files"
-"2022-05-29 16:04:23.202254Z FINISH producer for \"/home/arpan/dev/csv2sql/apps/csv2sql/priv/src/test3.csv\""
+  Comparison with load in file query like:
+  set session sql_mode = '';
+  LOAD DATA INFILE "/var/lib/mysql-files/test2.csv" INTO TABLE test2 COLUMNS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' ESCAPED BY '"' LINES TERMINATED BY '\n' IGNORE 1 LINES;
+
+  For a single 818MB file
+
+  CSV2SQL:
+    Analyze - ~2min 10sec
+    Parse and Insert - ~8min 38sec
+
+  Load infile query, only insert - 10 min 54.89 sec
+  Considering only insertion time csv2sql was ~20.7% faster than a load infile query
+  even if the analysis time is considered csv2sql is still faster.
+  This will especially be more noticeable with large file sizes and multiple files
 
 # Todo List
 

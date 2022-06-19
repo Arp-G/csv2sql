@@ -34,7 +34,7 @@ defmodule Csv2sql.ProgressTracker do
 
   @spec report_error(any()) :: :ok
   def report_error(error),
-    do: GenServer.cast(__MODULE__, {:report_error, error})
+    do: GenServer.call(__MODULE__, {:report_error, error})
 
   # Start Observer
   @spec start_link(any()) :: {:ok, pid()}
@@ -63,13 +63,12 @@ defmodule Csv2sql.ProgressTracker do
   def handle_call(:add_subscriber, {caller_pid, _ref_tag}, ~M{%State subscribers} = state),
     do: {:reply, :ok, %State{state | subscribers: [caller_pid | subscribers]}}
 
-  def handle_cast({:report_error, _error}, ~M{%State status: :error} = state),
-    do: {:noreply, state}
+  def handle_call({:report_error, _error}, _from, ~M{%State status: :error} = state),
+    do: {:reply, :already_errored, state}
 
-  def handle_cast({:report_error, error}, ~M{%State subscribers} = state) do
-    IO.inspect("report_error #{inspect(error)}, subs: #{inspect subscribers}")
+  def handle_call({:report_error, error}, _from, ~M{%State subscribers} = state) do
     Enum.each(subscribers, fn subscriber -> Process.send(subscriber, {:error, error}, []) end)
-    {:noreply, %State{state | status: {:error, error}}}
+    {:reply, :ok, %State{state | status: {:error, error}}}
   end
 
   def handle_cast({:update_file, _file}, ~M{%State status: :error} = state), do: {:noreply, state}

@@ -15,8 +15,6 @@ defmodule Csv2sql.DbLoader.ConsumerSupervisor do
       }
     ]
 
-    opts = [strategy: :one_for_one]
-
-    ConsumerSupervisor.init(children, opts)
+    ConsumerSupervisor.init(children, strategy: :one_for_one)
   end
 end

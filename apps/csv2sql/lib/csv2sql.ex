@@ -1,4 +1,6 @@
 defmodule Csv2sql do
+
+  # Start this unliked Task.start(fn -> Csv2sql.start() end)
   @spec start() :: :ok
   def start() do
     Csv2sql.ProgressTracker.add_subscriber()
@@ -7,7 +9,7 @@ defmodule Csv2sql do
       db_type: "mysql",
       db_url: "root:root@localhost/csv2sql?socket=/var/run/mysqld/mysqld.sock&pool_size=15",
       log: false,
-      source_directory: "/home/arpan/dev/csv2sql/apps/csv2sql/priv/src"
+      source_directory: "/home/arpan/dev/csv2sql/apps/csv2sql/priv/"
     })
 
     Csv2sql.Stages.Analyze.analyze_files()

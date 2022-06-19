@@ -15,10 +15,11 @@ defmodule Csv2sql.TypeDeducer do
   def get_count_and_types(csv_file_path) do
     try do
       headers = Helpers.get_csv_headers(csv_file_path)
-
       # Initial type maps for every csv column
       initial_column_type_list = get_initial_type_map(headers)
 
+      # Process csv parsing flow in a task to catch csv parsing failures
+      # https://github.com/dashbitco/flow/issues/39#issuecomment-340684768
       Task.async(fn ->
         [{row_count, column_type_map}] =
           csv_file_path
@@ -72,6 +73,7 @@ defmodule Csv2sql.TypeDeducer do
           throw(reason)
       end
     catch
+      # Catch CSV parsing failures
       _, reason ->
         Csv2sql.ProgressTracker.report_error(reason)
         throw(reason)
