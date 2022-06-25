@@ -14,8 +14,6 @@ defmodule Csv2sql.Config.ParserTest do
         "false",
         "--insert-data",
         "false",
-        "--validate-import",
-        "true",
         "--date-patterns",
         "{YYYY}-{0M}-{0D}",
         "--datetime-patterns",
@@ -34,6 +32,8 @@ defmodule Csv2sql.Config.ParserTest do
         "user@pass:host/db",
         "--varchar-limit",
         "120",
+        "--ordered",
+        "true",
         "--log",
         "debug"
       ]

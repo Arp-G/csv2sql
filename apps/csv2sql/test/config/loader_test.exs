@@ -21,8 +21,8 @@ defmodule Csv2sql.Config.LoaderTest do
         insertion_chunk_size: 200,
         log: "debug",
         schema_infer_chunk_size: 250,
-        schema_path: current_dir,
-        source_directory: current_dir,
+        schema_path: "#{current_dir}/",
+        source_directory: "#{current_dir}/",
         ordered: true,
         varchar_limit: 150,
         worker_count: 22
@@ -43,8 +43,8 @@ defmodule Csv2sql.Config.LoaderTest do
                insertion_chunk_size: 200,
                log: :debug,
                schema_infer_chunk_size: 250,
-               schema_path: current_dir,
-               source_directory: current_dir,
+               schema_path: "#{current_dir}/",
+               source_directory: "#{current_dir}/",
                ordered: true,
                varchar_limit: 150,
                worker_count: 22
@@ -53,7 +53,7 @@ defmodule Csv2sql.Config.LoaderTest do
 
     test "when no args are passed loads default configs" do
       Loader.load(@default_config)
-      current_dir = File.cwd!()
+      current_dir = "#{File.cwd!()}/"
 
       assert %Csv2sql.Config{
                dashboard: false,
@@ -76,7 +76,7 @@ defmodule Csv2sql.Config.LoaderTest do
     end
 
     test "when invalid source directory is specified" do
-      source_directory = "/tmp/invalid_dir_#{:rand.uniform(10000)}"
+      source_directory = "/tmp/invalid_dir_#{:rand.uniform(10000)}/"
 
       assert_raise RuntimeError, "Could not find source directory: #{source_directory}", fn ->
         @default_config
@@ -96,7 +96,7 @@ defmodule Csv2sql.Config.LoaderTest do
     end
 
     test "when schema directory not specified uses source directory" do
-      source_directory = "#{File.cwd!()}/priv"
+      source_directory = "#{File.cwd!()}/priv/"
 
       @default_config
       |> Map.put(:source_directory, source_directory)
@@ -114,7 +114,7 @@ defmodule Csv2sql.Config.LoaderTest do
         ordered: false,
         db_url: "some_url",
         log: "debug",
-        varchar_limit: 200,
+        varchar_limit: 300,
         insertion_chunk_size: 200
       })
       |> Loader.load()
@@ -125,13 +125,13 @@ defmodule Csv2sql.Config.LoaderTest do
       assert is_nil(db_type)
       assert is_nil(db_url)
       assert is_nil(insertion_chunk_size)
-      assert varchar_limit == 100
+      assert varchar_limit == 200
       assert date_patterns == []
       assert datetime_patterns == []
       assert log == false
     end
 
-    for config <- ~w(insert_schema insert_data ordered)a do
+    for config <- ~w(insert_schema insert_data)a do
       test "when only \"#{config}\" is set, loads db config" do
         config = unquote(config)
 

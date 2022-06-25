@@ -142,16 +142,18 @@ defmodule Csv2sql.DatabaseTest do
         end)
 
       assert Database.get_create_table_ddl("priv/src/test.csv", db_name, col_type_defs) ==
-               "CREATE TABLE #{db_name}.test (#{cols});"
+               "CREATE TABLE IF NOT EXISTS #{db_name}.#{delimiter}test#{delimiter} (#{cols});"
     end
   end
 
   describe "get_drop_table_ddl/3" do
-    test "returns correct drop table ddl" do
+    db_test "returns correct drop table ddl" do
       db_name = get_db_name()
+      db_type = Csv2sql.Helpers.get_config(:db_type)
+      delimiter = if(db_type == :mysql, do: "`", else: "\"")
 
       assert Database.get_drop_table_ddl("priv/src/test.csv", db_name) ==
-               "DROP TABLE IF EXISTS #{db_name}.test;"
+               "DROP TABLE IF EXISTS #{db_name}.#{delimiter}test#{delimiter};"
     end
   end
 
