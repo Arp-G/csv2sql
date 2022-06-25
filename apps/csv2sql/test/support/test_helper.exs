@@ -11,6 +11,26 @@ defmodule Csv2sql.Support.TestHelper do
     end
   end
 
+  def load_fixtures(fixture_names \\ []) do
+    src_dir = "#{File.cwd!()}/test/fixtures"
+    dest_dir = "#{File.cwd!()}/test/csv_src"
+
+    # Delete existing loaded fixtures
+    File.rm_rf(dest_dir)
+    File.mkdir!(dest_dir)
+
+    # Copy fixtures to csv_src directory
+    Enum.map(
+      fixture_names,
+      fn fixture_name ->
+        File.cp(
+          "#{src_dir}/#{fixture_name}",
+          "#{dest_dir}/#{fixture_name}"
+        )
+      end
+    )
+  end
+
   defmacro db_test(message, tags \\ Macro.escape(%{}), do: block) do
     quote bind_quoted: [message: message, tags: tags], unquote: true do
       @tag tags: tags
