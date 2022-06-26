@@ -38,5 +38,4 @@ schema.sql
 !.env*.sample
 
 # Test csv files
-/priv/test_csvs
-
+test/support/csv_src/*

@@ -12,8 +12,7 @@ defmodule Csv2sql.Support.TestHelper do
   end
 
   def load_fixtures(fixture_names \\ []) do
-    src_dir = "#{File.cwd!()}/test/fixtures"
-    dest_dir = "#{File.cwd!()}/test/csv_src"
+    dest_dir = get_csv_source_path()
 
     # Delete existing loaded fixtures
     File.rm_rf(dest_dir)
@@ -24,7 +23,7 @@ defmodule Csv2sql.Support.TestHelper do
       fixture_names,
       fn fixture_name ->
         File.cp(
-          "#{src_dir}/#{fixture_name}",
+          "#{get_fixture_path()}/#{fixture_name}",
           "#{dest_dir}/#{fixture_name}"
         )
       end
@@ -40,6 +39,9 @@ defmodule Csv2sql.Support.TestHelper do
 
         db_config
         |> Map.merge(args_from_tags)
+        # If custom source directory not sent then load default
+        |> Map.put_new(:source_directory, get_csv_source_path())
+        |> Map.put_new(:drop_existing_tables, true)
         |> Csv2sql.Config.Loader.load()
 
         unquote(block)
@@ -52,6 +54,9 @@ defmodule Csv2sql.Support.TestHelper do
 
         db_config
         |> Map.merge(args_from_tags)
+        # If custom source directory not sent then load default
+        |> Map.put_new(:source_directory, get_csv_source_path())
+        |> Map.put_new(:drop_existing_tables, true)
         |> Csv2sql.Config.Loader.load()
 
         unquote(block)
@@ -65,7 +70,7 @@ defmodule Csv2sql.Support.TestHelper do
       db_type: "msql",
       db_url: "user@password:localhost:3306/dbname",
       log_level: "debug",
-      source_directory: "./priv/src"
+      source_directory: get_csv_source_path()
     }
     |> Csv2sql.Config.Loader.load()
   end
@@ -82,4 +87,7 @@ defmodule Csv2sql.Support.TestHelper do
       end
     end)
   end
+
+  def get_fixture_path, do: "#{File.cwd!()}/test/support/fixtures"
+  def get_csv_source_path, do: "#{File.cwd!()}/test/support/csv_src"
 end

@@ -8,8 +8,7 @@ for db <- [:mysql, :postgres] do
   loader_config = %{
     db_type: configs["DB_TYPE"],
     db_url: configs["DB_URL"],
-    log_level: configs["LOG_LEVEL"],
-    source_directory: configs["SOURCE_DIRECTORY"]
+    log_level: configs["LOG_LEVEL"]
   }
 
   Application.put_env(:csv2sql, :"#{db}_config", loader_config)
