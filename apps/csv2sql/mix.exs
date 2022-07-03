@@ -1,6 +1,8 @@
 defmodule Csv2sql.MixProject do
   use Mix.Project
 
+  @app :csv2sql
+
   def project do
     [
       app: :csv2sql,
@@ -11,8 +13,9 @@ defmodule Csv2sql.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      compilers: [:unused] ++ Mix.compilers(),
-      test_coverage: [tool: ExCoveralls]
+      compilers: Mix.compilers(),
+      test_coverage: [tool: ExCoveralls],
+      releases: [{@app, release()}]
     ]
   end
 
@@ -21,6 +24,7 @@ defmodule Csv2sql.MixProject do
     [
       extra_applications: [:logger],
       mod: {Csv2sql.Application, []}
+      #mod: {Csv2sql, []}
     ]
   end
 
@@ -39,6 +43,7 @@ defmodule Csv2sql.MixProject do
       {:flow, "~> 1.2"},
       {:stream_split, "~> 0.1.0"},
       {:codepagex, "~> 0.1.6"},
+      {:bakeware, "~> 0.2.4"},
 
       # For dev and/or test
       {:dotenv, github: "avdi/dotenv_elixir", only: [:test]},
@@ -65,5 +70,19 @@ defmodule Csv2sql.MixProject do
       env: [{"MIX_ENV", "test"}],
       into: IO.stream()
     )
+  end
+
+  def release do
+    [
+      # keeps only significant chunks necessary for the VM operation
+      strip_beams: Mix.env() == :prod,
+      overwrite: true,
+      steps: [:assemble, &Bakeware.assemble/1],
+      bakeware: [
+        # Highest compression level
+        compression_level: 1,
+        start_command: "start"
+      ]
+    ]
   end
 end
