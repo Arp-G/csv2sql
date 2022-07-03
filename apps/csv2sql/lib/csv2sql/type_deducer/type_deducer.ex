@@ -18,9 +18,6 @@ defmodule Csv2sql.TypeDeducer do
       # Initial type maps for every csv column
       initial_column_type_list = get_initial_type_map(headers)
 
-      # Process csv parsing flow in a task to catch csv parsing failures
-      # https://github.com/dashbitco/flow/issues/39#issuecomment-340684768
-
       [{row_count, column_type_map}] =
         csv_file_path
         |> File.stream!([:trim_bom, read_ahead: @csv_read_ahead])
@@ -66,7 +63,7 @@ defmodule Csv2sql.TypeDeducer do
       # Catch CSV parsing failures
       _, reason ->
         Csv2sql.ProgressTracker.report_error(reason)
-        throw(reason)
+        exit(reason)
     end
   end
 
