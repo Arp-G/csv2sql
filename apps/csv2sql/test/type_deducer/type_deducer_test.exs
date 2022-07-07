@@ -47,18 +47,17 @@ defmodule Csv2sql.TypeDeducerTest do
       assert logs =~ "Renamed duplicate column \"id\" to \"id_2\""
     end
 
-    # TODO: find a better way to handle Flow process crashes on CSV parsing error
-    # Process csv parsing flow in a task to catch csv parsing failures
-    # https://github.com/dashbitco/flow/issues/39#issuecomment-340684768
-    # test "when csv file is invalid returns error" do
-    #   Csv2sql.ProgressTracker.add_subscriber()
+    test "when csv file is invalid returns error" do
+      # Capture process crash logs to avoid bloating output
+      ExUnit.CaptureLog.capture_log(fn ->
+        Csv2sql.ProgressTracker.add_subscriber()
 
-    #   Task.start(fn ->
-    #     Csv2sql.TypeDeducer.get_count_and_types("test/support/fixtures/invalid.csv")
-    #   end)
+        Task.start(fn ->
+          Csv2sql.TypeDeducer.get_count_and_types("test/support/fixtures/invalid.csv")
+        end)
 
-    #   assert_receive {:error, p}, 3000
-    #   IO.inspect p
-    # end
+        assert_receive {:error, {{%NimbleCSV.ParseError{}, _}, _}}, 3000
+      end)
+    end
   end
 end

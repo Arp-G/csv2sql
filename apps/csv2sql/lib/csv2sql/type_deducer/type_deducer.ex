@@ -18,6 +18,9 @@ defmodule Csv2sql.TypeDeducer do
       # Initial type maps for every csv column
       initial_column_type_list = get_initial_type_map(headers)
 
+      # Don't crash if linked flow process crashes
+      Process.flag(:trap_exit, true)
+
       [{row_count, column_type_map}] =
         csv_file_path
         |> File.stream!([:trim_bom, read_ahead: @csv_read_ahead])

@@ -54,7 +54,7 @@ defmodule Csv2sql.Stages.AnalyzeTest do
       |> Stream.run()
     end
 
-    db_test 'when ordered true, loads csv files into database properly with ordering column',
+    db_test "when ordered true, loads csv files into database properly with ordering column",
             %{ordered: true} do
       load_fixtures(["test.csv"])
       Csv2sql.ProgressTracker.add_subscriber()
