@@ -1,26 +1,21 @@
 defmodule Dashboard.Application do
+  @moduledoc false
+
   use Application
 
+  @impl true
   def start(_type, _args) do
     children = [
-      # Start the PubSub system
+      DashboardWeb.Telemetry,
       {Phoenix.PubSub, name: Dashboard.PubSub},
-      # Start the Endpoint (http/https)
-      DashboardWeb.Endpoint,
-      {Cachex, name: :config_cache}
+      DashboardWeb.Endpoint
     ]
 
     opts = [strategy: :one_for_one, name: Dashboard.Supervisor]
-    sup = Supervisor.start_link(children, opts)
-
-    # Load initial cache config
-    DashboardWeb.Helper.ConfigHelper.load_initial_config()
-
-    sup
+    Supervisor.start_link(children, opts)
   end
 
-  # Tell Phoenix to update the endpoint configuration
-  # whenever the application is updated.
+  @impl true
   def config_change(changed, _new, removed) do
     DashboardWeb.Endpoint.config_change(changed, removed)
     :ok

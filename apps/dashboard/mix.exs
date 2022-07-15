@@ -4,14 +4,14 @@ defmodule Dashboard.MixProject do
   def project do
     [
       app: :dashboard,
-      version: "0.1.1",
+      version: "0.1.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
       lockfile: "../../mix.lock",
-      elixir: "~> 1.7",
+      elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:phoenix, :gettext] ++ Mix.compilers(),
+      compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps()
@@ -24,7 +24,7 @@ defmodule Dashboard.MixProject do
   def application do
     [
       mod: {Dashboard.Application, []},
-      extra_applications: [:logger, :runtime_tools, :os_mon]
+      extra_applications: [:logger, :runtime_tools]
     ]
   end
 
@@ -37,17 +37,19 @@ defmodule Dashboard.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.6"},
+      {:phoenix, "~> 1.6.11"},
+      {:phoenix_html, "~> 3.0"},
+      {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 0.17.5"},
-      {:floki, "~> 0.32.0", only: :test},
-      {:phoenix_html, "~> 3.1"},
-      {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:telemetry_poller, "~> 0.4"},
-      {:gettext, "~> 0.11"},
+      {:floki, ">= 0.30.0", only: :test},
+      {:esbuild, "~> 0.4", runtime: Mix.env() == :dev},
+      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
-      {:cachex, "~> 3.3"},
-      {:csv2sql, in_umbrella: true}
+
+      # Development Deps
+      {:dart_sass, "~> 0.2", runtime: Mix.env() == :dev}
     ]
   end
 
@@ -59,7 +61,12 @@ defmodule Dashboard.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "cmd npm install --prefix assets"]
+      setup: ["deps.get"],
+      "assets.deploy": [
+        "esbuild default --minify",
+        "sass default --no-source-map --style=compressed",
+        "phx.digest"
+      ]
     ]
   end
 end

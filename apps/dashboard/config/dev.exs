@@ -1,25 +1,22 @@
-use Mix.Config
+import Config
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we use it
-# with webpack to recompile .js and .css sources.
+# with esbuild to bundle .js and .css sources.
 config :dashboard, DashboardWeb.Endpoint,
-  http: [port: 4000],
-  debug_errors: true,
-  code_reloader: true,
+  # Binding to loopback ipv4 address prevents access from other machines.
+  # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
+  http: [ip: {127, 0, 0, 1}, port: 4000],
   check_origin: false,
-  server: true,
+  code_reloader: true,
+  debug_errors: true,
+  secret_key_base: "SB0LWzWbkJdBpnbm7sH3yIaAZO1oUSIhxIi2zNTpJVq+aht7BUJXAyCc2l8plWvg",
   watchers: [
-    node: [
-      "node_modules/webpack/bin/webpack.js",
-      "--mode",
-      "development",
-      "--watch-stdin",
-      cd: Path.expand("../assets", __DIR__)
-    ]
+    # Start the esbuild watcher by calling Esbuild.install_and_run(:default, args)
+    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]}
   ]
 
 # ## SSL Support
@@ -51,11 +48,15 @@ config :dashboard, DashboardWeb.Endpoint,
   live_reload: [
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
-      ~r"priv/gettext/.*(po)$",
       ~r"lib/dashboard_web/(live|views)/.*(ex)$",
       ~r"lib/dashboard_web/templates/.*(eex)$"
     ]
-  ]
+  ],
+  sass: {
+    DartSass,
+    :install_and_run,
+    [:default, ~w(--embed-source-map --source-map-urls=absolute --watch)]
+  }
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"

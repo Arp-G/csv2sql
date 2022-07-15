@@ -10,21 +10,9 @@ defmodule DashboardWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  pipeline :api do
-    plug :accepts, ["json"]
-  end
-
   scope "/", DashboardWeb do
     pipe_through :browser
 
     live "/", PageLive, :index
-    live "/config", ConfigLive, :index
-    live "/main", MainLive, :index
-    live "/about", AboutLive, :index
   end
-
-  # Other scopes may use custom stacks.
-  # scope "/api", DashboardWeb do
-  #   pipe_through :api
-  # end
 end
