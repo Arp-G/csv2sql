@@ -1,0 +1,40 @@
+<header>
+  <section class="top-navbar">
+    <div>
+      <a href="https://github.com/Arp-G/csv2sql/" class="csv2sql-logo">
+        <img {%{src: Routes.static_path(@socket, "/images/logo.png")}} alt="CSV2SQL Logo"/>
+      </a>
+    </div>
+    <div class="nav-header"> CSV2SQL </div>
+  </section>
+  <ul class="custom-navbar nav nav-tabs nav-justified">
+    <li class="nav-item" role="button" phx-click="page-change" phx-value-page="config">
+      <a {get_nav_item_attrs(assigns, "config")} href="#">
+        <div class="grow">
+          <IconSvg.settings />
+          Change Configuration
+        </div>
+      </a>
+    </li>
+    <li class="nav-item" role="button" phx-click="page-change" phx-value-page="start">
+      <a {get_nav_item_attrs(assigns, "start")} href="#">
+        <div class="grow">
+          <IconSvg.start />
+          Start!
+        </div>
+      </a>
+    </li>      
+    <li class="nav-item" role="button" phx-click="page-change" phx-value-page="about">
+      <a {get_nav_item_attrs(assigns, "about")} href="#">
+        <div class="grow">
+          <IconSvg.about />
+          About
+        </div>
+      </a>
+    </li>
+  </ul>
+</header>
+
+<div>
+  <%= @page %>
+</div>

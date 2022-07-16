@@ -1,0 +1,55 @@
+// Varaibles
+$light-grey: #F0F0F0;
+
+.bg-light-grey {
+  background-color: $light-grey !important;
+}
+
+// Disable horizontal scrollbar
+html,
+body {
+  overflow-x: hidden;
+}
+
+.csv2sql-logo {
+  display: block;
+  min-width: 80px;
+  margin-top: 1rem;
+
+  img {
+    height: 35px;
+    width: auto;
+    display: block;
+  }
+}
+
+.top-navbar{
+  background-color: #4a4473;
+  display: flex;
+  justify-content: center;
+  height: 70px;
+
+  .nav-header{
+    color: white;
+    font-size: 1rem;
+    font-variant: small-caps;
+    font-weight: bold;
+    margin-top: 1.3rem;
+    margin-left: 0.2rem;
+  }
+}
+
+.custom-navbar {
+  max-width: 100%;
+  font-variant: small-caps;
+  font-weight: bold;
+  font-style: italic;
+}
+
+.grow {
+  transition: all 0.04s ease-in-out;
+}
+
+.grow:hover {
+  transform: scale(1.05);
+}
