@@ -35,6 +35,8 @@
   </ul>
 </header>
 
-<div>
-  <%= @page %>
-</div>
+<%= case @page do %>
+  <% "config" -> %> <%= DashboardWeb.Live.ConfigLive.render(assigns) %>
+  <% "start" -> %> start
+  <% "about" -> %> about
+<% end %>

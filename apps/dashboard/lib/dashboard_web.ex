@@ -47,6 +47,11 @@ defmodule DashboardWeb do
         layout: {DashboardWeb.LayoutView, "live.html"}
 
       unquote(view_helpers())
+
+      import ShorterMaps
+      import DashboardWeb.LiveHelpers
+      import DashboardWeb.Live.UI
+      alias DashboardWeb.Live.IconSvg
     end
   end
 

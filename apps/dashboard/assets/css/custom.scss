@@ -53,3 +53,10 @@ body {
 .grow:hover {
   transform: scale(1.05);
 }
+
+.tool-tip-wrapper {
+  width: fit-content;
+  position: relative;
+  top: -4px;
+  padding-right: 2px;
+}

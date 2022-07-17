@@ -13,6 +13,6 @@ defmodule DashboardWeb.Router do
   scope "/", DashboardWeb do
     pipe_through :browser
 
-    live "/", MainLive, :index
+    live "/", Live.MainLive, :index
   end
 end
