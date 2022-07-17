@@ -1,6 +1,8 @@
 defmodule DashBoard.Config do
   use Ecto.Schema
+  import Ecto.Changeset
 
+  @primary_key false
   embedded_schema do
     field(:source_directory)
     field(:schema_path, :string)
@@ -23,5 +25,9 @@ defmodule DashBoard.Config do
     field(:db_worker_count, :integer)
     field(:insertion_chunk_size, :integer)
     field(:log, :boolean)
+  end
+
+  def changeset(params) do
+    cast(%__MODULE__{}, params, __MODULE__.__schema__(:fields))
   end
 end

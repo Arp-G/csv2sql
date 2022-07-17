@@ -1,5 +1,6 @@
 defmodule DashboardWeb.Live.MainLive do
   use DashboardWeb, :live_view
+  alias DashBoard.Config
 
   @impl true
   def mount(_params, _session, socket) do
@@ -20,7 +21,7 @@ defmodule DashboardWeb.Live.MainLive do
     {:noreply,
      assign(socket,
        page: "config",
-       changeset: Ecto.Changeset.change(%DashBoard.Config{}, attrs)
+       changeset: Config.changeset(Map.get(attrs, "config", %{}))
      )}
   end
 end
