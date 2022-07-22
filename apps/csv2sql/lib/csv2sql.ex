@@ -25,9 +25,9 @@ defmodule Csv2sql do
     # Load configurations
     Csv2sql.Config.Loader.load(%{
       db_type: "mysql",
-      db_url: "root:root@localhost/csv2sql?socket=/var/run/mysqld/mysqld.sock&pool_size=15",
+      db_url: "root:mysql@localhost/csv2sql",
       log: false,
-      source_directory: "/home/arpan/dev/csv2sql/apps/csv2sql/test/support/"
+      source_directory: "/home/arpan/dev/others/csv2sql/apps/csv2sql/priv/"
     })
 
     # Begin analysis
