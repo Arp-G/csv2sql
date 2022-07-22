@@ -42,9 +42,39 @@ defmodule Csv2sql.TypeDeducerTest do
         end)
 
       # Assert warning log messages
-      assert logs =~ "Renamed duplicate column \"name\" to \"name_1\""
-      assert logs =~ "Renamed duplicate column \"id\" to \"id_1\""
-      assert logs =~ "Renamed duplicate column \"id\" to \"id_2\""
+      assert logs =~ "Renamed duplicate column \"name\" to \"name_1\" in csv duplicate_cols"
+      assert logs =~ "Renamed duplicate column \"id\" to \"id_1\" in csv duplicate_cols"
+      assert logs =~ "Renamed duplicate column \"id\" to \"id_2\" in csv duplicate_cols"
+    end
+
+    db_test "fixes missing and invalid column names" do
+      logs =
+        ExUnit.CaptureLog.capture_log(fn ->
+          csv_file_path = "test/support/fixtures/invalid_column_names.csv"
+          {2, col_type_defs} = Csv2sql.TypeDeducer.get_count_and_types(csv_file_path)
+          names = Enum.map(col_type_defs, fn {name, _type} -> name end)
+
+          assert names == [
+                   "missing_column_1",
+                   "name",
+                   "missing_column_2",
+                   "salary",
+                   "permanent",
+                   "missing_column_3"
+                 ]
+        end)
+
+      # Assert warning log messages
+      assert logs =~ "Trimmed spaces for column \"salary \" in csv invalid_column_names.csv"
+
+      assert logs =~
+               "Renamed empty column as \"missing_column_1\" in csv invalid_column_names.csv"
+
+      assert logs =~
+               "Renamed empty column as \"missing_column_2\" in csv invalid_column_names.csv"
+
+      assert logs =~
+               "Renamed empty column as \"missing_column_3\" in csv invalid_column_names.csv"
     end
 
     test "when csv file is invalid returns error" do

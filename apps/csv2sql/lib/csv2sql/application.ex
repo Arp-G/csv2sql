@@ -4,6 +4,7 @@ defmodule Csv2sql.Application do
   """
 
   use Application
+  @current_env Mix.env()
 
   def start(_type, _args) do
     children = [
@@ -15,7 +16,9 @@ defmodule Csv2sql.Application do
 
     opts = [strategy: :one_for_one, name: Csv2sql.Supervisor]
     res = Supervisor.start_link(children, opts)
-    kickoff()
+
+    # Don't start loading CSVs on app start for dev and test environments
+    if @current_env == :prod, do: kickoff()
     res
   end
 

@@ -52,10 +52,11 @@ defmodule Csv2sql.TypeDeducer do
         |> Enum.to_list()
         |> List.flatten()
 
+      csv_file_name = Path.basename(csv_file_path)
       headers =
         headers
-        |> fix_invalid_column_names(csv_file_path)
-        |> fix_duplicate_column_names(csv_file_path)
+        |> fix_invalid_column_names(csv_file_name)
+        |> fix_duplicate_column_names(csv_file_name)
 
       types =
         column_type_map
@@ -108,19 +109,19 @@ defmodule Csv2sql.TypeDeducer do
     end
   end
 
-  defp fix_invalid_column_names(columns, csv_file_path) do
+  defp fix_invalid_column_names(columns, csv_file_name) do
     {updated_column_names, _missing_count} =
       Enum.map_reduce(columns, 1, fn column, missing_count ->
         trimmed_column = String.trim(column)
 
         cond do
           trimmed_column != column ->
-            Logger.warn("Trimmed spaces for column name: \"#{column}\" in csv: #{csv_file_path}")
+            Logger.warn("Trimmed spaces for column \"#{column}\" in csv #{csv_file_name}")
             {String.trim(trimmed_column), missing_count}
 
           trimmed_column == "" ->
             Logger.warn(
-              "Renamed empty column as \"missing_column_#{missing_count}\" in csv: #{csv_file_path}"
+              "Renamed empty column as \"missing_column_#{missing_count}\" in csv #{csv_file_name}"
             )
 
             {"missing_column_#{missing_count}", missing_count + 1}
@@ -133,7 +134,7 @@ defmodule Csv2sql.TypeDeducer do
     updated_column_names
   end
 
-  defp fix_duplicate_column_names(columns, csv_file_path) do
+  defp fix_duplicate_column_names(columns, csv_file_name) do
     {updated_column_names, _acc} =
       Enum.map_reduce(columns, %{}, fn column, count_map ->
         {_cur_value, count_map} =
@@ -145,7 +146,7 @@ defmodule Csv2sql.TypeDeducer do
         updated_column_name =
           count_map
           |> Map.get(column, 0)
-          |> get_duplicate_column_name(column, csv_file_path)
+          |> get_duplicate_column_name(column, csv_file_name)
 
         {updated_column_name, count_map}
       end)
@@ -153,11 +154,11 @@ defmodule Csv2sql.TypeDeducer do
     updated_column_names
   end
 
-  defp get_duplicate_column_name(count, column, _csv_file_path) when count == 0, do: column
+  defp get_duplicate_column_name(count, column, _csv_file_name) when count == 0, do: column
 
-  defp get_duplicate_column_name(count, column, csv_file_path) do
+  defp get_duplicate_column_name(count, column, csv_file_name) do
     Logger.warn(
-      "Renamed duplicate column \"#{column}\" to \"#{column}_#{count}\" in csv: #{csv_file_path}"
+      "Renamed duplicate column \"#{column}\" to \"#{column}_#{count}\" in csv #{csv_file_name}"
     )
 
     "#{column}_#{count}"
