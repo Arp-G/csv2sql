@@ -14,7 +14,34 @@ defmodule DashboardWeb.Live.UI do
         class="tool-tip-wrapper"
         phx-hook="initTooltipPopup"
         >
-        <IconSvg.bulb dimensions={%{width: 20, height: 20}}/>
+        <IconSvg.bulb {%{width: 20, height: 20}}/>
+      </div>
+    """
+  end
+
+  def config_item(assigns \\ %{}) do
+    ~H"""
+      <div {%{class: "card-body #{assigns[:class]}"}}>
+        <div class="d-flex pb-2">
+          <.popup title={@tooltip} id={@id}/>
+
+          <%= if assigns[:checkbox_input] do %>
+            <div>
+              <%= render_slot(@input) %>
+            </div>
+          <% end %>
+
+          <div class="ms-2">
+            <%= if assigns[:required_input] do %>
+              <span class="text-danger fw-bolder"> * </span>
+            <% end %>
+            <em> <%= @title %> </em>
+          </div>
+        </div>
+
+        <%= if !assigns[:checkbox_input] do%>
+          <div> <%= render_slot(@input) %> </div>
+        <% end %>
       </div>
     """
   end

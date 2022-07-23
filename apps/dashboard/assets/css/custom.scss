@@ -9,6 +9,7 @@ $light-grey: #F0F0F0;
 html,
 body {
   overflow-x: hidden;
+  background: blanchedalmond;
 }
 
 .csv2sql-logo {
@@ -60,3 +61,5 @@ body {
   top: -4px;
   padding-right: 2px;
 }
+
+.mysql-label { top: -14px }

@@ -18,6 +18,7 @@ defmodule DashboardWeb.Live.MainLive do
 
   @impl true
   def handle_event("validate-and-save", attrs, socket) do
+    IO.inspect attrs
     {:noreply,
      assign(socket,
        page: "config",
