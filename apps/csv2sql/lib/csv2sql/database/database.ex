@@ -40,9 +40,10 @@ defmodule Csv2sql.Database do
     Ecto.Adapters.SQL.query!(repo, query)
   end
 
-  @spec get_repo(:mysql | :postgres) :: Csv2sql.MySQLRepo | Csv2sql.PostgresRepo
-  def get_repo(:mysql), do: Csv2sql.MySQLRepo
-  def get_repo(:postgres), do: Csv2sql.PostgreSQLRepo
+  @spec get_repo(:mysql | :postgres | String.t()) ::
+          Csv2sql.MySQLRepo | Csv2sql.PostgresRepo
+  def get_repo(repo) when repo in [:mysql, "mysql"], do: Csv2sql.MySQLRepo
+  def get_repo(repo) when repo in [:postgres, "postgres"], do: Csv2sql.PostgreSQLRepo
 
   @spec varchar_limit :: pos_integer()
   def varchar_limit, do: Helpers.get_config(:varchar_limit)

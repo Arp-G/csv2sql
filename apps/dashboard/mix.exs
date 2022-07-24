@@ -49,6 +49,7 @@ defmodule Dashboard.MixProject do
       {:shorter_maps, "~> 2.2"},
       {:ecto, "~> 3.8"},
       {:phoenix_ecto, "~> 4.4"},
+      {:csv2sql, in_umbrella: true},
 
       # Development Deps
       {:dart_sass, "~> 0.2", runtime: Mix.env() == :dev},

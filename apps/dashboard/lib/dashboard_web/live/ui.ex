@@ -27,7 +27,7 @@ defmodule DashboardWeb.Live.UI do
 
           <%= if assigns[:checkbox_input] do %>
             <div>
-              <%= render_slot(@input) %>
+              <%= render_slot(@input, @form) %>
             </div>
           <% end %>
 
@@ -40,7 +40,7 @@ defmodule DashboardWeb.Live.UI do
         </div>
 
         <%= if !assigns[:checkbox_input] do%>
-          <div> <%= render_slot(@input) %> </div>
+          <div> <%= render_slot(@input, @form) %> </div>
         <% end %>
       </div>
     """

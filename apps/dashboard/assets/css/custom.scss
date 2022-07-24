@@ -63,3 +63,16 @@ body {
 }
 
 .mysql-label { top: -14px }
+
+.add-link {
+  cursor: pointer;
+  margin-top: 20px;
+  
+  span {
+    position: relative;
+    top: -4px;
+    color: blue;
+    font-style: italic;
+    text-decoration: underline;
+  }
+}
