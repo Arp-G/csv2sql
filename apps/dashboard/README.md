@@ -1,18 +1,11 @@
-# Dashboard
+* Refs
 
-To start your Phoenix server:
+Windows installer creation: https://docs.microsoft.com/en-us/windows/msix/app-installer/how-to-create-appinstaller-file
 
-  * Install dependencies with `mix deps.get`
-  * Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+Live book installers: https://github.com/livebook-dev/livebook/tree/main/app_bundler/lib/app_bundler
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+CI setup:
+https://curiosum.com/blog/mastering-elixir-ci-pipeline?utm_medium=email&utm_source=elixir-radar
+https://github.com/livebook-dev/livebook/blob/main/.github/workflows/test.yaml
 
-Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
-
-## Learn more
-
-  * Official website: https://www.phoenixframework.org/
-  * Guides: https://hexdocs.pm/phoenix/overview.html
-  * Docs: https://hexdocs.pm/phoenix
-  * Forum: https://elixirforum.com/c/phoenix-forum
-  * Source: https://github.com/phoenixframework/phoenix
+Docker file refs: https://github.com/livebook-dev/livebook/blob/main/Dockerfile
