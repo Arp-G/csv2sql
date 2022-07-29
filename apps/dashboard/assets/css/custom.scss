@@ -2,7 +2,7 @@
 $light-grey: #F0F0F0;
 
 .bg-light-grey {
-  background-color: $light-grey !important;
+  background-color: $light-grey  !important;
 }
 
 // Disable horizontal scrollbar
@@ -24,13 +24,13 @@ body {
   }
 }
 
-.top-navbar{
+.top-navbar {
   background-color: #4a4473;
   display: flex;
   justify-content: center;
   height: 70px;
 
-  .nav-header{
+  .nav-header {
     color: white;
     font-size: 1rem;
     font-variant: small-caps;
@@ -62,12 +62,33 @@ body {
   padding-right: 2px;
 }
 
-.mysql-label { top: -14px }
+.mysql-label {
+  position: relative;
+  top: -14px
+}
+
+.postgres-label {
+
+  svg {
+    display: block;
+    position: relative;
+    left: 30%;
+  }
+
+  div {
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.2rem;
+
+    .inner-text {
+      color: #336791;
+    }
+  }
+}
 
 .add-link {
   cursor: pointer;
   margin-top: 20px;
-  
+
   span {
     position: relative;
     top: -4px;

@@ -111,14 +111,17 @@ defmodule DashboardWeb.Live.ConfigLive do
                   <div class="d-flex flex-column">
                     <div class="form-check">
                       <%= radio_button f, :db_type, :mysql, class: "form-check-input mt-4", id: "mysql_db_type", checked: "checked" %>
-                      <label class="form-check-label position-relative mysql-label" for="mysql_db_type">
+                      <label class="form-check-label mysql-label" for="mysql_db_type">
                         <IconSvg.mysql_icon {%{width: 100, height: 100}} />
                       </label>
                     </div>
                     <div class="form-check">
                       <%= radio_button f, :db_type, "postgres", class: "form-check-input mt-4", id: "postgres_db_type" %>
-                      <label class="form-check-label" for="postgres_db_type">
-                        <IconSvg.postgresql_icon {%{width: 320, height: 65}} />
+                      <label class="form-check-label postgres-label" for="postgres_db_type">
+                        <div>
+                          <IconSvg.postgresql_icon />
+                          <span> Postgre<span class="inner-text">SQL</span> </span>
+                        </div>
                       </label>
                     </div>
                   </div>
