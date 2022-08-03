@@ -29,12 +29,14 @@ defmodule Csv2sql.TypeDeducer do
         # By default Flow work with batches of 500 items that is 500 chunks in this case
         # Set max demand to 1 to avoid blocking if data not available
         |> Flow.from_enumerable(max_demand: 1, stages: Helpers.get_config(:worker_count))
-        # Infer type for chunk: returns array of type maps for that chunk
+        # Infer type for chunk: returns list of type maps for that chunk
         |> Flow.map(fn rows ->
           {Enum.count(rows), infer_type_for_chunk(rows, initial_column_type_list)}
         end)
-        # Reduce overy array of type maps for every chunk to produce a final array of type maps for the chunk
+        # Reduce over the list of type maps for every chunk to produce a final list of type maps for the chunk
         # Here we are reducing parallely accross multiple stages or partitions thus leading to a separate reduction result from each stage/partition
+        # We don't need to explicitly partition the flow since we don't care which type chunk ends up in which partition, we will anyways merge the
+        # type maps later in the departitioning step.
         |> Flow.reduce(
           fn -> {0, initial_column_type_list} end,
           fn {count_sum, existing_type_maps}, {count, new_type_maps} ->
