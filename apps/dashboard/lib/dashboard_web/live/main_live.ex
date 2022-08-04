@@ -11,6 +11,7 @@ defmodule DashboardWeb.Live.MainLive do
      assign(socket,
        page: "config",
        configs: %{},
+       modal: false,
        path_validator_debouncer: nil,
        db_connection_debouncer: nil,
        db_connection_established: false,
@@ -21,6 +22,11 @@ defmodule DashboardWeb.Live.MainLive do
   @impl true
   def handle_event("page-change", ~m{page}, socket) do
     {:noreply, assign(socket, ~M{page})}
+  end
+
+  @impl true
+  def handle_event("close-modal", attrs, socket) do
+    {:noreply, assign(socket, ~M{modal: false})}
   end
 
   @impl true

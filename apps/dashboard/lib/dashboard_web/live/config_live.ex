@@ -262,15 +262,21 @@ defmodule DashboardWeb.Live.ConfigLive do
           </div>
         </div>
       </.form>
+
+
+      <DashboardWeb.Live.Modal.modal id="modalid">
+      <div class="modal-header">
+      <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      ...
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary">Save changes</button>
+    </div>
+      </DashboardWeb.Live.Modal.modal>
     """
   end
-
-  # field(:db_type, Ecto.Enum, values: [:mysql, :postgres])
-  # field(:db_name, :string)
-  # field(:db_url, :string)
-  # field(:drop_existing_tables, :boolean)
-  # field(:varchar_limit, :integer)
-  # field(:db_worker_count, :integer)
-  # field(:insertion_chunk_size, :integer)
-  # field(:log, :boolean)
 end
