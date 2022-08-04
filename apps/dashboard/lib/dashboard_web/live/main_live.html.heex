@@ -35,6 +35,12 @@
   </ul>
 </header>
 
+<!-- Modal -->
+<%= case @modal do %>
+  <% "add-more-db-attrs" -> %> <DashboardWeb.Live.Modals.db_attrs_modal />
+  <% _ -> %>
+<% end %>
+
 <%= case @page do %>
   <% "config" -> %> <%= DashboardWeb.Live.ConfigLive.render(assigns) %>
   <% "start" -> %> start

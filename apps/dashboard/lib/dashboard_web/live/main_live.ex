@@ -25,6 +25,11 @@ defmodule DashboardWeb.Live.MainLive do
   end
 
   @impl true
+  def handle_event("open-modal", ~m{modal}, socket) do
+    {:noreply, assign(socket, ~M{modal})}
+  end
+
+  @impl true
   def handle_event("close-modal", attrs, socket) do
     {:noreply, assign(socket, ~M{modal: false})}
   end
@@ -32,7 +37,6 @@ defmodule DashboardWeb.Live.MainLive do
   @impl true
   def handle_event("validate-and-save", attrs, socket) do
     args = Map.get(attrs, "config", %{})
-    # IO.inspect(updated_config)
 
     socket =
       socket
