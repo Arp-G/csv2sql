@@ -98,6 +98,10 @@ body {
   }
 }
 
+.opacity-transition {
+  transition: opacity .25s ease-in-out;
+}
+
 .live-modal {
   position: absolute;
   top: 50%;

@@ -262,6 +262,11 @@ defmodule DashboardWeb.Live.ConfigLive do
           </div>
         </div>
       </.form>
+
+      <%= case @modal do %>
+        <% "add-more-db-attrs" -> %> <DashboardWeb.Live.Modals.db_attrs_modal />
+        <% _ -> %>
+      <% end %>
     """
   end
 end
