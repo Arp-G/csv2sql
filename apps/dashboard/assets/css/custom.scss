@@ -110,3 +110,8 @@ body {
   z-index: 9999;
   margin: auto;
 }
+
+.db-attrs-container {
+  max-height: 400px;
+  overflow-y: scroll;
+}

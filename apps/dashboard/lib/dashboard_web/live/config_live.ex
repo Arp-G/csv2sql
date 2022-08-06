@@ -1,5 +1,6 @@
 defmodule DashboardWeb.Live.ConfigLive do
   use DashboardWeb, :live_view
+  import DashboardWeb.Live.Modal.DbAttributesModal
 
   # TODO: Break this in simple components and remove any uneeded classes and cleanup the markup
   @impl true
@@ -160,7 +161,7 @@ defmodule DashboardWeb.Live.ConfigLive do
                 <% else %>
                   <IconSvg.warn_icon {%{width: 25, height: 25}} />
                 <% end %>
-                Database URL: <%= Dashboard.Helpers.create_db_url(@configs) %>
+                Database URL: <%= Dashboard.Helpers.create_db_url(@changeset.changes) %>
               </div>
 
 
@@ -212,7 +213,7 @@ defmodule DashboardWeb.Live.ConfigLive do
                   required_input={true}
                   placeholder="Database password">
                   <:input let={f}>
-                    <%= text_input f, :db_password, class: "form-control", placeholder: "Database password" %>
+                    <%= text_input f, :db_password, type: "password", class: "form-control", placeholder: "Database password" %>
                   </:input>
                 </.config_item>
               </div>
@@ -220,6 +221,18 @@ defmodule DashboardWeb.Live.ConfigLive do
               <div class="add-link">
                 <IconSvg.add_icon />
                 <span phx-click="open-modal" phx-value-modal="add-more-db-attrs"> Add more database configurations </span>
+
+                <!-- NON UNIQUE ID BUG -->
+                <!-- TODO: !!!!!!! This does not fix the issue: Since modal also has hidden elements so avoid rendering these when modal open -->
+                <!-- TODO: check if the hidden elements from modal can be removed -->
+                <% if @modal != "add-more-db-attrs" do %>
+                  <%= inputs_for f, :db_attrs, fn db_attrs_form -> %>
+                    <%= hidden_input(db_attrs_form, :id) %>
+                    <%= hidden_input(db_attrs_form, :name) %>
+                    <%= hidden_input(db_attrs_form, :value) %>
+                  <% end %>
+                <% end %>
+
               </div>
             </div>
 
@@ -261,12 +274,12 @@ defmodule DashboardWeb.Live.ConfigLive do
             </div>
           </div>
         </div>
-      </.form>
 
-      <%= case @modal do %>
-        <% "add-more-db-attrs" -> %> <DashboardWeb.Live.Modals.db_attrs_modal />
-        <% _ -> %>
-      <% end %>
+        <%= case @modal do %>
+          <% "add-more-db-attrs" -> %> <.db_attrs_modal id="db_attrs_modal" form={f} />
+          <% _ -> %>
+        <% end %>
+      </.form>
     """
   end
 end

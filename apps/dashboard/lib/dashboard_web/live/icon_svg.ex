@@ -6,7 +6,7 @@ defmodule DashboardWeb.Live.IconSvg do
 
   def args(assigns) do
     %{
-      classes: Map.get(assigns, :classes, ""),
+      class: Map.get(assigns, :class, ""),
       width: Map.get(assigns, :width, @dimensions[:width]),
       height: Map.get(assigns, :height, @dimensions[:height])
     }
@@ -253,6 +253,14 @@ defmodule DashboardWeb.Live.IconSvg do
         <path style="fill:#f7e07f" d="M972.038 466.784 361.87 1523.627c-23.094 40 5.774 90 51.962 90h1220.337c46.188 0 75.056-50 51.961-90L1075.962 466.784c-23.094-40-80.829-40-103.924 0z" />
         <path style="fill:#fc636e" d="M1024 1302.971c-25.039 0-45.337-20.298-45.337-45.337V780.563c0-25.039 20.298-45.337 45.337-45.337 25.039 0 45.337 20.298 45.337 45.337v477.071c0 25.039-20.298 45.337-45.337 45.337z" />
         <circle style="fill:#fc636e" cx="1024" cy="1438.027" r="51.143" />
+      </svg>
+    """
+  end
+
+  def remove_icon(assigns \\ %{}) do
+    ~H"""
+      <svg xmlns="http://www.w3.org/2000/svg" {args(assigns)} viewBox="0 0 24 24">
+        <path d="M12,2A10,10,0,1,0,22,12,10,10,0,0,0,12,2Zm3.707,12.293a1,1,0,1,1-1.414,1.414L12,13.414,9.707,15.707a1,1,0,0,1-1.414-1.414L10.586,12,8.293,9.707A1,1,0,0,1,9.707,8.293L12,10.586l2.293-2.293a1,1,0,0,1,1.414,1.414L13.414,12Z"/>
       </svg>
     """
   end

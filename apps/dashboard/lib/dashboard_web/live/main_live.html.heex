@@ -35,10 +35,8 @@
   </ul>
 </header>
 
-<!-- Modal -->
-<%= case @modal do %>
-  <% "add-more-db-attrs" -> %> <DashboardWeb.Live.Modals.db_attrs_modal />
-  <% _ -> %>
+<%= if @modal do %>
+  <div class="modal-backdrop show opacity-transition"></div>
 <% end %>
 
 <%= case @page do %>

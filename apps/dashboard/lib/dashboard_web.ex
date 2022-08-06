@@ -52,6 +52,7 @@ defmodule DashboardWeb do
       import DashboardWeb.LiveHelpers
       import DashboardWeb.Live.UI
       alias DashboardWeb.Live.IconSvg
+      alias Phoenix.LiveView.JS
     end
   end
 
@@ -60,6 +61,12 @@ defmodule DashboardWeb do
       use Phoenix.LiveComponent
 
       unquote(view_helpers())
+
+      import ShorterMaps
+      import DashboardWeb.LiveHelpers
+      import DashboardWeb.Live.UI
+      alias DashboardWeb.Live.IconSvg
+      alias Phoenix.LiveView.JS
     end
   end
 
@@ -68,6 +75,12 @@ defmodule DashboardWeb do
       use Phoenix.Component
 
       unquote(view_helpers())
+
+      import ShorterMaps
+      import DashboardWeb.LiveHelpers
+      import DashboardWeb.Live.UI
+      alias DashboardWeb.Live.IconSvg
+      alias Phoenix.LiveView.JS
     end
   end
 

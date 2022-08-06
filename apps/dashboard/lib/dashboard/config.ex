@@ -19,15 +19,31 @@ defmodule DashBoard.Config do
     # Database related configs
     field(:db_type, Ecto.Enum, values: [:mysql, :postgres])
     field(:db_name, :string)
-    field(:db_url, :string)
+    field(:db_username, :string)
+    field(:db_password, :string)
+    field(:db_host, :string)
+
+    # Other Database configs
     field(:drop_existing_tables, :boolean)
     field(:varchar_limit, :integer)
     field(:db_worker_count, :integer)
     field(:insertion_chunk_size, :integer)
     field(:log, :boolean)
+
+    embeds_many(:db_attrs, DashBoard.DbAttribute, on_replace: :delete)
   end
 
   def changeset(params) do
-    cast(%__MODULE__{}, params, __MODULE__.__schema__(:fields))
+    attrs_to_cast =
+      :fields
+      |> __MODULE__.__schema__()
+      |> Enum.reject(fn
+        field when field in [:db_attrs] -> true
+        _field -> false
+      end)
+
+    %__MODULE__{}
+    |> cast(params, attrs_to_cast)
+    |> cast_embed(:db_attrs)
   end
 end

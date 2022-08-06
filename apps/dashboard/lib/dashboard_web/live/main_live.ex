@@ -1,6 +1,6 @@
 defmodule DashboardWeb.Live.MainLive do
   use DashboardWeb, :live_view
-  alias DashBoard.Config
+  alias DashBoard.{Config, DbAttribute}
   alias Csv2sql.Database.ConnectionTest
 
   @debounce_time 1000
@@ -10,7 +10,6 @@ defmodule DashboardWeb.Live.MainLive do
     {:ok,
      assign(socket,
        page: "config",
-       configs: %{},
        modal: false,
        path_validator_debouncer: nil,
        db_connection_debouncer: nil,
@@ -30,7 +29,7 @@ defmodule DashboardWeb.Live.MainLive do
   end
 
   @impl true
-  def handle_event("close-modal", attrs, socket) do
+  def handle_event("close-modal", _attrs, socket) do
     {:noreply, assign(socket, ~M{modal: false})}
   end
 
@@ -40,22 +39,52 @@ defmodule DashboardWeb.Live.MainLive do
 
     socket =
       socket
-      |> db_connection_checker(args)
       |> assign(
         page: "config",
-        configs: args,
         changeset: Config.changeset(args)
       )
+      |> db_connection_checker(args)
 
     {:noreply, socket}
   end
 
   @impl true
+  def handle_event("add-new-db-config", attrs, ~M{assigns} = socket) do
+    updated_db_attrs =
+      assigns.changeset.changes
+      |> Map.get(:db_attrs, [])
+      |> Enum.concat([%DbAttribute{id: Nanoid.generate(), name: "", value: ""}])
+
+    updated_changeset = Ecto.Changeset.put_embed(assigns.changeset, :db_attrs, updated_db_attrs)
+
+    {:noreply, assign(socket, changeset: updated_changeset, configs: attrs)}
+  end
+
+  @impl true
+  def handle_event("remove-db-config", ~m{attrid}, ~M{assigns} = socket) do
+
+    # TODO !!!!!!! -> Due to "&1.data" cant remove edited db-attr
+
+
+
+    # From the top level changeset get the "db_attrs" changesets
+    # Then check there "changes.id" property for matching id to remove, if its an empty db_attr then check "data.id" for id
+    updated_db_attrs =
+      assigns.changeset.changes
+      |> Map.get(:db_attrs, [])
+      |> Enum.reject(&((&1.data || &1.changes).id == attrid))
+
+    updated_changeset = Ecto.Changeset.put_embed(assigns.changeset, :db_attrs, updated_db_attrs)
+
+    {:noreply, assign(socket, changeset: updated_changeset)}
+  end
+
+  @impl true
   def handle_info(:check_db_connection, ~M{assigns} = socket) do
     with(
-      db_url = Dashboard.Helpers.create_db_url(assigns.configs),
+      db_url = Dashboard.Helpers.create_db_url(assigns.changeset.changes, false),
       "NA" != db_url,
-      db_type <- get_in(assigns, [:configs, "db_type"]),
+      db_type <- assigns.changeset.changes.db_type,
       false <- is_nil(db_type),
       args = %{db_type: db_type, db_url: db_url},
       resp = ConnectionTest.check_db_connection(self(), args),
@@ -95,13 +124,13 @@ defmodule DashboardWeb.Live.MainLive do
     end
   end
 
-  defp db_config_updated?(~M{configs}, args) do
+  defp db_config_updated?(~M{changeset}, args) do
+    changes = changeset.changes
     # TODO: Take into account custom db params
-
-    Map.get(configs, "db_type") != Map.get(args, "db_type") ||
-      Map.get(configs, "db_username") != Map.get(args, "db_username") ||
-      Map.get(configs, "db_password") != Map.get(args, "db_password") ||
-      Map.get(configs, "db_host") != Map.get(args, "db_host") ||
-      Map.get(configs, "db_name") != Map.get(args, "db_name")
+    changes.db_type != Map.get(args, "db_type") ||
+      changes.db_username != Map.get(args, "db_username") ||
+      changes.db_password != Map.get(args, "db_password") ||
+      changes.db_host != Map.get(args, "db_host") ||
+      changes.db_name != Map.get(args, "db_name")
   end
 end
