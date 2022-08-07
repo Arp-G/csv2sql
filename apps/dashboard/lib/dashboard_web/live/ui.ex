@@ -3,6 +3,29 @@ defmodule DashboardWeb.Live.UI do
   import Phoenix.HTML.Form
   alias DashboardWeb.Live.IconSvg
 
+  def db_connection_check(assigns \\ %{}) do
+    db_url = Dashboard.Helpers.create_db_url(assigns.changeset.changes)
+
+    # TODO: Maybe add loader for indicating on going db connect check
+    ~H"""
+      <div class="db-connect-check border p-2 rounded">
+        <div>
+          <%= if @db_connection_established do %>
+            <IconSvg.check_icon {%{width: 20, height: 20}} />
+            <span class="fw-bold font-monospace small text-success"> CAN CONNECT TO DATABASE! </span>
+          <% else %>
+            <IconSvg.warn_icon {%{width: 23, height: 23}} />
+            <span class="fw-bold font-monospace small text-danger"> COULD NOT CONNECT TO DATABASE! </span>
+          <% end %>
+        </div>
+
+        <div class="mt-2 small text-dark fw-bold font-monospace">
+          <p class="db-url-text" title={db_url}> DATABASE URL: <%= db_url %> </p>
+        </div>
+      </div>
+    """
+  end
+
   def popup(assigns \\ %{}) do
     ~H"""
       <div

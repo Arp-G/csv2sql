@@ -25,3 +25,12 @@ liveSocket.connect();
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket;
+
+// Listen for scroll events and auto scroll to end
+window.addEventListener(
+  "phx:scroll-to-bottom",
+  e => {
+    const element = document.getElementById(e.detail.id);
+    element.scrollTop = element.scrollHeight;
+  }
+)

@@ -155,15 +155,7 @@ defmodule DashboardWeb.Live.ConfigLive do
 
             <div class="d-flex flex-column">
 
-              <div>
-                <%= if @db_connection_established do %>
-                  <IconSvg.check_icon {%{width: 25, height: 25}} />
-                <% else %>
-                  <IconSvg.warn_icon {%{width: 25, height: 25}} />
-                <% end %>
-                Database URL: <%= Dashboard.Helpers.create_db_url(@changeset.changes) %>
-              </div>
-
+              <.db_connection_check changeset={@changeset} db_connection_established={@db_connection_established} />
 
               <div class="d-flex">
                 <.config_item
@@ -222,10 +214,8 @@ defmodule DashboardWeb.Live.ConfigLive do
                 <IconSvg.add_icon />
                 <span phx-click="open-modal" phx-value-modal="add-more-db-attrs"> Add more database configurations </span>
 
-                <!-- NON UNIQUE ID BUG -->
-                <!-- TODO: !!!!!!! This does not fix the issue: Since modal also has hidden elements so avoid rendering these when modal open -->
-                <!-- TODO: check if the hidden elements from modal can be removed -->
-                <% if @modal != "add-more-db-attrs" do %>
+                <!-- These hidden elements supply db_attrs as form changes when db_attrs modal is closed -->
+                <%= if @modal != "add-more-db-attrs" do %>
                   <%= inputs_for f, :db_attrs, fn db_attrs_form -> %>
                     <%= hidden_input(db_attrs_form, :id) %>
                     <%= hidden_input(db_attrs_form, :name) %>

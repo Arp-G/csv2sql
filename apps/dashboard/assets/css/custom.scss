@@ -1,8 +1,8 @@
 // Varaibles
-$light-grey: #F0F0F0;
+$light-grey: #f0f0f0;
 
 .bg-light-grey {
-  background-color: $light-grey  !important;
+  background-color: $light-grey !important;
 }
 
 // Disable horizontal scrollbar
@@ -10,6 +10,15 @@ html,
 body {
   overflow-x: hidden;
   background: blanchedalmond;
+
+  // Custom scrollbar styles
+  * {
+    scrollbar-width: thin;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 10px !important;
+  }
 }
 
 .csv2sql-logo {
@@ -64,11 +73,10 @@ body {
 
 .mysql-label {
   position: relative;
-  top: -14px
+  top: -14px;
 }
 
 .postgres-label {
-
   svg {
     display: block;
     position: relative;
@@ -76,7 +84,7 @@ body {
   }
 
   div {
-    font-family: 'Roboto', sans-serif;
+    font-family: "Roboto", sans-serif;
     font-size: 1.2rem;
 
     .inner-text {
@@ -92,18 +100,20 @@ body {
   span {
     position: relative;
     top: -4px;
-    color: blue;
+    color: darkgreen;
+    font-weight: bold;
     font-style: italic;
     text-decoration: underline;
   }
 }
 
 .opacity-transition {
-  transition: opacity .25s ease-in-out;
+  transition: opacity 0.25s ease-in-out;
 }
 
 .live-modal {
   position: absolute;
+  width: 700px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -111,7 +121,44 @@ body {
   margin: auto;
 }
 
-.db-attrs-container {
-  max-height: 400px;
-  overflow-y: scroll;
+.db-connect-check {
+  height: 72px;
+}
+
+.db-url-text {
+  width: 500px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#db-attrs-container {
+  padding: 10px;
+  height: 300px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable; // Reserve space for scrollbar to avoid UI shifting when scrollbar appears
+  scrollbar-color: #d4aa70 #e4e4e4; // Works for non-chromium (tested on firfox)
+
+  li { display: list-item; }
+
+  .db-attr-index {
+    padding: 2px;
+  }
+
+  // Custom Scrollbar css  works only for chromium based browser
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background-color: #e4e4e4;
+    border-radius: 100px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    border-radius: 100px;
+    background-color: #d4aa70;
+    box-shadow: inset 2px 2px 5px 0 rgba(#fff, 0.5);
+  }
 }

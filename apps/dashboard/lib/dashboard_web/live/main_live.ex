@@ -57,22 +57,20 @@ defmodule DashboardWeb.Live.MainLive do
 
     updated_changeset = Ecto.Changeset.put_embed(assigns.changeset, :db_attrs, updated_db_attrs)
 
-    {:noreply, assign(socket, changeset: updated_changeset, configs: attrs)}
+    {:noreply,
+     socket
+     |> assign(changeset: updated_changeset)
+     |> push_event("scroll-to-bottom", %{id: "db-attrs-container"})}
   end
 
   @impl true
   def handle_event("remove-db-config", ~m{attrid}, ~M{assigns} = socket) do
-
-    # TODO !!!!!!! -> Due to "&1.data" cant remove edited db-attr
-
-
-
     # From the top level changeset get the "db_attrs" changesets
     # Then check there "changes.id" property for matching id to remove, if its an empty db_attr then check "data.id" for id
     updated_db_attrs =
       assigns.changeset.changes
       |> Map.get(:db_attrs, [])
-      |> Enum.reject(&((&1.data || &1.changes).id == attrid))
+      |> Enum.reject(&((Map.get(&1.changes, :id) || &1.data.id) == attrid))
 
     updated_changeset = Ecto.Changeset.put_embed(assigns.changeset, :db_attrs, updated_db_attrs)
 

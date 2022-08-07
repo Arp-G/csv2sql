@@ -1,22 +1,40 @@
 defmodule Dashboard.Helpers do
-  def create_db_url(configs, hide_password \\ true) do
-    db_username = Map.get(configs, :db_username)
-    db_password = Map.get(configs, :db_password)
-    db_host = Map.get(configs, :db_host)
-    db_name = Map.get(configs, :db_name)
+  import ShorterMaps
 
-    if !is_empty(db_username) &&
-         !is_empty(db_password) &&
-         !is_empty(db_host) &&
-         !is_empty(db_name),
-       do:
-         "ecto://#{db_username}:#{if hide_password, do: hidden_password(db_password), else: db_password}@#{db_host}/#{db_name}",
-       else: "NA"
+  defguard present?(value) when value != nil and value != ""
+
+  def create_db_url(configs, hide_password \\ true)
+
+  def create_db_url(
+        ~M{db_username, db_password, db_host, db_name} = config,
+        hide_password
+      )
+      when present?(db_username) and present?(db_password) and
+             present?(db_name) and present?(db_host) do
+    password = hide_password(db_password, hide_password)
+
+    "ecto://#{db_username}:#{password}@#{db_host}/#{db_name}?#{make_query_params(config)}"
+    |> String.trim_trailing("?")
   end
 
-  def is_empty(arg) when arg in [nil, ""], do: true
-  def is_empty(_), do: false
+  def create_db_url(_configs, _hide_password), do: "NA"
 
-  defp hidden_password(password),
+  # == Private helpers ==
+  defp make_query_params(~M{db_attrs}) when is_list(db_attrs) do
+    db_attrs
+    |> Enum.map(& &1.changes)
+    |> Enum.reject(fn
+      ~M{name, value} when present?(name) and present?(value) -> false
+      _ -> true
+    end)
+    |> Enum.into(%{}, fn ~M{name, value} -> {name, value} end)
+    |> URI.encode_query()
+  end
+
+  defp make_query_params(_config), do: ""
+
+  defp hide_password(password, true),
     do: password |> String.split("") |> Enum.map(fn _ -> "•" end) |> Enum.join("")
+
+  defp hide_password(password, false), do: password
 end
