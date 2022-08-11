@@ -2,7 +2,7 @@ defmodule DashboardWeb.Live.ConfigLive do
   use DashboardWeb, :live_view
   import DashboardWeb.Live.Modal.DbAttributesModal
 
-  # TODO: Break this in simple components and remove any uneeded classes and cleanup the markup
+  # TODO: Break this in simple components and remove any unneeded classes and cleanup the markup
   @impl true
   def render(assigns) do
     ~H"""
@@ -28,6 +28,7 @@ defmodule DashboardWeb.Live.ConfigLive do
               <:input let={f}>
                 <%= text_input f, :source_directory, "phx-debounce": "1000", class: "form-control", placeholder: "CSV source directory path" %>
               </:input>
+              <%= DashboardWeb.ErrorHelpers.error_message(f, :source_directory) %>
             </.config_item>
 
             <.config_item

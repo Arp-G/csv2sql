@@ -51,6 +51,7 @@ defmodule DashboardWeb do
       import ShorterMaps
       import DashboardWeb.LiveHelpers
       import DashboardWeb.Live.UI
+      import DashboardWeb.ErrorHelpers
       alias DashboardWeb.Live.IconSvg
       alias Phoenix.LiveView.JS
     end
