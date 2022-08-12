@@ -49,7 +49,7 @@ defmodule DashboardWeb.Live.MainLive do
   end
 
   @impl true
-  def handle_event("add-new-db-config", attrs, ~M{assigns} = socket) do
+  def handle_event("add-new-db-config", _attrs, ~M{assigns} = socket) do
     updated_db_attrs =
       assigns.changeset.changes
       |> Map.get(:db_attrs, [])
@@ -81,7 +81,7 @@ defmodule DashboardWeb.Live.MainLive do
   def handle_info(:check_db_connection, ~M{assigns} = socket) do
     with(
       db_url = Dashboard.Helpers.create_db_url(assigns.changeset.changes, false),
-      "NA" != db_url,
+      not("NA" == db_url),
       db_type <- assigns.changeset.changes.db_type,
       false <- is_nil(db_type),
       args = %{db_type: db_type, db_url: db_url},

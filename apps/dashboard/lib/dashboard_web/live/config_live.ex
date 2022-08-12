@@ -27,8 +27,11 @@ defmodule DashboardWeb.Live.ConfigLive do
               placeholder="CSV source directory path">
               <:input let={f}>
                 <%= text_input f, :source_directory, "phx-debounce": "1000", class: "form-control", placeholder: "CSV source directory path" %>
+                <%= if (csv_count = Ecto.Changeset.get_field(@changeset, :csv_count)) && !is_nil(csv_count) && csv_count > 0 do %>
+                  <span> Found <%= csv_count %> csvs at given path </span>
+                <% end %>
+                <%= error_tag(f, :source_directory) %>
               </:input>
-              <%= DashboardWeb.ErrorHelpers.error_message(f, :source_directory) %>
             </.config_item>
 
             <.config_item
@@ -39,6 +42,7 @@ defmodule DashboardWeb.Live.ConfigLive do
               placeholder="Schema file path">
               <:input let={f}>
                 <%= text_input f, :schema_path, "phx-debounce": "1000", class: "form-control", placeholder: "Schema file path" %>
+                <%= error_tag(f, :schema_path) %>
               </:input>
             </.config_item>
 

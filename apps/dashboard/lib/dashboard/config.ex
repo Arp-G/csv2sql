@@ -30,6 +30,9 @@ defmodule DashBoard.Config do
     field(:insertion_chunk_size, :integer)
     field(:log, :boolean)
 
+    # Misc
+    field(:csv_count, :integer)
+
     embeds_many(:db_attrs, DashBoard.DbAttribute, on_replace: :delete)
   end
 
@@ -42,8 +45,52 @@ defmodule DashBoard.Config do
         _field -> false
       end)
 
-    %__MODULE__{}
-    |> cast(params, attrs_to_cast)
-    |> cast_embed(:db_attrs)
+    changeset =
+      %__MODULE__{}
+      |> cast(params, attrs_to_cast)
+      |> validate_source_directory()
+      |> validate_path(:schema_path)
+      |> cast_embed(:db_attrs)
+
+    # Phoenix uses the value of changeset.action to decide if errors should be shown or not on a given form
+    %{changeset | action: :insert}
+  end
+
+  defp validate_source_directory(changeset) do
+    changeset
+    |> validate_path(:source_directory)
+    |> add_csv_count()
+  end
+
+  defp validate_path(changeset, field) do
+    changeset
+    |> get_change(field, "")
+    |> File.dir?()
+    |> if(
+      do: changeset,
+      else: add_error(changeset, field, "Invalid path, enter a path to a valid directory")
+    )
+  end
+
+  defp add_csv_count(%Ecto.Changeset{valid?: true} = changeset) do
+    csv_count =
+      changeset
+      |> get_change(:source_directory)
+      |> File.ls!()
+      |> Enum.filter(&is_csv?/1)
+      |> Enum.count()
+
+    if csv_count == 0,
+      do: add_error(changeset, :source_directory, "No CSVs found at path"),
+      else: put_change(changeset, :csv_count, csv_count)
+  end
+
+  defp add_csv_count(changeset), do: changeset
+
+  defp is_csv?(filepath) do
+    filepath
+    |> String.trim()
+    |> String.slice(-4..-1)
+    |> String.downcase() == ".csv"
   end
 end
