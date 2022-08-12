@@ -43,6 +43,8 @@ defmodule DashboardWeb.Live.MainLive do
         page: "config",
         changeset: Config.changeset(args)
       )
+      # DB connection checker is expensive and returns result to caller process with delay
+      # so we don't do this validation on changeset level
       |> db_connection_checker(args)
 
     {:noreply, socket}
@@ -51,8 +53,8 @@ defmodule DashboardWeb.Live.MainLive do
   @impl true
   def handle_event("add-new-db-config", _attrs, ~M{assigns} = socket) do
     updated_db_attrs =
-      assigns.changeset.changes
-      |> Map.get(:db_attrs, [])
+      assigns.changeset
+      |> Ecto.Changeset.get_field(:db_attrs, [])
       |> Enum.concat([%DbAttribute{id: Nanoid.generate(), name: "", value: ""}])
 
     updated_changeset = Ecto.Changeset.put_embed(assigns.changeset, :db_attrs, updated_db_attrs)
@@ -65,12 +67,13 @@ defmodule DashboardWeb.Live.MainLive do
 
   @impl true
   def handle_event("remove-db-config", ~m{attrid}, ~M{assigns} = socket) do
-    # From the top level changeset get the "db_attrs" changesets
-    # Then check there "changes.id" property for matching id to remove, if its an empty db_attr then check "data.id" for id
     updated_db_attrs =
-      assigns.changeset.changes
-      |> Map.get(:db_attrs, [])
-      |> Enum.reject(&((Map.get(&1.changes, :id) || &1.data.id) == attrid))
+      assigns.changeset
+      # For relations get_change/2 return the original changeset data with changes applied, fetch_change!/2 returns raw db_config changesets
+      |> Ecto.Changeset.fetch_change!(:db_attrs)
+      |> Enum.reject(fn db_config_changeset ->
+        Ecto.Changeset.get_field(db_config_changeset, :id) == attrid
+      end)
 
     updated_changeset = Ecto.Changeset.put_embed(assigns.changeset, :db_attrs, updated_db_attrs)
 
@@ -81,8 +84,8 @@ defmodule DashboardWeb.Live.MainLive do
   def handle_info(:check_db_connection, ~M{assigns} = socket) do
     with(
       db_url = Dashboard.Helpers.create_db_url(assigns.changeset.changes, false),
-      not("NA" == db_url),
-      db_type <- assigns.changeset.changes.db_type,
+      true <- not ("NA" == db_url),
+      db_type <- Ecto.Changeset.get_field(assigns.changeset, :db_type),
       false <- is_nil(db_type),
       args = %{db_type: db_type, db_url: db_url},
       resp = ConnectionTest.check_db_connection(self(), args),
@@ -107,8 +110,14 @@ defmodule DashboardWeb.Live.MainLive do
     do: {:noreply, assign(socket, db_connection_established: true)}
 
   @impl true
-  def handle_info({:error, _}, socket),
-    do: {:noreply, assign(socket, db_connection_established: false)}
+  def handle_info({:error, _}, ~M{assigns} = socket) do
+    {:noreply,
+     assign(
+       socket,
+       changeset: Ecto.Changeset.add_error(assigns.changeset, :db_url, "Could not connect to database"),
+       db_connection_established: false
+     )}
+  end
 
   defp db_connection_checker(~M{assigns} = socket, args) do
     if db_config_updated?(assigns, args) do
@@ -123,12 +132,11 @@ defmodule DashboardWeb.Live.MainLive do
   end
 
   defp db_config_updated?(~M{changeset}, args) do
-    changes = changeset.changes
     # TODO: Take into account custom db params
-    changes.db_type != Map.get(args, "db_type") ||
-      changes.db_username != Map.get(args, "db_username") ||
-      changes.db_password != Map.get(args, "db_password") ||
-      changes.db_host != Map.get(args, "db_host") ||
-      changes.db_name != Map.get(args, "db_name")
+    Ecto.Changeset.get_field(changeset, :db_type) != Map.get(args, "db_type") ||
+      Ecto.Changeset.get_field(changeset, :db_username) != Map.get(args, "db_username") ||
+      Ecto.Changeset.get_field(changeset, :db_password) != Map.get(args, "db_password") ||
+      Ecto.Changeset.get_field(changeset, :db_host) != Map.get(args, "db_host") ||
+      Ecto.Changeset.get_field(changeset, :db_name) != Map.get(args, "db_name")
   end
 end
