@@ -2,6 +2,9 @@ defmodule DashboardWeb.Live.Modal.DbAttributesModal do
   use DashboardWeb, :component
 
   def db_attrs_modal(assigns) do
+    db_attrs_added =
+      assigns.changeset |> Ecto.Changeset.get_field(:db_attrs, []) |> length() != 0
+
     ~H"""
       <DashboardWeb.Live.Modals.modal title="Add additional DB attributes">
         <div>
@@ -19,7 +22,7 @@ defmodule DashboardWeb.Live.Modal.DbAttributesModal do
           </datalist>
 
           <div id="db-attrs-container">
-            <%= if (@form.source.changes |> Map.get(:db_attrs, []) |> length != 0) do %>
+            <%= if db_attrs_added do %>
               <%= for {db_attrs_form, index} <- Enum.with_index(inputs_for(@form, :db_attrs), 1) do %>
                 <div class="d-flex flex-row">
                   <div class="input-group mb-3">
@@ -31,8 +34,7 @@ defmodule DashboardWeb.Live.Modal.DbAttributesModal do
 
                   <%= hidden_input(db_attrs_form, :id) %>
 
-                  <!-- Initially for a new db_attr the id is present in db_attrs_form.data.id but once edited db_attrs_form.data becomes nil so we get id from params -->
-                  <div role="button" phx-click="remove-db-config" phx-value-attrid={db_attrs_form.data.id || db_attrs_form.params["id"]}>
+                  <div role="button" phx-click="remove-db-attr" phx-value-attrid={Ecto.Changeset.get_field(db_attrs_form.source, :id)}>
                     <IconSvg.remove_icon class="ms-2 pt-1"/>
                   </div>
                 </div>
@@ -47,7 +49,7 @@ defmodule DashboardWeb.Live.Modal.DbAttributesModal do
 
           <div class="add-link text-center">
             <IconSvg.add_icon {%{width: 28}} />
-            <span phx-click="add-new-db-config"> Add more database configurations </span>
+            <span phx-click="add-new-db-attr"> Add more database configurations </span>
           </div>
         </div>
       </DashboardWeb.Live.Modals.modal>

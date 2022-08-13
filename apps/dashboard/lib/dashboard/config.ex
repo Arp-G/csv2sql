@@ -9,8 +9,6 @@ defmodule DashBoard.Config do
     field(:insert_schema, :boolean)
     field(:insert_data, :boolean)
     field(:ordered, :boolean)
-    field(:date_patterns, {:array, :utc_datetime})
-    field(:datetime_patterns, {:array, :utc_datetime})
     field(:schema_infer_chunk_size, :integer)
     field(:worker_count, :integer)
     field(:parse_datetime, :boolean)
@@ -34,6 +32,8 @@ defmodule DashBoard.Config do
     field(:csv_count, :integer)
 
     embeds_many(:db_attrs, DashBoard.DbAttribute, on_replace: :delete)
+    embeds_many(:date_patterns, DashBoard.DatePattern, on_replace: :delete)
+    embeds_many(:date_time_patterns, DashBoard.DateTimePattern, on_replace: :delete)
   end
 
   def changeset(params) do
@@ -41,7 +41,7 @@ defmodule DashBoard.Config do
       :fields
       |> __MODULE__.__schema__()
       |> Enum.reject(fn
-        field when field in [:db_attrs] -> true
+        field when field in ~w[db_attrs date_patterns date_time_patterns]a -> true
         _field -> false
       end)
 
@@ -51,6 +51,8 @@ defmodule DashBoard.Config do
       |> validate_source_directory()
       |> validate_path(:schema_path)
       |> cast_embed(:db_attrs)
+      |> cast_embed(:date_patterns)
+      |> cast_embed(:date_time_patterns)
 
     # Phoenix uses the value of changeset.action to decide if errors should be shown or not on a given form
     %{changeset | action: :insert}

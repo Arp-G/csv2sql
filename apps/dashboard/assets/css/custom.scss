@@ -113,7 +113,7 @@ body {
 
 .live-modal {
   position: absolute;
-  width: 700px;
+  width: 900px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -130,6 +130,15 @@ body {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+#date-time-patterns-container {
+  padding-top: 10px;
+  height: 300px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable; // Reserve space for scrollbar to avoid UI shifting when scrollbar appears
+  scrollbar-color: #d4aa70 #e4e4e4; // Works for non-chromium (tested on firfox)
 }
 
 #db-attrs-container {

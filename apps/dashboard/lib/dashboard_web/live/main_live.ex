@@ -51,31 +51,49 @@ defmodule DashboardWeb.Live.MainLive do
   end
 
   @impl true
-  def handle_event("add-new-db-config", _attrs, ~M{assigns} = socket) do
-    updated_db_attrs =
-      assigns.changeset
-      |> Ecto.Changeset.get_field(:db_attrs, [])
-      |> Enum.concat([%DbAttribute{id: Nanoid.generate(), name: "", value: ""}])
+  def handle_event("add-new-" <> field, _attrs, ~M{assigns} = socket)
+      when field in ~w[db-attr date-pattern date-time-pattern] do
+    new_field =
+      field
+      |> String.replace("-", "_")
+      |> String.to_atom()
+      |> case do
+        :db_attr -> %DbAttribute{id: Nanoid.generate(), name: "", value: ""}
+        :date_pattern -> %DashBoard.DatePattern{id: Nanoid.generate()}
+        :date_time_pattern -> %DashBoard.DateTimePattern{id: Nanoid.generate()}
+      end
 
-    updated_changeset = Ecto.Changeset.put_embed(assigns.changeset, :db_attrs, updated_db_attrs)
+    association = "#{field}s" |> String.replace("-", "_") |> String.to_atom()
+
+    updated_association =
+      assigns.changeset
+      |> Ecto.Changeset.get_field(association, [])
+      |> Enum.concat([new_field])
+
+    updated_changeset =
+      Ecto.Changeset.put_embed(assigns.changeset, association, updated_association)
 
     {:noreply,
      socket
      |> assign(changeset: updated_changeset)
-     |> push_event("scroll-to-bottom", %{id: "db-attrs-container"})}
+     |> push_event("scroll-to-bottom", %{id: "#{field}s-container"})}
   end
 
   @impl true
-  def handle_event("remove-db-config", ~m{attrid}, ~M{assigns} = socket) do
-    updated_db_attrs =
+  def handle_event("remove-" <> field, ~m{attrid}, ~M{assigns} = socket)
+      when field in ~w[db-attr date-pattern date-time-pattern] do
+    association = "#{field}s" |> String.replace("-", "_") |> String.to_atom()
+
+    updated_association =
       assigns.changeset
       # For relations get_change/2 return the original changeset data with changes applied, fetch_change!/2 returns raw db_config changesets
-      |> Ecto.Changeset.fetch_change!(:db_attrs)
-      |> Enum.reject(fn db_config_changeset ->
-        Ecto.Changeset.get_field(db_config_changeset, :id) == attrid
+      |> Ecto.Changeset.fetch_change!(association)
+      |> Enum.reject(fn embed_changeset ->
+        Ecto.Changeset.get_field(embed_changeset, :id) == attrid
       end)
 
-    updated_changeset = Ecto.Changeset.put_embed(assigns.changeset, :db_attrs, updated_db_attrs)
+    updated_changeset =
+      Ecto.Changeset.put_embed(assigns.changeset, association, updated_association)
 
     {:noreply, assign(socket, changeset: updated_changeset)}
   end
@@ -114,7 +132,8 @@ defmodule DashboardWeb.Live.MainLive do
     {:noreply,
      assign(
        socket,
-       changeset: Ecto.Changeset.add_error(assigns.changeset, :db_url, "Could not connect to database"),
+       changeset:
+         Ecto.Changeset.add_error(assigns.changeset, :db_url, "Could not connect to database"),
        db_connection_established: false
      )}
   end

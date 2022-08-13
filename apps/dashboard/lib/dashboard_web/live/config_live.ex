@@ -1,6 +1,6 @@
 defmodule DashboardWeb.Live.ConfigLive do
   use DashboardWeb, :live_view
-  import DashboardWeb.Live.Modal.DbAttributesModal
+  import DashboardWeb.Live.Modal.{DbAttributesModal, DateTimePatternsModal}
 
   # TODO: Break this in simple components and remove any unneeded classes and cleanup the markup
   @impl true
@@ -92,6 +92,13 @@ defmodule DashboardWeb.Live.ConfigLive do
                   <%= checkbox f, :remove_illegal_characters, class: "form-check-input" %>
                 </:input>
               </.config_item>
+
+              <%= if Ecto.Changeset.get_field(@changeset, :parse_datetime) do %>
+                <div class="add-link">
+                  <IconSvg.add_icon />
+                  <span phx-click="open-modal" phx-value-modal="add-date-time-patterns"> Add date time patterns </span>
+                </div>
+              <% end %>
             </div>
           </div>
         </div>
@@ -218,16 +225,6 @@ defmodule DashboardWeb.Live.ConfigLive do
               <div class="add-link">
                 <IconSvg.add_icon />
                 <span phx-click="open-modal" phx-value-modal="add-more-db-attrs"> Add more database configurations </span>
-
-                <!-- These hidden elements supply db_attrs as form changes when db_attrs modal is closed -->
-                <%= if @modal != "add-more-db-attrs" do %>
-                  <%= inputs_for f, :db_attrs, fn db_attrs_form -> %>
-                    <%= hidden_input(db_attrs_form, :id) %>
-                    <%= hidden_input(db_attrs_form, :name) %>
-                    <%= hidden_input(db_attrs_form, :value) %>
-                  <% end %>
-                <% end %>
-
               </div>
             </div>
 
@@ -270,8 +267,32 @@ defmodule DashboardWeb.Live.ConfigLive do
           </div>
         </div>
 
+        <!-- These hidden elements supply db_attrs as form changes when db_attrs modal is closed -->
+        <%= if @modal != "add-more-db-attrs" do %>
+          <%= inputs_for f, :db_attrs, fn assoc_form -> %>
+            <%= hidden_input(assoc_form, :id) %>
+            <%= hidden_input(assoc_form, :name) %>
+            <%= hidden_input(assoc_form, :value) %>
+          <% end %>
+        <% end %>
+
+        <%= if @modal != "add-date-time-patterns" do %>
+          <%= inputs_for f, :date_time_patterns, fn assoc_form -> %>
+            <%= hidden_input(assoc_form, :id) %>w
+            <%= hidden_input(assoc_form, :pattern) %>
+          <% end %>
+        <% end %>
+
+        <%= if @modal != "add-datepatterns" do %>
+          <%= inputs_for f, :date_patterns, fn assoc_form -> %>
+            <%= hidden_input(assoc_form, :id) %>w
+            <%= hidden_input(assoc_form, :pattern) %>
+          <% end %>
+        <% end %>
+
         <%= case @modal do %>
-          <% "add-more-db-attrs" -> %> <.db_attrs_modal id="db_attrs_modal" form={f} />
+          <% "add-more-db-attrs" -> %> <.db_attrs_modal id="db_attrs_modal" form={f} changeset={@changeset} />
+          <% "add-date-time-patterns" -> %> <.date_time_patterns_modal id="date_time_patterns_modal" form={f} changeset={@changeset} />
           <% _ -> %>
         <% end %>
       </.form>
