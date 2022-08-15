@@ -1,5 +1,6 @@
 defmodule DashboardWeb.Live.MainLive do
   use DashboardWeb, :live_view
+  import Dashboard.Helpers
   alias DashBoard.{Config, DbAttribute}
   alias Csv2sql.Database.ConnectionTest
 
@@ -14,7 +15,8 @@ defmodule DashboardWeb.Live.MainLive do
        path_validator_debouncer: nil,
        db_connection_debouncer: nil,
        db_connection_established: false,
-       changeset: Ecto.Changeset.change(%DashBoard.Config{})
+       changeset: Ecto.Changeset.change(%DashBoard.Config{}),
+       matching_date_time: nil
      )}
   end
 
@@ -34,7 +36,7 @@ defmodule DashboardWeb.Live.MainLive do
   end
 
   @impl true
-  def handle_event("validate-and-save", attrs, socket) do
+  def handle_event("validate-and-save", attrs, ~M{assigns} = socket) do
     args = Map.get(attrs, "config", %{})
 
     socket =
@@ -46,6 +48,7 @@ defmodule DashboardWeb.Live.MainLive do
       # DB connection checker is expensive and returns result to caller process with delay
       # so we don't do this validation on changeset level
       |> db_connection_checker(args)
+      |> update_matching_date_time(attrs)
 
     {:noreply, socket}
   end
@@ -95,13 +98,16 @@ defmodule DashboardWeb.Live.MainLive do
     updated_changeset =
       Ecto.Changeset.put_embed(assigns.changeset, association, updated_association)
 
-    {:noreply, assign(socket, changeset: updated_changeset)}
+    {:noreply,
+     socket
+     |> assign(changeset: updated_changeset)
+     |> update_matching_date_time()}
   end
 
   @impl true
   def handle_info(:check_db_connection, ~M{assigns} = socket) do
     with(
-      db_url = Dashboard.Helpers.create_db_url(assigns.changeset.changes, false),
+      db_url = create_db_url(assigns.changeset.changes, false),
       true <- not ("NA" == db_url),
       db_type <- Ecto.Changeset.get_field(assigns.changeset, :db_type),
       false <- is_nil(db_type),
@@ -157,5 +163,24 @@ defmodule DashboardWeb.Live.MainLive do
       Ecto.Changeset.get_field(changeset, :db_password) != Map.get(args, "db_password") ||
       Ecto.Changeset.get_field(changeset, :db_host) != Map.get(args, "db_host") ||
       Ecto.Changeset.get_field(changeset, :db_name) != Map.get(args, "db_name")
+  end
+
+  defp update_matching_date_time(~M{assigns} = socket, attrs \\ %{}) do
+    date_time_sample =
+      get_in(attrs, ["config", "date_time_trial"]) ||
+        Ecto.Changeset.get_field(assigns.changeset, :date_time_trial)
+
+    case match_date_time(assigns.changeset, date_time_sample) do
+      {type, index} ->
+
+        socket
+        |> assign(matching_date_time: {type, index})
+        |> push_event("scroll-into-view", %{
+          id: "config_#{type}_patterns_#{index}_pattern"
+        })
+
+      false ->
+        assign(socket, matching_date_time: nil)
+    end
   end
 end

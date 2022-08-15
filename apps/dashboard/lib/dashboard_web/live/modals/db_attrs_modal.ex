@@ -21,7 +21,7 @@ defmodule DashboardWeb.Live.Modal.DbAttributesModal do
             <option value="socket"/>
           </datalist>
 
-          <div id="db-attrs-container">
+          <div class="scrollable-container" id="db-attrs-container">
             <%= if db_attrs_added do %>
               <%= for {db_attrs_form, index} <- Enum.with_index(inputs_for(@form, :db_attrs), 1) do %>
                 <div class="d-flex flex-row">

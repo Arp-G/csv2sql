@@ -281,9 +281,7 @@ defmodule DashboardWeb.Live.ConfigLive do
             <%= hidden_input(assoc_form, :id) %>w
             <%= hidden_input(assoc_form, :pattern) %>
           <% end %>
-        <% end %>
 
-        <%= if @modal != "add-datepatterns" do %>
           <%= inputs_for f, :date_patterns, fn assoc_form -> %>
             <%= hidden_input(assoc_form, :id) %>w
             <%= hidden_input(assoc_form, :pattern) %>
@@ -292,7 +290,7 @@ defmodule DashboardWeb.Live.ConfigLive do
 
         <%= case @modal do %>
           <% "add-more-db-attrs" -> %> <.db_attrs_modal id="db_attrs_modal" form={f} changeset={@changeset} />
-          <% "add-date-time-patterns" -> %> <.date_time_patterns_modal id="date_time_patterns_modal" form={f} changeset={@changeset} />
+          <% "add-date-time-patterns" -> %> <.date_time_patterns_modal id="date_time_patterns_modal" form={f} changeset={@changeset} matching_date_time={@matching_date_time}/>
           <% _ -> %>
         <% end %>
       </.form>

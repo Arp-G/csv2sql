@@ -19,18 +19,22 @@ let hooks = {
 
 let liveSocket = new LiveSocket("/live", Socket, { hooks, params: { _csrf_token: csrfToken } });
 liveSocket.connect();
-
-// expose liveSocket on window for web console debug logs and latency simulation:
-// >> liveSocket.enableDebug()
-// >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
-// >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket;
 
-// Listen for scroll events and auto scroll to end
+// Listen for phx "scroll-to-bottom" events and scroll to end of given element id
 window.addEventListener(
   "phx:scroll-to-bottom",
   e => {
     const element = document.getElementById(e.detail.id);
     element.scrollTop = element.scrollHeight;
+  }
+)
+
+// Listen for phx "scroll-into-view" events and scroll the given element id into view
+window.addEventListener(
+  "phx:scroll-into-view",
+  e => {
+    const element = document.getElementById(e.detail.id);
+    element.scrollIntoView({behavior: "smooth",  block: "nearest"});
   }
 )

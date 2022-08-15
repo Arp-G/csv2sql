@@ -75,7 +75,7 @@ defmodule DashboardWeb.Live.UI do
         <div class="card-body d-flex flex-column align-items-center pb-0">
           <IconSvg.infer_schema dimensions={%{width: 40, height: 40}}/>
           <div class="d-flex flex-row justify-content-around m-2">
-            <div> <.popup title="TODO: popup title" id ="infer_schema_popup" /> </div>
+            <div> <.popup title="TODO: popup title" id="infer_schema_popup" /> </div>
             <span> Infer Schema </span>
           </div>
         </div>
@@ -87,7 +87,7 @@ defmodule DashboardWeb.Live.UI do
         <div class="card-body d-flex flex-column align-items-center pb-0">
           <IconSvg.insert_schema />
           <div class="d-flex flex-row justify-content-around m-2">
-            <div> <.popup title="TODO: popup title" id ="insert_schema_popup" /> </div>
+            <div> <.popup title="TODO: popup title" id="insert_schema_popup" /> </div>
             <div class="form-check">
               <%= checkbox @form, :insert_schema, class: "form-check-input" %>
               <%= label @form, :insert_schema, "Create Tables", class: "form-check-label" %>
@@ -102,7 +102,7 @@ defmodule DashboardWeb.Live.UI do
         <div class="card-body d-flex flex-column align-items-center pb-0">
           <IconSvg.insert_data />
           <div class="d-flex flex-row justify-content-around m-2">
-            <div> <.popup title="TODO: popup title" id ="insert_data_popup" /> </div>
+            <div> <.popup title="TODO: popup title" id="insert_data_popup" /> </div>
             <div class="form-check">
               <%= checkbox @form, :insert_data, class: "form-check-input" %>
               <%= label @form, :insert_data, class: "form-check-label" %>

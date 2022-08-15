@@ -30,6 +30,7 @@ defmodule DashBoard.Config do
 
     # Misc
     field(:csv_count, :integer)
+    field(:date_time_trial, :string)
 
     embeds_many(:db_attrs, DashBoard.DbAttribute, on_replace: :delete)
     embeds_many(:date_patterns, DashBoard.DatePattern, on_replace: :delete)
