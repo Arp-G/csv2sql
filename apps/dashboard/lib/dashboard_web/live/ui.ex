@@ -113,7 +113,7 @@ defmodule DashboardWeb.Live.UI do
     """
   end
 
-    @doc """
+  @doc """
   Generates tag for inlined form input errors.
   """
   def error_tag(form, field) do

@@ -13,11 +13,27 @@ let hooks = {
       // Initialize bootstrap tooltips
       // Ref: https://getbootstrap.com/docs/5.2/components/tooltips/#enable-tooltips
       new bootstrap.Tooltip(this.el);
+
+      this.handleEvent("save-config", ({ config }) => {
+        console.log("write to local", JSON.stringify(config))
+        localStorage.setItem("config", JSON.stringify(config))
+      }
+      )
     }
   }
 };
 
-let liveSocket = new LiveSocket("/live", Socket, { hooks, params: { _csrf_token: csrfToken } });
+let liveSocket = new LiveSocket(
+  "/live",
+  Socket,
+  {
+    hooks,
+    params: {
+      _csrf_token: csrfToken,
+      localConfig: (JSON.parse(localStorage.getItem('config') || '{}'))
+    }
+  });
+
 liveSocket.connect();
 window.liveSocket = liveSocket;
 
@@ -35,6 +51,6 @@ window.addEventListener(
   "phx:scroll-into-view",
   e => {
     const element = document.getElementById(e.detail.id);
-    element.scrollIntoView({behavior: "smooth",  block: "nearest"});
+    element.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 )

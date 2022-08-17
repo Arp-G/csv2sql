@@ -8,14 +8,18 @@ defmodule DashboardWeb.Live.MainLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    localstorage_config = (get_connect_params(socket) || %{}) |> Map.get("localConfig", %{})
+    # Check for DB connection on config load from local storage
+    timer_ref = Process.send_after(self(), :check_db_connection, @debounce_time)
+
     {:ok,
      assign(socket,
        page: "config",
        modal: false,
        path_validator_debouncer: nil,
-       db_connection_debouncer: nil,
+       db_connection_debouncer: timer_ref,
        db_connection_established: false,
-       changeset: Ecto.Changeset.change(%DashBoard.Config{}),
+       changeset: Config.get_defaults() |> Config.changeset(localstorage_config),
        matching_date_time: nil
      )}
   end
@@ -50,7 +54,7 @@ defmodule DashboardWeb.Live.MainLive do
       |> db_connection_checker(args)
       |> update_matching_date_time(attrs)
 
-    {:noreply, socket}
+    {:noreply, socket |> push_event("save-config", %{config: socket.assigns.changeset})}
   end
 
   @impl true
@@ -172,7 +176,6 @@ defmodule DashboardWeb.Live.MainLive do
 
     case match_date_time(assigns.changeset, date_time_sample) do
       {type, index} ->
-
         socket
         |> assign(matching_date_time: {type, index})
         |> push_event("scroll-into-view", %{

@@ -5,9 +5,15 @@
   display: block;
 }
 
-.phx-no-feedback.invalid-feedback, .phx-no-feedback .invalid-feedback {
-  display: none;
-}
+/*
+  Any DOM container with the phx-feedback-for attribute will receive a phx-no-feedback class in cases where the 
+  form fields has yet to receive user input/focus, in such cases we hide the error.
+
+  In our case if still show the errors always
+*/
+// .phx-no-feedback.invalid-feedback, .phx-no-feedback .invalid-feedback {
+//   display: none;
+// }
 
 .phx-click-loading {
   opacity: 0.5;

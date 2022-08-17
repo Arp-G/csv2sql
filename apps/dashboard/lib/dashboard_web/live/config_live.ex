@@ -278,12 +278,12 @@ defmodule DashboardWeb.Live.ConfigLive do
 
         <%= if @modal != "add-date-time-patterns" do %>
           <%= inputs_for f, :date_time_patterns, fn assoc_form -> %>
-            <%= hidden_input(assoc_form, :id) %>w
+            <%= hidden_input(assoc_form, :id) %>
             <%= hidden_input(assoc_form, :pattern) %>
           <% end %>
 
           <%= inputs_for f, :date_patterns, fn assoc_form -> %>
-            <%= hidden_input(assoc_form, :id) %>w
+            <%= hidden_input(assoc_form, :id) %>
             <%= hidden_input(assoc_form, :pattern) %>
           <% end %>
         <% end %>

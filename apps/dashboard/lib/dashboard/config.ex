@@ -1,3 +1,11 @@
+# This is required so that changesets can be serialized and stored in browser local storage
+# We are using only changes on a changeset
+defimpl Jason.Encoder, for: Ecto.Changeset do
+  def encode(changeset, opts) do
+    Jason.Encode.map(changeset.changes, opts)
+  end
+end
+
 defmodule DashBoard.Config do
   use Ecto.Schema
   import Ecto.Changeset
@@ -37,20 +45,41 @@ defmodule DashBoard.Config do
     embeds_many(:date_time_patterns, DashBoard.DateTimePattern, on_replace: :delete)
   end
 
-  def changeset(params) do
+  def get_defaults do
+    %__MODULE__{
+      db_type: :mysql,
+      db_worker_count: 10,
+      drop_existing_tables: false,
+      insert_data: true,
+      insert_schema: true,
+      insertion_chunk_size: 100,
+      log: false,
+      ordered: false,
+      parse_datetime: true,
+      remove_illegal_characters: false,
+      schema_infer_chunk_size: 100,
+      varchar_limit: 200,
+      worker_count: System.schedulers_online()
+    }
+  end
+
+  def changeset(params), do: changeset(%__MODULE__{}, params)
+
+  def changeset(%__MODULE__{} = config, params) do
     attrs_to_cast =
       :fields
       |> __MODULE__.__schema__()
+      # Reject nested attributes from cast, they will be loaded via cast_embed/2
       |> Enum.reject(fn
         field when field in ~w[db_attrs date_patterns date_time_patterns]a -> true
         _field -> false
       end)
 
     changeset =
-      %__MODULE__{}
+      config
       |> cast(params, attrs_to_cast)
       |> validate_source_directory()
-      |> validate_path(:schema_path)
+      |> validate_path(:schema_path, true)
       |> cast_embed(:db_attrs)
       |> cast_embed(:date_patterns)
       |> cast_embed(:date_time_patterns)
@@ -65,14 +94,19 @@ defmodule DashBoard.Config do
     |> add_csv_count()
   end
 
-  defp validate_path(changeset, field) do
-    changeset
-    |> get_change(field, "")
-    |> File.dir?()
-    |> if(
-      do: changeset,
-      else: add_error(changeset, field, "Invalid path, enter a path to a valid directory")
-    )
+  defp validate_path(changeset, field, allow_blank \\ false) do
+    value = get_change(changeset, field, "")
+
+    if allow_blank && value == "" do
+      changeset
+    else
+      value
+      |> File.dir?()
+      |> if(
+        do: changeset,
+        else: add_error(changeset, field, "Invalid path, enter a path to a valid directory")
+      )
+    end
   end
 
   defp add_csv_count(%Ecto.Changeset{valid?: true} = changeset) do
