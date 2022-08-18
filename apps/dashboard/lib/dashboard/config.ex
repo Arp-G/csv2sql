@@ -48,7 +48,7 @@ defmodule DashBoard.Config do
 
   def get_defaults do
     Csv2sql.Config.Loader.get_defaults()
-    |> Map.put(:source_directory, get_source_directory())
+    |> Map.merge(%{source_directory: get_source_directory(), worker_count: System.schedulers_online()})
   end
 
   def changeset(params), do: changeset(%__MODULE__{}, params)
