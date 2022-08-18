@@ -9,6 +9,7 @@ end
 defmodule DashBoard.Config do
   use Ecto.Schema
   import Ecto.Changeset
+  import ShorterMaps
 
   @primary_key false
   embedded_schema do
@@ -46,21 +47,8 @@ defmodule DashBoard.Config do
   end
 
   def get_defaults do
-    %__MODULE__{
-      db_type: :mysql,
-      db_worker_count: 10,
-      drop_existing_tables: false,
-      insert_data: true,
-      insert_schema: true,
-      insertion_chunk_size: 100,
-      log: false,
-      ordered: false,
-      parse_datetime: true,
-      remove_illegal_characters: false,
-      schema_infer_chunk_size: 100,
-      varchar_limit: 200,
-      worker_count: System.schedulers_online()
-    }
+    Csv2sql.Config.Loader.get_defaults()
+    |> Map.put(:source_directory, get_source_directory())
   end
 
   def changeset(params), do: changeset(%__MODULE__{}, params)
@@ -78,6 +66,7 @@ defmodule DashBoard.Config do
     changeset =
       config
       |> cast(params, attrs_to_cast)
+      |> validate_limit_constraints(Csv2sql.Config.Loader.get_constraints())
       |> validate_source_directory()
       |> validate_path(:schema_path, true)
       |> cast_embed(:db_attrs)
@@ -86,6 +75,21 @@ defmodule DashBoard.Config do
 
     # Phoenix uses the value of changeset.action to decide if errors should be shown or not on a given form
     %{changeset | action: :insert}
+  end
+
+  defp validate_limit_constraints(changeset, constants) do
+    Enum.reduce(
+      constants,
+      changeset,
+      fn {key, ~M{min, max}}, changeset ->
+        validate_number(
+          changeset,
+          key,
+          greater_than_or_equal_to: min,
+          less_than_or_equal_to: max
+        )
+      end
+    )
   end
 
   defp validate_source_directory(changeset) do
@@ -109,25 +113,40 @@ defmodule DashBoard.Config do
     end
   end
 
-  defp add_csv_count(%Ecto.Changeset{valid?: true} = changeset) do
-    csv_count =
+  defp add_csv_count(changeset) do
+    source_directory = get_change(changeset, :source_directory)
+
+    if File.dir?(source_directory) do
+      csv_count =
+        source_directory
+        |> File.ls!()
+        |> Enum.filter(&is_csv?/1)
+        |> Enum.count()
+
+      if csv_count == 0,
+        do: add_error(changeset, :source_directory, "No CSVs found at path"),
+        else: put_change(changeset, :csv_count, csv_count)
+    else
       changeset
-      |> get_change(:source_directory)
-      |> File.ls!()
-      |> Enum.filter(&is_csv?/1)
-      |> Enum.count()
-
-    if csv_count == 0,
-      do: add_error(changeset, :source_directory, "No CSVs found at path"),
-      else: put_change(changeset, :csv_count, csv_count)
+    end
   end
-
-  defp add_csv_count(changeset), do: changeset
 
   defp is_csv?(filepath) do
     filepath
     |> String.trim()
     |> String.slice(-4..-1)
     |> String.downcase() == ".csv"
+  end
+
+  defp get_source_directory() do
+    case :os.type() do
+      {:win32, _} ->
+        username = System.shell("echo %USERNAME%") |> elem(0) |> String.trim()
+        "C:/Users/#{username}/Desktop"
+
+      {:unix, _} ->
+        {op, _exit_code} = System.cmd("eval", ["echo ~$USER"])
+        String.trim(op)
+    end
   end
 end

@@ -8,6 +8,8 @@ defmodule DashBoard.DatePattern do
     field(:pattern, :string)
   end
 
+  def changeset(params), do: changeset(%__MODULE__{}, params)
+
   def changeset(struct, params) do
     struct
     |> cast(params, [:id, :pattern])

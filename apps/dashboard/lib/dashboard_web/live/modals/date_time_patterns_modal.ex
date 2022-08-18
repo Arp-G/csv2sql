@@ -49,14 +49,16 @@ defmodule DashboardWeb.Live.Modal.DateTimePatternsModal do
                         <div class="d-flex flex-row">
                           <div class="input-group mb-3">
                             <span class="input-group-text fw-bold pe-2 pt-1"><%= index %>.</span>
-                            <%= text_input date_patterns_form, :pattern, class: input_class(index, :date, @matching_date_time), placeholder: "Pattern", list: "date-patterns-suggestions" %>
+                            <%= text_input date_patterns_form, :pattern, disabled: index == 1, class: input_class(index, :date, @matching_date_time), placeholder: "Pattern", list: "date-patterns-suggestions" %>
                           </div>
 
                           <%= hidden_input(date_patterns_form, :id) %>
 
-                          <div role="button" phx-click="remove-date-pattern" phx-value-attrid={Ecto.Changeset.get_field(date_patterns_form.source, :id)}>
-                            <IconSvg.remove_icon class="ms-2 pt-1"/>
-                          </div>
+                          <%= unless index == 1 do %>
+                            <div role="button" phx-click="remove-date-pattern" phx-value-attrid={Ecto.Changeset.get_field(date_patterns_form.source, :id)}>
+                              <IconSvg.remove_icon class="ms-2 pt-1"/>
+                            </div>
+                          <% end %>
                         </div>
                       <% end %>
                     <% else %>
@@ -78,14 +80,16 @@ defmodule DashboardWeb.Live.Modal.DateTimePatternsModal do
                         <div class="d-flex flex-row">
                           <div class="input-group mb-3">
                             <span class="input-group-text fw-bold pe-2 pt-1"><%= index %>.</span>
-                            <%= text_input date_time_patterns_form, :pattern, class: input_class(index, :date_time, @matching_date_time), placeholder: "Pattern", list: "date-time-patterns-suggestions" %>
+                            <%= text_input date_time_patterns_form, :pattern, disabled: index == 1, class: input_class(index, :date_time, @matching_date_time), placeholder: "Pattern", list: "date-time-patterns-suggestions" %>
                           </div>
 
                           <%= hidden_input(date_time_patterns_form, :id) %>
 
-                          <div role="button" phx-click="remove-date-time-pattern" phx-value-attrid={Ecto.Changeset.get_field(date_time_patterns_form.source, :id)}>
-                            <IconSvg.remove_icon class="ms-2 pt-1"/>
-                          </div>
+                          <%= unless index == 1 do %>
+                            <div role="button" phx-click="remove-date-time-pattern" phx-value-attrid={Ecto.Changeset.get_field(date_time_patterns_form.source, :id)}>
+                              <IconSvg.remove_icon class="ms-2 pt-1"/>
+                            </div>
+                          <% end %>
                         </div>
                       <% end %>
                     <% else %>

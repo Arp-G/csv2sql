@@ -8,7 +8,11 @@ defmodule DashboardWeb.Live.MainLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    localstorage_config = (get_connect_params(socket) || %{}) |> Map.get("localConfig", %{})
+    local_storage_config = (get_connect_params(socket) || %{}) |> Map.get("localConfig", %{})
+
+    local_storage_config =
+      for {key, val} <- local_storage_config, into: %{}, do: {String.to_existing_atom(key), val}
+
     # Check for DB connection on config load from local storage
     timer_ref = Process.send_after(self(), :check_db_connection, @debounce_time)
 
@@ -19,8 +23,9 @@ defmodule DashboardWeb.Live.MainLive do
        path_validator_debouncer: nil,
        db_connection_debouncer: timer_ref,
        db_connection_established: false,
-       changeset: Config.get_defaults() |> Config.changeset(localstorage_config),
-       matching_date_time: nil
+       changeset: Config.get_defaults() |> Map.merge(local_storage_config) |> Config.changeset(),
+       matching_date_time: nil,
+       constraints: Csv2sql.Config.Loader.get_constraints()
      )}
   end
 

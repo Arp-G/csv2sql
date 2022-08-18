@@ -30,6 +30,40 @@ defmodule Csv2sql.Config.Loader do
   @insertion_chunk_size 100
   @min_insertion_chunk_size 1
 
+  @spec get_defaults() :: map()
+  def get_defaults do
+    %{
+      date_patterns: [%{id: 1, pattern: @date_pattern}],
+      datetime_patterns: [%{id: 1, pattern: @datetime_pattern}],
+      db_type: @db_type,
+      drop_existing_tables: false,
+      insert_data: false,
+      insert_schema: true,
+      log: false,
+      ordered: false,
+      parse_datetime: true,
+      remove_illegal_characters: false,
+      schema_infer_chunk_size: @schema_infer_chunk_size,
+      db_worker_count: @default_db_worker_count,
+      varchar_limit: @varchar_limit,
+      insertion_chunk_size: @insertion_chunk_size
+    }
+  end
+
+  @spec get_constraints() :: map()
+  def get_constraints do
+    %{
+      schema_infer_chunk_size: %{
+        min: @min_schema_infer_chunk_size,
+        max: @max_schema_infer_chunk_size
+      },
+      varchar_limit: %{min: @min_varchar_limit, max: @max_varchar_limit},
+      worker_count: %{min: @min_worker_count, max: @max_worker_count},
+      db_worker_count: %{min: @min_db_worker_count, max: @max_db_worker_count},
+      insertion_chunk_size: %{min: @min_insertion_chunk_size, max: @max_insertion_chunk_size}
+    }
+  end
+
   @spec load(map) :: :ok
   def load(args), do: Application.put_env(:csv2sql, :config, prepare_configs(args))
 

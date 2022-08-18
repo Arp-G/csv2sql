@@ -15,8 +15,7 @@ let hooks = {
       new bootstrap.Tooltip(this.el);
 
       this.handleEvent("save-config", ({ config }) => {
-        console.log("write to local", JSON.stringify(config))
-        localStorage.setItem("config", JSON.stringify(config))
+        localStorage.setItem("config", JSON.stringify(config));
       }
       )
     }

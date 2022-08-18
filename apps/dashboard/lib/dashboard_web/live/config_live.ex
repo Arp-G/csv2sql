@@ -53,7 +53,9 @@ defmodule DashboardWeb.Live.ConfigLive do
               tooltip="TODO: popup title"
               placeholder="Worker count">
               <:input let={f}>
-                <%= text_input f, :worker_count, type: "number", class: "form-control", placeholder: "Worker count" %>
+                <%= text_input f, :worker_count, type: "number", class: "form-control", placeholder: "Worker count",
+                    max: @constraints.worker_count.max, min: @constraints.worker_count.min %>
+                <%= error_tag(f, :worker_count) %>
               </:input>
             </.config_item>
 
@@ -64,7 +66,9 @@ defmodule DashboardWeb.Live.ConfigLive do
               tooltip="TODO: popup title"
               placeholder="Chunk Size">
               <:input let={f}>
-                <%= text_input f, :schema_infer_chunk_size, type: "number", class: "form-control", placeholder: "Chunk Size" %>
+                <%= text_input f, :schema_infer_chunk_size, type: "number", class: "form-control", placeholder: "Chunk Size",
+                    max: @constraints.schema_infer_chunk_size.max, min: @constraints.schema_infer_chunk_size.min  %>
+                <%= error_tag(f, :schema_infer_chunk_size) %>
               </:input>
             </.config_item>
 
@@ -104,7 +108,7 @@ defmodule DashboardWeb.Live.ConfigLive do
         </div>
 
         <!-- Database Configurations -->
-        <div class="card m-4 d-flex w-75 m-auto mt-4">
+        <div class={"card m-4 d-flex w-75 m-auto mt-4 #{unless(db_needed(@changeset), do: "invisible")}"}>
           <header>
             <IconSvg.db_settings class="m-2"/>
             <span class="font-monospace small fst-italic fw-bold"> Database Configurations </span>
@@ -123,7 +127,7 @@ defmodule DashboardWeb.Live.ConfigLive do
                 <:input let={f}>
                   <div class="d-flex flex-column">
                     <div class="form-check">
-                      <%= radio_button f, :db_type, :mysql, class: "form-check-input mt-4", id: "mysql_db_type", checked: "checked" %>
+                      <%= radio_button f, :db_type, :mysql, class: "form-check-input mt-4", id: "mysql_db_type", checked: "checked", disable: !db_needed(@changeset) %>
                       <label class="form-check-label mysql-label" for="mysql_db_type">
                         <IconSvg.mysql_icon {%{width: 100, height: 100}} />
                       </label>
@@ -237,7 +241,9 @@ defmodule DashboardWeb.Live.ConfigLive do
                 tooltip="TODO: popup title"
                 placeholder="Varchar size">
                 <:input let={f}>
-                  <%= text_input f, :varchar_limit, type: "number", class: "form-control", placeholder: "Varchar size" %>
+                  <%= text_input f, :varchar_limit, type: "number", class: "form-control", placeholder: "Varchar size",
+                      max: @constraints.varchar_limit.max, min: @constraints.varchar_limit.min  %>
+                  <%= error_tag(f, :varchar_limit) %>
                 </:input>
               </.config_item>
 
@@ -249,7 +255,9 @@ defmodule DashboardWeb.Live.ConfigLive do
                 tooltip="TODO: popup title"
                 placeholder="DB Worker count">
                 <:input let={f}>
-                  <%= text_input f, :db_worker_count, type: "number", class: "form-control", placeholder: "DB Worker count" %>
+                  <%= text_input f, :db_worker_count, type: "number", class: "form-control", placeholder: "DB Worker count",
+                      max: @constraints.db_worker_count.max, min: @constraints.db_worker_count.min  %>
+                  <%= error_tag(f, :db_worker_count) %>
                 </:input>
               </.config_item>
 
@@ -260,7 +268,9 @@ defmodule DashboardWeb.Live.ConfigLive do
                 tooltip="TODO: popup title"
                 placeholder="Insertion Chunk Size">
                 <:input let={f}>
-                  <%= text_input f, :insertion_chunk_size, type: "number", class: "form-control", placeholder: "Insertion Chunk size" %>
+                  <%= text_input f, :insertion_chunk_size, type: "number", class: "form-control", placeholder: "Insertion Chunk size",
+                      max: @constraints.insertion_chunk_size.max, min: @constraints.insertion_chunk_size.min  %>
+                  <%= error_tag(f, :insertion_chunk_size) %>
                 </:input>
               </.config_item>
             </div>
@@ -295,5 +305,10 @@ defmodule DashboardWeb.Live.ConfigLive do
         <% end %>
       </.form>
     """
+  end
+
+  defp db_needed(changeset) do
+    Ecto.Changeset.get_field(changeset, :insert_schema) ||
+      Ecto.Changeset.get_field(changeset, :insert_data)
   end
 end
