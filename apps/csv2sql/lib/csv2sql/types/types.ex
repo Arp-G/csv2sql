@@ -12,7 +12,7 @@ defmodule Csv2sql.Types do
               is_boolean: boolean(),
               is_integer: boolean(),
               is_float: boolean(),
-              is_text: boolean()
+              max_data_length: non_neg_integer()
             }
 
       @type csv_col_types_list() :: list({String.t(), String.t()})

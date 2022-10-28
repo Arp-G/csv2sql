@@ -145,8 +145,8 @@ defmodule DashBoard.Config do
         "C:/Users/#{username}/Desktop"
 
       {:unix, _} ->
-        {op, _exit_code} = System.cmd("eval", ["echo ~$USER"])
-        String.trim(op)
+        {op, _exit_code} = System.shell("echo $USER")
+        "/home/#{String.trim(op)}"
     end
   end
 end

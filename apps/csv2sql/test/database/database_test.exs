@@ -11,7 +11,7 @@ defmodule Csv2sql.DatabaseTest do
     is_boolean: false,
     is_integer: false,
     is_float: false,
-    is_text: false
+    max_data_length: 0
   }
 
   setup_all do
@@ -62,15 +62,13 @@ defmodule Csv2sql.DatabaseTest do
         is_datetime: "DATETIME",
         is_boolean: "BIT",
         is_integer: "INT",
-        is_float: "DOUBLE",
-        is_text: "LONGTEXT"
+        is_float: "DOUBLE"
       }
 
       db_type_mappings =
         if db_type == :postgres,
           do:
             Map.merge(db_type_mappings, %{
-              is_text: "TEXT",
               is_datetime: "TIMESTAMP",
               is_boolean: "BOOLEAN",
               is_float: "NUMERIC(1000, 100)"
@@ -78,8 +76,11 @@ defmodule Csv2sql.DatabaseTest do
           else: db_type_mappings
 
       @type_map
-      |> Enum.each(fn {key, _value} ->
-        updated_type_map = @type_map |> Map.put(key, true)
+      |> Map.keys()
+      |> Kernel.++([:max_data_length])
+      |> Enum.each(fn key ->
+        type_value = if(key == :max_data_length, do: 0, else: true)
+        updated_type_map = Map.put(@type_map, key, type_value)
 
         assert Database.get_db_type(updated_type_map) ==
                  Map.get(db_type_mappings, key, "VARCHAR(#{varchar_limit})")
