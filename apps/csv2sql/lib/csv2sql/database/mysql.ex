@@ -17,8 +17,7 @@ defmodule Csv2sql.Database.MySql do
       type_map[:is_boolean] -> "BIT"
       type_map[:is_integer] -> "INT"
       type_map[:is_float] -> "DOUBLE"
-      type_map[:is_text] -> "LONGTEXT"
-      true -> "VARCHAR(#{varchar_limit()})"
+      true -> type_map[:max_data_length] |> string_column_type() |> get_string_column_type()
     end
   end
 
@@ -54,6 +53,7 @@ defmodule Csv2sql.Database.MySql do
   @spec get_ordering_column_type :: String.t()
   def get_ordering_column_type(), do: "INT UNSIGNED"
 
+  # Private helpers
   defp to_date_string(%DateTime{} = datetime),
     do: datetime |> DateTime.to_date() |> to_datetime_string()
 
@@ -63,4 +63,8 @@ defmodule Csv2sql.Database.MySql do
     do: datetime |> DateTime.to_string() |> String.trim_trailing("Z")
 
   defp to_datetime_string(val), do: val
+
+  defp get_string_column_type(:text), do: "LONGTEXT"
+  defp get_string_column_type({:varchar, 0}), do: "VARCHAR(#{varchar_limit()})"
+  defp get_string_column_type({:varchar, size}), do: "VARCHAR(#{size})"
 end

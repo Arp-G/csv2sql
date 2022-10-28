@@ -17,8 +17,7 @@ defmodule Csv2sql.Database.Postgres do
       type_map[:is_boolean] -> "BOOLEAN"
       type_map[:is_integer] -> "INT"
       type_map[:is_float] -> "NUMERIC(1000, 100)"
-      type_map[:is_text] -> "TEXT"
-      true -> "VARCHAR(#{varchar_limit()})"
+      true -> type_map[:max_data_length] |> string_column_type() |> get_string_column_type()
     end
   end
 
@@ -71,4 +70,9 @@ defmodule Csv2sql.Database.Postgres do
   @impl Csv2sql.Database
   @spec get_ordering_column_type :: String.t()
   def get_ordering_column_type(), do: "INT"
+
+  # Private helpers
+  defp get_string_column_type(:text), do: "TEXT"
+  defp get_string_column_type({:varchar, 0}), do: "VARCHAR(#{varchar_limit()})"
+  defp get_string_column_type({:varchar, size}), do: "VARCHAR(#{size})"
 end

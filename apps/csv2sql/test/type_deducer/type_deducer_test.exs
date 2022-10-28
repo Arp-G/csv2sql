@@ -22,7 +22,7 @@ defmodule Csv2sql.TypeDeducerTest do
 
       col_type_defs = [
         {"id", "INT"},
-        {"name", "VARCHAR(120)"},
+        {"name", "VARCHAR(10)"},
         {"description", if(db_type == :mysql, do: "LONGTEXT", else: "TEXT")},
         {"salary", if(db_type == :mysql, do: "DOUBLE", else: "NUMERIC(1000, 100)")},
         {"permanent", if(db_type == :mysql, do: "BIT", else: "BOOLEAN")},

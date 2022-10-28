@@ -100,13 +100,14 @@ defmodule Csv2sql.Database do
     ProgressTracker.update_row_count(path, length(data_chunk))
   end
 
+  @spec encode_binary(binary()) :: String.t()
   def encode_binary(str) do
     if Helpers.get_config(:remove_illegal_characters) do
       # TODO: Check if utf8mb4 is supported https://github.com/tallakt/codepagex/issues/27
       {:ok, str, replaced} =
         Codepagex.to_string(str, :iso_8859_1, Codepagex.replace_nonexistent(""), 0)
 
-      # TODO: fix this can slow down things
+      # TODO: fix this it can slow down things
       if replaced > 0,
         do: Logger.warn("[#{Process.get(:file)}] Replaced #{replaced} characters in binary data")
 
@@ -114,6 +115,13 @@ defmodule Csv2sql.Database do
     else
       str
     end
+  end
+
+  @spec string_column_type(non_neg_integer()) :: :text | {:varchar, non_neg_integer()}
+  def string_column_type(max_data_length) do
+    if max_data_length > varchar_limit(),
+      do: :text,
+      else: {:varchar, max_data_length}
   end
 
   # Callbacks to implement

@@ -21,7 +21,7 @@ defmodule Csv2sql.TypeDeducer.TypeChecker do
         is_boolean: existing_type_map.is_boolean && is_boolean?(item),
         is_integer: existing_type_map.is_integer && is_integer?(item),
         is_float: existing_type_map.is_float && is_float?(item),
-        is_text: existing_type_map.is_text || is_text?(item)
+        max_data_length: max(existing_type_map.max_data_length, String.length(item))
       }
     end
   end
@@ -70,11 +70,6 @@ defmodule Csv2sql.TypeDeducer.TypeChecker do
     rescue
       _e in ArgumentError -> false
     end
-  end
-
-  defp is_text?(item) do
-    varchar_limit = Helpers.get_config(:varchar_limit)
-    if String.length(item) > varchar_limit, do: true, else: false
   end
 
   defp parse_datetime_pattern(datetime_string, pattern) do
