@@ -1,8 +1,10 @@
 defmodule DashboardWeb.Live.MainLive do
   use DashboardWeb, :live_view
   import Dashboard.Helpers
-  alias DashBoard.{Config, DbAttribute}
+  alias DashBoard.Config
+  alias DashBoard.DbAttribute
   alias Csv2sql.Database.ConnectionTest
+  alias DashboardWeb.Live.ConfigLive
 
   @debounce_time 1000
 
@@ -36,16 +38,16 @@ defmodule DashboardWeb.Live.MainLive do
 
   @impl true
   def handle_event("open-modal", ~m{modal}, socket) do
-    {:noreply, assign(socket, ~M{modal})}
+    {:noreply, assign(socket, :modal, modal)}
   end
 
   @impl true
   def handle_event("close-modal", _attrs, socket) do
-    {:noreply, assign(socket, ~M{modal: false})}
+    {:noreply, assign(socket, :modal, false)}
   end
 
   @impl true
-  def handle_event("validate-and-save", attrs, ~M{assigns} = socket) do
+  def handle_event("validate-and-save", attrs, socket) do
     args = Map.get(attrs, "config", %{})
 
     socket =
@@ -151,6 +153,23 @@ defmodule DashboardWeb.Live.MainLive do
          Ecto.Changeset.add_error(assigns.changeset, :db_url, "Could not connect to database"),
        db_connection_established: false
      )}
+  end
+
+  defp render_page(assigns) do
+    case assigns.page do
+      "config" ->
+        ConfigLive.config_page(assigns)
+
+      "start" ->
+        ~H"""
+        Placeholder
+        """
+
+      "about" ->
+        ~H"""
+        About
+        """
+    end
   end
 
   defp db_connection_checker(~M{assigns} = socket, args) do

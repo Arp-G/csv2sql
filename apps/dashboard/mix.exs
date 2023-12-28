@@ -37,24 +37,25 @@ defmodule Dashboard.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.6.11"},
+      {:phoenix, "~> 1.7"},
       {:phoenix_html, "~> 3.0"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 0.17.5"},
-      {:floki, ">= 0.30.0", only: :test},
+      {:phoenix_view, "~> 2.0"},
+      {:phoenix_live_view, "~> 0.20.2"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
-      {:shorter_maps, "~> 2.2"},
-      {:ecto, "~> 3.8"},
+      {:shorter_maps, git: "https://github.com/boyzwj/shorter_maps.git"},
+      {:ecto, "~> 3.11"},
       {:phoenix_ecto, "~> 4.4"},
       {:csv2sql, in_umbrella: true},
       {:nanoid, "~> 2.0.5"},
 
       # Development Deps
+      {:phoenix_live_reload, "~> 1.4", only: :dev},
       {:dart_sass, "~> 0.2", runtime: Mix.env() == :dev},
-      {:esbuild, "~> 0.4", runtime: Mix.env() == :dev}
+      {:esbuild, "~> 0.4", runtime: Mix.env() == :dev},
+      {:floki, ">= 0.30.0", only: :test}
     ]
   end
 

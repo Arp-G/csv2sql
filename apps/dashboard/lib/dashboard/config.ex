@@ -48,7 +48,10 @@ defmodule DashBoard.Config do
 
   def get_defaults do
     Csv2sql.Config.Loader.get_defaults()
-    |> Map.merge(%{source_directory: get_source_directory(), worker_count: System.schedulers_online()})
+    |> Map.merge(%{
+      source_directory: get_source_directory(),
+      worker_count: System.schedulers_online()
+    })
   end
 
   def changeset(params), do: changeset(%__MODULE__{}, params)
@@ -145,7 +148,7 @@ defmodule DashBoard.Config do
         "C:/Users/#{username}/Desktop"
 
       {:unix, _} ->
-        {op, _exit_code} = System.cmd("eval", ["echo ~$USER"])
+        {op, _exit_code} = System.shell("eval echo \"~$USER\"")
         String.trim(op)
     end
   end

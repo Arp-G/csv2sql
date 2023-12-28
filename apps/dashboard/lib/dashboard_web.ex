@@ -32,6 +32,8 @@ defmodule DashboardWeb do
         root: "lib/dashboard_web/templates",
         namespace: DashboardWeb
 
+      import Phoenix.Component
+
       # Import convenience functions from controllers
       import Phoenix.Controller,
         only: [get_flash: 1, get_flash: 2, view_module: 1, view_template: 1]
@@ -44,7 +46,7 @@ defmodule DashboardWeb do
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {DashboardWeb.LayoutView, "live.html"}
+        layout: {DashboardWeb.LayoutView, :live}
 
       unquote(view_helpers())
 
@@ -107,9 +109,6 @@ defmodule DashboardWeb do
 
       # Import LiveView and .heex helpers (live_render, live_patch, <.form>, etc)
       import Phoenix.LiveView.Helpers
-
-      # Import basic rendering functionality (render, render_layout, etc)
-      import Phoenix.View
 
       alias DashboardWeb.Router.Helpers, as: Routes
     end
