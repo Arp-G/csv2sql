@@ -2,7 +2,7 @@ defmodule Csv2sql.Database.ConnectionTestTest do
   @moduledoc """
     Test the connection to the database.
   """
-  use Csv2sql.Support.TestHelper
+  use Csv2sql.Support.TestHelper, async: false
   @db_wait_time 2000
   alias Csv2sql.Database.ConnectionTest
 

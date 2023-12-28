@@ -67,7 +67,7 @@ defmodule Csv2sql.Support.TestHelper do
   def load_default_config do
     # Load some default configs, so that non-db dependent tests work
     %{
-      db_type: "msql",
+      db_type: "mysql",
       db_url: "user@password:localhost:3306/dbname",
       log_level: "debug",
       source_directory: get_csv_source_path()

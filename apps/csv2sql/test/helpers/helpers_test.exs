@@ -1,9 +1,9 @@
 defmodule Csv2sql.Helpers.HelpersTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Csv2sql.{Config.Loader, Helpers}
 
   @test_date Date.new!(2018, 01, 01, Calendar.ISO)
-  @test_date_time  %DateTime{
+  @test_date_time %DateTime{
     year: 2018,
     month: 01,
     day: 01,
@@ -19,7 +19,7 @@ defmodule Csv2sql.Helpers.HelpersTest do
 
   describe "get_config/1" do
     test "should return a config value" do
-      Loader.load(%{ db_url: "db_url" })
+      Loader.load(%{db_url: "db_url"})
       assert Helpers.get_config(:db_url) == "ecto://db_url"
     end
   end
@@ -51,7 +51,8 @@ defmodule Csv2sql.Helpers.HelpersTest do
       Loader.load(%{
         db_url: "db_url",
         date_patterns: "{YYYY}-{0M}-{0D};{0D}-{0M}-{YYYY}",
-        datetime_patterns: "{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s};{0D}-{0M}-{YYYY} {0h12}{AM}:{0m}-{0s}"
+        datetime_patterns:
+          "{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s};{0D}-{0M}-{YYYY} {0h12}{AM}:{0m}-{0s}"
       })
     end
 

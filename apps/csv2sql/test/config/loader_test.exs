@@ -1,5 +1,5 @@
 defmodule Csv2sql.Config.LoaderTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Csv2sql.Config.Loader
 
   @default_config %{db_url: "user@pass:host/db"}
@@ -71,7 +71,7 @@ defmodule Csv2sql.Config.LoaderTest do
                source_directory: current_dir,
                ordered: false,
                varchar_limit: 100,
-               worker_count: 32
+               worker_count: System.schedulers_online() * 2
              } == Application.get_env(:csv2sql, :config)
     end
 

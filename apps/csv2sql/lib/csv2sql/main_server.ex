@@ -99,7 +99,6 @@
 
 #     The operation took #{time_taken} seconds
 
-
 #     ----------------------------------------
 
 #     """

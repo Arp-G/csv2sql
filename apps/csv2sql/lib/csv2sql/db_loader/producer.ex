@@ -35,6 +35,7 @@ defmodule Csv2sql.DbLoader.Producer do
   def handle_demand(demand, ~M{file, csv_stream} = state) do
     {csv_chunks, remainder_stream} = StreamSplit.take_and_drop(csv_stream, demand)
     new_state = %{state | csv_stream: remainder_stream}
+
     if csv_chunks == [] do
       IO.inspect("#{DateTime.utc_now()} FINISH producer for #{inspect(file.path)}")
       {:stop, :normal, new_state}

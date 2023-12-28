@@ -108,7 +108,8 @@ defmodule Csv2sql.Database do
 
       # TODO: fix this can slow down things
       if replaced > 0,
-        do: Logger.warn("[#{Process.get(:file)}] Replaced #{replaced} characters in binary data")
+        do:
+          Logger.warning("[#{Process.get(:file)}] Replaced #{replaced} characters in binary data")
 
       str
     else

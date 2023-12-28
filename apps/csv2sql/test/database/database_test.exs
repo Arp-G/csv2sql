@@ -1,7 +1,7 @@
 defmodule Csv2sql.DatabaseTest do
   @moduledoc false
 
-  use Csv2sql.Support.TestHelper
+  use Csv2sql.Support.TestHelper, async: false
   alias Csv2sql.Database
 
   @type_map %{

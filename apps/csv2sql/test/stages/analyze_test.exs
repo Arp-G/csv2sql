@@ -2,7 +2,7 @@ defmodule Csv2sql.Stages.AnalyzeTest do
   use Csv2sql.Support.TestHelper, async: false
 
   describe "analyze/0" do
-    db_test 'loads csv files into database properly' do
+    db_test ~c"loads csv files into database properly" do
       load_fixtures(["test.csv"])
       Csv2sql.ProgressTracker.add_subscriber()
       Csv2sql.Stages.Analyze.analyze_files()

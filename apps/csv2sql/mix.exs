@@ -24,7 +24,7 @@ defmodule Csv2sql.MixProject do
     [
       extra_applications: [:logger],
       mod: {Csv2sql.Application, []}
-      #mod: {Csv2sql, []}
+      # mod: {Csv2sql, []}
     ]
   end
 
@@ -32,12 +32,12 @@ defmodule Csv2sql.MixProject do
   defp deps do
     [
       {:nimble_csv, "~> 1.2"},
-      {:myxql, "~> 0.6.1"},
+      {:myxql, "~> 0.6.4"},
       {:postgrex, "~> 0.16.2"},
-      {:ecto, "~> 3.7"},
-      {:ecto_sql, "~> 3.7"},
+      {:ecto, "~> 3.11"},
+      {:ecto_sql, "~> 3.11"},
       {:sizeable, "~> 1.0"},
-      {:shorter_maps, "~> 2.2"},
+      {:shorter_maps, git: "https://github.com/boyzwj/shorter_maps.git"},
       {:timex, "~> 3.7"},
       {:typed_struct, "~> 0.3.0"},
       {:flow, "~> 1.2"},

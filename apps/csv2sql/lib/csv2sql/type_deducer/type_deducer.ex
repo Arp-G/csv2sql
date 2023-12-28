@@ -55,6 +55,7 @@ defmodule Csv2sql.TypeDeducer do
         |> List.flatten()
 
       csv_file_name = Path.basename(csv_file_path)
+
       headers =
         headers
         |> fix_invalid_column_names(csv_file_name)
@@ -118,11 +119,11 @@ defmodule Csv2sql.TypeDeducer do
 
         cond do
           trimmed_column != column ->
-            Logger.warn("Trimmed spaces for column \"#{column}\" in csv #{csv_file_name}")
+            Logger.warning("Trimmed spaces for column \"#{column}\" in csv #{csv_file_name}")
             {String.trim(trimmed_column), missing_count}
 
           trimmed_column == "" ->
-            Logger.warn(
+            Logger.warning(
               "Renamed empty column as \"missing_column_#{missing_count}\" in csv #{csv_file_name}"
             )
 
@@ -159,7 +160,7 @@ defmodule Csv2sql.TypeDeducer do
   defp get_duplicate_column_name(count, column, _csv_file_name) when count == 0, do: column
 
   defp get_duplicate_column_name(count, column, csv_file_name) do
-    Logger.warn(
+    Logger.warning(
       "Renamed duplicate column \"#{column}\" to \"#{column}_#{count}\" in csv #{csv_file_name}"
     )
 

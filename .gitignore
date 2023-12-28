@@ -21,6 +21,3 @@ erl_crash.dump
 
 # linter
 /.elixir_ls/
-
-# Formatting file
-.formatter.exs

@@ -1,6 +1,6 @@
 defmodule Csv2sql.MySQLRepo do
   @moduledoc """
-    MySQL specific Repo defination
+    MySQL specific Repo definition
   """
   use Ecto.Repo,
     otp_app: :csv2sql,
@@ -9,7 +9,7 @@ end
 
 defmodule Csv2sql.PostgreSQLRepo do
   @moduledoc """
-    Postgres specific Repo defination
+    Postgres specific Repo definition
   """
 
   use Ecto.Repo,

@@ -47,7 +47,7 @@ defmodule Csv2sql.Stages.Analyze do
       path = "#{source_directory}#{file}"
 
       %Csv2sql.File{
-        name: String.slice(file, 0..-5),
+        name: String.slice(file, 0..-5//1),
         path: path,
         status: :pending
       }

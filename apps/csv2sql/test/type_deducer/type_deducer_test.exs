@@ -1,5 +1,5 @@
 defmodule Csv2sql.TypeDeducerTest do
-  use Csv2sql.Support.TestHelper
+  use Csv2sql.Support.TestHelper, async: false
 
   describe "get_types/1" do
     db_test "should return a column type list for csv file" do
