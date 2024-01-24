@@ -18,7 +18,6 @@ defmodule DashboardWeb.Live.MainLive do
 
     # Check for DB connection on config load from local storage
     timer_ref = Process.send_after(self(), :check_db_connection, @debounce_time)
-    IO.inspect(Csv2sql.ProgressTracker.get_state())
 
     case Csv2sql.ProgressTracker.get_state().status do
       {:error, %{message: message}} ->
@@ -58,13 +57,11 @@ defmodule DashboardWeb.Live.MainLive do
   def handle_event("csv-parse", _attrs, socket) do
     try do
       Csv2sql.Stages.Analyze.analyze_files()
-      IO.inspect(Csv2sql.ProgressTracker.get_state())
       Process.send_after(self(), :get_status, 2000)
       {:noreply, assign(socket, page: "start", state: Csv2sql.ProgressTracker.get_state())}
     catch
       err ->
-        IO.inspect(err)
-        {:noreply, assign(socket, page: "start", error: true, err: err)}
+        {:noreply, assign(socket, page: "start", error: true)}
     end
   end
 
@@ -220,7 +217,6 @@ defmodule DashboardWeb.Live.MainLive do
         ConfigLive.config_page(assigns)
 
       "start" ->
-        IO.inspect(assigns.changeset.changes.source_directory)
         Map.put(assigns.changeset.changes, :dashboard, true)
 
         Csv2sql.Config.Loader.load(
