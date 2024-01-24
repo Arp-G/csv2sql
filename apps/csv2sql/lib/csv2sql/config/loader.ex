@@ -107,12 +107,16 @@ defmodule Csv2sql.Config.Loader do
   end
 
   defp load_db_config(args) do
-    db_type = get_db_type(args)
+    db_type = args[:db_type]
+    db_url = args[:db_url]
+    # db_type = get_db_type(args)
 
-    db_url =
-      if args[:db_url],
-        do: "ecto://#{args[:db_url]}",
-        else: raise("Please provide a valid database url")
+    # db_type = args[:db_type]
+
+    # db_url = args[:db_url]
+      # if args[:db_url],
+      #   do: "ecto://#{args[:db_url]}",
+      #   else: raise("Please provide a valid database url")
 
     varchar_limit = get_varchar_limit(args)
     insertion_chunk_size = get_insertion_chunk_size(args)
