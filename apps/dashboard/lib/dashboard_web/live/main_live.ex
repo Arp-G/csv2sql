@@ -21,33 +21,37 @@ defmodule DashboardWeb.Live.MainLive do
     IO.inspect(Csv2sql.ProgressTracker.get_state())
 
     case Csv2sql.ProgressTracker.get_state().status do
-      {:error, %{message: message}} -> {:ok,
-      assign(socket,
-        page: "start",
-        modal: false,
-        path_validator_debouncer: nil,
-        db_connection_debouncer: timer_ref,
-        db_connection_established: false,
-        changeset: Config.get_defaults() |> Map.merge(local_storage_config) |> Config.changeset(),
-        matching_date_time: nil,
-        constraints: Csv2sql.Config.Loader.get_constraints(),
-        error: true,
-        reason: String.split(message, "\n") |> Enum.filter(fn s -> s not in ["",nil] end),
-        state: Csv2sql.ProgressTracker.get_state()
-      )}
+      {:error, %{message: message}} ->
+        {:ok,
+         assign(socket,
+           page: "start",
+           modal: false,
+           path_validator_debouncer: nil,
+           db_connection_debouncer: timer_ref,
+           db_connection_established: false,
+           changeset:
+             Config.get_defaults() |> Map.merge(local_storage_config) |> Config.changeset(),
+           matching_date_time: nil,
+           constraints: Csv2sql.Config.Loader.get_constraints(),
+           error: true,
+           reason: String.split(message, "\n") |> Enum.filter(fn s -> s not in ["", nil] end),
+           state: Csv2sql.ProgressTracker.get_state()
+         )}
 
-      _ -> {:ok,
-      assign(socket,
-        page: "start",
-        modal: false,
-        path_validator_debouncer: nil,
-        db_connection_debouncer: timer_ref,
-        db_connection_established: false,
-        changeset: Config.get_defaults() |> Map.merge(local_storage_config) |> Config.changeset(),
-        matching_date_time: nil,
-        constraints: Csv2sql.Config.Loader.get_constraints(),
-        state: Csv2sql.ProgressTracker.get_state()
-      )}
+      _ ->
+        {:ok,
+         assign(socket,
+           page: "start",
+           modal: false,
+           path_validator_debouncer: nil,
+           db_connection_debouncer: timer_ref,
+           db_connection_established: false,
+           changeset:
+             Config.get_defaults() |> Map.merge(local_storage_config) |> Config.changeset(),
+           matching_date_time: nil,
+           constraints: Csv2sql.Config.Loader.get_constraints(),
+           state: Csv2sql.ProgressTracker.get_state()
+         )}
     end
   end
 
@@ -56,11 +60,11 @@ defmodule DashboardWeb.Live.MainLive do
       Csv2sql.Stages.Analyze.analyze_files()
       IO.inspect(Csv2sql.ProgressTracker.get_state())
       Process.send_after(self(), :get_status, 2000)
-      {:noreply, assign(socket,page: "start",state: Csv2sql.ProgressTracker.get_state())}
+      {:noreply, assign(socket, page: "start", state: Csv2sql.ProgressTracker.get_state())}
     catch
       err ->
         IO.inspect(err)
-      {:noreply, assign(socket,page: "start",error: true,err: err)}
+        {:noreply, assign(socket, page: "start", error: true, err: err)}
     end
   end
 
@@ -151,21 +155,25 @@ defmodule DashboardWeb.Live.MainLive do
   @impl true
   def handle_info(:get_status, socket) do
     IO.inspect(Csv2sql.ProgressTracker.get_state().status)
+
     case Csv2sql.ProgressTracker.get_state().status do
       :finish ->
-       {:noreply, assign(socket,page: "start",state: Csv2sql.ProgressTracker.get_state())}
+        {:noreply, assign(socket, page: "start", state: Csv2sql.ProgressTracker.get_state())}
 
-       {:error, %{message: message}} -> {:ok,
-       assign(socket,
-         page: "start",
-         error: true,
-         reason: String.split(message, "\n") |> Enum.filter(fn s -> s not in ["",nil] end),
-         state: Csv2sql.ProgressTracker.get_state()
-       )}
-    _ ->
-      Process.send_after(self(), :get_status, 2000)
+      {:error, %{message: message}} ->
+        {:ok,
+         assign(socket,
+           page: "start",
+           error: true,
+           reason: String.split(message, "\n") |> Enum.filter(fn s -> s not in ["", nil] end),
+           state: Csv2sql.ProgressTracker.get_state()
+         )}
+
+      _ ->
+        Process.send_after(self(), :get_status, 2000)
     end
   end
+
   @impl true
   def handle_info(:check_db_connection, ~M{assigns} = socket) do
     with(
@@ -214,8 +222,17 @@ defmodule DashboardWeb.Live.MainLive do
       "start" ->
         IO.inspect(assigns.changeset.changes.source_directory)
         Map.put(assigns.changeset.changes, :dashboard, true)
-        Csv2sql.Config.Loader.load(Map.put(assigns.changeset.changes,:db_url, create_db_url(assigns.changeset.changes, false)))
+
+        Csv2sql.Config.Loader.load(
+          Map.put(
+            assigns.changeset.changes,
+            :db_url,
+            create_db_url(assigns.changeset.changes, false)
+          )
+        )
+
         StartLive.start_parse(assigns)
+
       "about" ->
         ~H"""
         About

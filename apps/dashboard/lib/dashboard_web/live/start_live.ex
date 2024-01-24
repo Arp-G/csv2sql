@@ -1,7 +1,7 @@
 defmodule DashboardWeb.Live.StartLive do
   use DashboardWeb, :component
-  def start_parse(assigns)  do
 
+  def start_parse(assigns) do
     ~H"""
       <h2 class="text-center mb-4 mt-2">Start Parse</h2>
       <div class="w-100 d-flex justify-content-center align-items-center">
