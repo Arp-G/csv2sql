@@ -158,7 +158,7 @@ defmodule Csv2sql.DatabaseTest do
   end
 
   defp get_db_name() do
-    "ecto://" <> db_url = Csv2sql.Helpers.get_config(:db_url)
+    db_url = Csv2sql.Helpers.get_config(:db_url)
     db_name = db_url |> String.split("/") |> Enum.at(1) |> String.split("?") |> Enum.at(0)
 
     if Csv2sql.Helpers.get_config(:db_type) == :postgres,

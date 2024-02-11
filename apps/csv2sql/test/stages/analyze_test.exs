@@ -6,7 +6,7 @@ defmodule Csv2sql.Stages.AnalyzeTest do
       load_fixtures(["test.csv"])
       Csv2sql.ProgressTracker.subscribe()
       Csv2sql.Stages.Analyze.analyze_files()
-      assert_receive :finish, 50_00
+      assert_receive {:progress_tracker_update, %Csv2sql.ProgressTracker.State{status: :finish}}, 50_00
 
       %{rows: rows} = Csv2sql.Database.run_query!("SELECT * from test")
 
@@ -60,7 +60,7 @@ defmodule Csv2sql.Stages.AnalyzeTest do
       Csv2sql.ProgressTracker.subscribe()
       Csv2sql.Stages.Analyze.analyze_files()
 
-      assert_receive :finish, 50_00
+      assert_receive {:progress_tracker_update, %Csv2sql.ProgressTracker.State{status: :finish}}, 50_00
 
       %{rows: rows} = Csv2sql.Database.run_query!("SELECT * from test")
 

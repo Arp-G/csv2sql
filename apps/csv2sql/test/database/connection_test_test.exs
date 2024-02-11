@@ -46,6 +46,7 @@ defmodule Csv2sql.Database.ConnectionTestTest do
 
   describe "check_db_connection/2" do
     db_test "when db url is valid returns connected message" do
+      IO.inspect Application.get_env(:csv2sql, :config)
       assert :ok ==
                ConnectionTest.check_db_connection(self(), Application.get_env(:csv2sql, :config))
 
@@ -62,7 +63,7 @@ defmodule Csv2sql.Database.ConnectionTestTest do
     db_test "when db url is incorrect can handle further connection check calls" do
       args =
         Application.get_env(:csv2sql, :config)
-        |> Map.put(:db_url, "ecto://invalid_user:invalid_pass@localhost/abadpassword")
+        |> Map.put(:db_url, "invalid_user:invalid_pass@localhost/abadpassword")
 
       assert ExUnit.CaptureLog.capture_log(fn ->
                assert :ok == ConnectionTest.check_db_connection(self(), args)

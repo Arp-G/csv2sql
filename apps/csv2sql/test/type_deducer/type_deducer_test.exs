@@ -86,7 +86,13 @@ defmodule Csv2sql.TypeDeducerTest do
           Csv2sql.TypeDeducer.get_count_and_types("test/support/fixtures/invalid.csv")
         end)
 
-        assert_receive {:error, {{%NimbleCSV.ParseError{}, _}, _}}, 3000
+        assert_receive {
+                         :progress_tracker_update,
+                         %Csv2sql.ProgressTracker.State{
+                           status: {:error, {{%NimbleCSV.ParseError{}, _}, _}}
+                         }
+                       },
+                       3000
       end)
     end
   end

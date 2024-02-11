@@ -20,7 +20,7 @@ defmodule Csv2sql.Helpers.HelpersTest do
   describe "get_config/1" do
     test "should return a config value" do
       Loader.load(%{db_url: "db_url"})
-      assert Helpers.get_config(:db_url) == "ecto://db_url"
+      assert Helpers.get_config(:db_url) == "db_url"
     end
   end
 

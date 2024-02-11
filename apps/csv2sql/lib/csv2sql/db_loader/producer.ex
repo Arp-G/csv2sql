@@ -12,7 +12,7 @@ defmodule Csv2sql.DbLoader.Producer do
   @csv_read_ahead 10_000
 
   def start_link(file) do
-    IO.inspect("#{DateTime.utc_now()} Start producer for #{inspect(file.path)}")
+    #pect("#{DateTime.utc_now()} Start producer for #{inspect(file.path)}")
 
     GenStage.start_link(
       __MODULE__,
@@ -43,7 +43,7 @@ defmodule Csv2sql.DbLoader.Producer do
       # Update file progress state
       Csv2sql.ProgressTracker.update_row_count(file.path, 0)
 
-      IO.inspect("#{DateTime.utc_now()} FINISH producer for #{inspect(file.path)}")
+      #IO.inspect("#{DateTime.utc_now()} FINISH producer for #{inspect(file.path)}")
       {:stop, :normal, new_state}
     else
       to_dispatch = Enum.map(csv_chunks, &{file, &1})

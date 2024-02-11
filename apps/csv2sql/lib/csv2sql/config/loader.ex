@@ -108,8 +108,8 @@ defmodule Csv2sql.Config.Loader do
 
   defp load_db_config(args) do
     db_type = get_db_type(args)
-    IO.inspect args, label: "args"
-    IO.inspect db_type, label: "DB Type"
+    # IO.inspect args, label: "args"
+    # IO.inspect db_type, label: "DB Type"
 
     db_url =
       if args[:db_url],

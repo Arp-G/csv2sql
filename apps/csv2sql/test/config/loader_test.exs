@@ -36,7 +36,7 @@ defmodule Csv2sql.Config.LoaderTest do
                  "{0D}-{0M}-{YYYY} {0h12}:{mm}"
                ],
                db_type: :postgres,
-               db_url: "ecto://user@pass:host/db",
+               db_url: "user@pass:host/db",
                db_worker_count: 10,
                insert_data: true,
                insert_schema: true,
@@ -60,7 +60,7 @@ defmodule Csv2sql.Config.LoaderTest do
                date_patterns: ["{YYYY}-{0M}-{0D}"],
                datetime_patterns: ["{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s}"],
                db_type: :mysql,
-               db_url: "ecto://user@pass:host/db",
+               db_url: "user@pass:host/db",
                db_worker_count: 10,
                insert_data: true,
                insert_schema: true,
@@ -153,7 +153,7 @@ defmodule Csv2sql.Config.LoaderTest do
           Application.get_env(:csv2sql, :config)
 
         assert db_type == :mysql
-        assert db_url == "ecto://some_url"
+        assert db_url == "some_url"
         assert insertion_chunk_size == 200
         assert date_patterns == ["{YYYY}-{0M}-{0D}"]
         assert datetime_patterns == ["{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s}"]
