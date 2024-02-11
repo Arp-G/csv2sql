@@ -34,6 +34,7 @@ defmodule Csv2sql.MixProject do
       {:nimble_csv, "~> 1.2"},
       {:myxql, "~> 0.6.4"},
       {:postgrex, "~> 0.16.2"},
+      {:phoenix_pubsub, "~> 2.0"},
       {:ecto, "~> 3.11"},
       {:ecto_sql, "~> 3.11"},
       {:sizeable, "~> 1.0"},

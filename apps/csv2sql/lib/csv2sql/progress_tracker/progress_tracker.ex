@@ -1,16 +1,24 @@
 defmodule Csv2sql.ProgressTracker do
+  @moduledoc """
+    This module is responsible for tracking the progress of the operations on different csv files.
+    The various processes working on the csv files can update the progress tracker with the status of the file.
+    The progress tracker then notifies its subscribers about the progress through Phoenix.PubSub.
+  """
+
   use GenServer
   use Csv2sql.Types
   alias Csv2sql.ProgressTracker.State
-  require Logger
-
-  import ShorterMaps
 
   # Sets the files list
   @spec init_files(list(Csv2sql.File.t())) :: files_map()
   def init_files(files), do: GenServer.call(__MODULE__, {:init_files, files})
 
-  # Get observer state
+  @spec subscribe :: :ok | {:error, term()}
+  def subscribe do
+    Phoenix.PubSub.subscribe(Csv2sql.PubSub, "progress")
+  end
+
+  # Get current progress state
   @spec get_state() :: State.t() | nil
   def get_state() do
     if Process.whereis(__MODULE__),
@@ -28,10 +36,6 @@ defmodule Csv2sql.ProgressTracker do
   def update_row_count(path, rows_inserted),
     do: GenServer.cast(__MODULE__, {:update_row_count, path, rows_inserted})
 
-  @spec add_subscriber() :: :ok
-  def add_subscriber(),
-    do: GenServer.call(__MODULE__, :add_subscriber, :infinity)
-
   @spec report_error(any()) :: :ok
   def report_error(error),
     do: GenServer.call(__MODULE__, {:report_error, error})
@@ -42,66 +46,89 @@ defmodule Csv2sql.ProgressTracker do
 
   # === Callbacks ===
 
-  @spec init(any) :: {:ok, State.t()}
-  def init(_),
-    do: {:ok, %State{start_time: DateTime.utc_now()}}
+  @impl true
+  def init(_) do
+    {:ok, %State{start_time: DateTime.utc_now()}}
+  end
 
-  def handle_call(:get_state, _from, state), do: {:reply, state, state}
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
 
+  @impl true
   def handle_call({:init_files, files}, _from, %State{} = state) do
-    state =
+    updated_state =
       if files == [] do
-        ~M{%State state | status: :finish, end_time: DateTime.utc_now()}
+        %State{state | status: :finish, end_time: DateTime.utc_now()}
       else
-        files = Enum.into(files, %{}, fn ~M{%Csv2sql.File path} = file -> {path, file} end)
-        ~M{%State state | files, status: :working}
+        files = Enum.into(files, %{}, &{&1.path, &1})
+        %State{state | files: files, status: :working}
       end
 
-    {:reply, files, state}
+    notify_subscribers(updated_state)
+
+    {:reply, files, updated_state}
   end
 
-  def handle_call(:add_subscriber, {caller_pid, _ref_tag}, ~M{%State subscribers} = state),
-    do: {:reply, :ok, %State{state | subscribers: [caller_pid | subscribers]}}
-
-  def handle_call({:report_error, _error}, _from, ~M{%State status: :error} = state),
-    do: {:reply, :already_errored, state}
-
-  def handle_call({:report_error, error}, _from, ~M{%State subscribers} = state) do
-    Enum.each(subscribers, fn subscriber -> Process.send(subscriber, {:error, error}, []) end)
-    {:reply, :ok, %State{state | status: {:error, error}}}
+  @impl true
+  def handle_call({:report_error, _error}, _from, %State{status: :error} = state) do
+    {:reply, :already_errored, state}
   end
 
-  def handle_cast({:update_file, _file}, ~M{%State status: :error} = state), do: {:noreply, state}
-
-  def handle_cast({:update_file, ~M{%Csv2sql.File path} = file}, ~M{%State files} = state) do
-    {_old_file, files} = Map.get_and_update!(files, path, fn old_file -> {old_file, file} end)
-    {:noreply, ~M{%State state | files}}
+  @impl true
+  def handle_call({:report_error, error}, _from, state) do
+    updated_state = %State{state | status: {:error, error}}
+    notify_subscribers(updated_state)
+    {:reply, :ok, updated_state}
   end
 
-  def handle_cast({:update_row_count, _path, _rows_inserted}, ~M{%State status: :error} = state),
-    do: {:noreply, state}
+  @impl true
+  def handle_cast({:update_file, _file}, %State{status: :error} = state) do
+    {:noreply, state}
+  end
 
-  def handle_cast({:update_row_count, path, rows_inserted}, ~M{%State files, subscribers} = state) do
+  @impl true
+  def handle_cast({:update_file, file}, state) do
+    {_old_file, files} = Map.get_and_update!(state.files, file.path, &{&1, file})
+    updated_state = %State{state | files: files}
+    notify_subscribers(updated_state)
+    {:noreply, updated_state}
+  end
+
+  @impl true
+  def handle_cast({:update_row_count, _path, _rows_inserted}, %State{status: :error} = state) do
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:update_row_count, path, rows_inserted}, state) do
     {_current_value, files} =
-      Map.get_and_update!(files, path, fn ~M{%Csv2sql.File row_count, rows_processed} = file ->
-        rows_processed = rows_processed + rows_inserted
-        status = if rows_processed == row_count, do: :done, else: :loading
+      Map.get_and_update!(state.files, path, fn file ->
+        rows_processed = file.rows_processed + rows_inserted
+        status = if rows_processed == file.row_count, do: :done, else: :loading
 
-        {file, ~M{%Csv2sql.File file | rows_processed, status}}
+        {file, %Csv2sql.File{file | rows_processed: rows_processed, status: status}}
       end)
 
-    state =
-      files
-      |> Enum.all?(fn {_path, ~M{%Csv2sql.File status}} -> status == :done end)
-      |> if do
-        end_time = DateTime.utc_now()
-        Enum.each(subscribers, fn subscriber -> Process.send(subscriber, :finish, []) end)
+    finish? = Enum.all?(files, fn {_path, %Csv2sql.File{status: status}} -> status == :done end)
+    end_time = DateTime.utc_now()
 
-        ~M{%State state | status: :finish, files, end_time}
-      else
-        ~M{%State state | files}
-      end
+    state =
+      if finish?,
+        do: %State{state | status: :finish, files: files, end_time: end_time},
+        else: %State{state | files: files}
+
+    notify_subscribers(state)
 
     {:noreply, state}
+  end
+
+  defp notify_subscribers(state) do
+    Phoenix.PubSub.local_broadcast(
+      Csv2sql.PubSub,
+      "progress",
+      {:progress_tracker_update, state}
+    )
   end
 end

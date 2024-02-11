@@ -108,10 +108,12 @@ defmodule Csv2sql.Config.Loader do
 
   defp load_db_config(args) do
     db_type = get_db_type(args)
+    IO.inspect args, label: "args"
+    IO.inspect db_type, label: "DB Type"
 
     db_url =
       if args[:db_url],
-        do: "ecto://#{args[:db_url]}",
+        do: args[:db_url],
         else: raise("Please provide a valid database url")
 
     varchar_limit = get_varchar_limit(args)
@@ -162,11 +164,13 @@ defmodule Csv2sql.Config.Loader do
 
   defp get_schema_infer_chunk_size(_), do: @schema_infer_chunk_size
 
-  defp get_db_type(~M{db_type}) when is_binary(db_type),
-    do: db_type |> strip_string() |> get_db_type()
+  defp get_db_type(%{db_type: db_type}),
+    do: db_type |> to_string() |> strip_string() |> get_db_type()
 
   defp get_db_type("mysql"), do: :mysql
   defp get_db_type("postgres"), do: :postgres
+  defp get_db_type(:mysql), do: :mysql
+  defp get_db_type(:postgres), do: :postgres
   defp get_db_type(_unknown_type), do: @db_type
 
   defp strip_string(nil), do: nil

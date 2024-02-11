@@ -4,7 +4,7 @@ defmodule Csv2sql.Stages.AnalyzeTest do
   describe "analyze/0" do
     db_test ~c"loads csv files into database properly" do
       load_fixtures(["test.csv"])
-      Csv2sql.ProgressTracker.add_subscriber()
+      Csv2sql.ProgressTracker.subscribe()
       Csv2sql.Stages.Analyze.analyze_files()
       assert_receive :finish, 50_00
 
@@ -57,7 +57,7 @@ defmodule Csv2sql.Stages.AnalyzeTest do
     db_test "when ordered true, loads csv files into database properly with ordering column",
             %{ordered: true} do
       load_fixtures(["test.csv"])
-      Csv2sql.ProgressTracker.add_subscriber()
+      Csv2sql.ProgressTracker.subscribe()
       Csv2sql.Stages.Analyze.analyze_files()
 
       assert_receive :finish, 50_00

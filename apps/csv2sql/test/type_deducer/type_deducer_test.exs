@@ -80,7 +80,7 @@ defmodule Csv2sql.TypeDeducerTest do
     test "when csv file is invalid returns error" do
       # Capture process crash logs to avoid bloating output
       ExUnit.CaptureLog.capture_log(fn ->
-        Csv2sql.ProgressTracker.add_subscriber()
+        Csv2sql.ProgressTracker.subscribe()
 
         Task.start(fn ->
           Csv2sql.TypeDeducer.get_count_and_types("test/support/fixtures/invalid.csv")

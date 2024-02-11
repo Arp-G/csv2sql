@@ -17,7 +17,7 @@ defmodule Csv2sql do
   @spec start() :: :ok
   def start() do
     # Subscribe to progress tracker
-    Csv2sql.ProgressTracker.add_subscriber()
+    Csv2sql.ProgressTracker.subscribe()
 
     # Trap Exits
     Process.flag(:trap_exit, true)

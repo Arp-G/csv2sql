@@ -6,7 +6,6 @@ defmodule Csv2sql.Stages.Analyze do
   @spec analyze_files :: :ok
   def analyze_files do
     try do
-      IO.inspect("#{DateTime.utc_now()} analyzing files")
       # Prepare file structs for all csvs in the source directory
       files_list = get_csv_files()
 
@@ -20,7 +19,7 @@ defmodule Csv2sql.Stages.Analyze do
       if Helpers.get_config(:insert_data), do: DbLoader.ConsumerSupervisor.start_link()
 
       # Remove existing schema file if present
-      get_schema_path() |> File.rm()
+      File.rm(get_schema_path())
 
       files_list
       |> Flow.from_enumerable(

@@ -21,6 +21,7 @@ defmodule Csv2sql.DbLoader.Producer do
     )
   end
 
+  @impl true
   def init(~M{file} = state) do
     csv_stream =
       file.path
@@ -32,6 +33,7 @@ defmodule Csv2sql.DbLoader.Producer do
     {:producer, Map.put(state, :csv_stream, csv_stream)}
   end
 
+  @impl true
   def handle_demand(demand, ~M{file, csv_stream} = state) do
     {csv_chunks, remainder_stream} = StreamSplit.take_and_drop(csv_stream, demand)
     new_state = %{state | csv_stream: remainder_stream}
@@ -40,7 +42,7 @@ defmodule Csv2sql.DbLoader.Producer do
       IO.inspect("#{DateTime.utc_now()} FINISH producer for #{inspect(file.path)}")
       {:stop, :normal, new_state}
     else
-      to_dispatch = Enum.map(csv_chunks, fn chunk -> {file, chunk} end)
+      to_dispatch = Enum.map(csv_chunks, &{file, &1})
       {:noreply, to_dispatch, new_state}
     end
   end

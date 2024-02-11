@@ -12,6 +12,5 @@ defmodule Csv2sql.ProgressTracker.State do
     field(:end_time, DateTime.t(), enforce: false)
     field(:files, files_map(), default: %{})
     field(:status, :init | :working | :finish | {:error, String.t()}, default: :init)
-    field(:subscribers, list(pid()), default: [])
   end
 end
