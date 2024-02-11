@@ -35,18 +35,23 @@ defmodule Csv2sql.DbLoader.Producer do
 
   @impl true
   def handle_demand(demand, ~M{file, csv_stream} = state) do
+    IO.inspect(demand, label: "DEMAND for #{inspect(file.path)}")
     {csv_chunks, remainder_stream} = StreamSplit.take_and_drop(csv_stream, demand)
     new_state = %{state | csv_stream: remainder_stream}
 
     if csv_chunks == [] do
+      # Update file progress state
+      Csv2sql.ProgressTracker.update_row_count(file.path, 0)
+
       IO.inspect("#{DateTime.utc_now()} FINISH producer for #{inspect(file.path)}")
       {:stop, :normal, new_state}
     else
       to_dispatch = Enum.map(csv_chunks, &{file, &1})
+      IO.inspect(Enum.count(to_dispatch), label: "DISPATCH for #{inspect(file.path)}")
       {:noreply, to_dispatch, new_state}
     end
   end
 
   defp with_index(stream),
-    do: if(Helpers.get_config(:ordered), do: stream |> Stream.with_index(1), else: stream)
+    do: if(Helpers.get_config(:ordered), do: Stream.with_index(stream, 1), else: stream)
 end

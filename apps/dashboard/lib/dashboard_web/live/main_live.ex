@@ -193,18 +193,27 @@ defmodule DashboardWeb.Live.MainLive do
           <div class="w-100 d-flex justify-content-center align-items-center">
             <button class="btn btn-primary px-4 text-center" phx-click="start">Start</button>
           </div>
-          <div
-            :for={file <- Map.values(@state.files)}
-            class={["file-list-item list-group-item list-group-item-action", file.status == :finish && "list-group-item-success"]}>
-            <span class="file-name"> <strong> Name: </strong> <%= file.name %> </span>
-            <span class="file-path"> <strong> Path: </strong> <a href={"file:///#{file.path}"} target="_blank"><%= file.path %></a> </span>
-            <span class="file-size"> <strong> Size: </strong> <%= file.size %> </span>
-            <span class="row_count"> <strong> Total Number of Records: </strong> <%= file.row_count %> </span>
-            <span>
-              <strong class="status"> Status: </strong>
-              <span> <%= file.status %> </span>
-            </span>
-          </div>
+
+          <table class = "table w-75 m-2 table-bordered border-dark">
+            <tr>
+              <th> File name </th>
+              <th> size </th>
+              <th> row_count </th>
+              <th> rows_processed </th>
+              <th> status </th>
+            </tr>
+
+              <tr :for={file <- Map.values(@state.files)}>
+                <td>
+                  <div><%= file.name %> </div>
+                  <div><a href={"file:///#{file.path}"} target="_blank"><%= file.path %></a></div>
+                </td>
+                <td> <%= file.size %> </td>
+                <td> <%= file.row_count %> </td>
+                <td> <%= file.rows_processed %> </td>
+                <td> <%= file.status %> </td>
+              </tr>
+          </table>
         </div>
         """
 
