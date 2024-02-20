@@ -142,7 +142,7 @@ defmodule Csv2sql.Database do
   defp get_headers(file) do
     [headers] =
       file
-      |> File.stream!()
+      |> File.stream!([:trim_bom])
       |> Stream.take(1)
       |> CSV.parse_stream(skip_headers: false)
       |> Enum.to_list()

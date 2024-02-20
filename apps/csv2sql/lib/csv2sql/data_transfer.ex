@@ -13,7 +13,7 @@ defmodule Csv2sql.DataTransfer do
     insertion_chunk_size = Application.get_env(:csv2sql, Csv2sql.get_repo())[:insertion_chunk_size]
 
     file
-    |> File.stream!()
+    |> File.stream!([:trim_bom])
     |> CSV.parse_stream()
     |> Stream.chunk_every(insertion_chunk_size)
     |> Enum.each(fn data_chunk ->

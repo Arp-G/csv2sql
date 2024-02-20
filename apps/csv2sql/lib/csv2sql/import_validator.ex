@@ -52,7 +52,7 @@ defmodule Csv2sql.ImportValidator do
   """
   def get_count_from_csv(file) do
     file
-    |> File.stream!()
+    |> File.stream!([:trim_bom])
     |> CSV.parse_stream()
     |> Enum.count()
   end
