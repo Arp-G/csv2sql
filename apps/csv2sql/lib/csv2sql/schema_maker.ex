@@ -106,7 +106,7 @@ defmodule Csv2sql.SchemaMaker do
 
     types =
       path
-      |> File.stream!()
+      |> File.stream!([:trim_bom])
       |> CSV.parse_stream()
       |> Stream.chunk_every(schema_infer_chunk_size)
       |> Task.async_stream(__MODULE__, :infer_type, [headers_type_list],
@@ -171,7 +171,7 @@ defmodule Csv2sql.SchemaMaker do
   defp get_headers(path) do
     [headers] =
       path
-      |> File.stream!()
+      |> File.stream!([:trim_bom])
       |> Stream.take(1)
       |> CSV.parse_stream(skip_headers: false)
       |> Enum.to_list()
