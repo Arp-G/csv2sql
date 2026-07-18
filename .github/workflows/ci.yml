@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [v5, develop, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CSV2SQL_TEST_POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres
+  CSV2SQL_TEST_MYSQL_URL: mysql://root:mysql@localhost:3306/mysql
+
+jobs:
+  ci:
+    name: Lint, Dialyzer, Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: mysql
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -pmysql"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28"
+          elixir-version: "1.20"
+
+      - name: Cache deps and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ runner.os }}-${{ hashFiles('mix.lock') }}
+          restore-keys: mix-${{ runner.os }}-
+
+      - name: Cache Dialyzer PLT
+        uses: actions/cache@v4
+        with:
+          path: priv/plts
+          key: plt-${{ runner.os }}-${{ hashFiles('mix.lock') }}
+          restore-keys: plt-${{ runner.os }}-
+
+      - run: mix deps.get
+      - run: mix format --check-formatted
+      - run: mix credo --strict
+      - run: mix compile --warnings-as-errors
+      - run: mix dialyzer
+      - run: mix test

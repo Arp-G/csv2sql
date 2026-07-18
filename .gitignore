@@ -35,3 +35,6 @@ csv2sql-*.tar
 npm-debug.log
 /assets/node_modules/
 
+
+# Dialyzer PLTs
+/priv/plts/
