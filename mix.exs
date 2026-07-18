@@ -4,14 +4,18 @@ defmodule Csv2sql.MixProject do
   def project do
     [
       app: :csv2sql,
-      version: "0.1.0",
-      elixir: "~> 1.17",
+      version: "5.0.0-dev",
+      elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        plt_add_apps: [:ex_unit]
+      ]
     ]
   end
 
@@ -66,7 +70,18 @@ defmodule Csv2sql.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      # Engine
+      {:nimble_csv, "~> 1.3"},
+      {:postgrex, "~> 0.22"},
+      {:myxql, "~> 0.9"},
+      # Core ecto only (embedded schemas + changesets); no ecto_sql/repos
+      {:ecto, "~> 3.14"},
+      # Quality / test tooling
+      {:stream_data, "~> 1.2", only: [:dev, :test]},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end
 
