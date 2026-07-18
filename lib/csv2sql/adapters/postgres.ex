@@ -17,10 +17,7 @@ defmodule Csv2sql.Adapters.Postgres do
       Db.conn_opts(db) ++
         [
           name: Keyword.fetch!(opts, :name),
-          pool_size: Keyword.fetch!(opts, :pool_size),
-          # The pipeline surfaces connection errors as run/file errors;
-          # Postgrex's own crash-logging would only add noise.
-          backoff_type: :stop
+          pool_size: Keyword.fetch!(opts, :pool_size)
         ]
 
     %{

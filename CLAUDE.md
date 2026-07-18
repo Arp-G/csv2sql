@@ -20,7 +20,7 @@ Guidance for Claude Code when working in this repository.
 MIX_ENV=test mix test         # REQUIRED: this machine exports MIX_ENV=dev
                               # (plain `mix test` compiles into _build/dev
                               # and fails to find test/support modules)
-MIX_ENV=test mix test --exclude postgres   # without a local Postgres
+MIX_ENV=test mix test --exclude db         # skip DB-backed tests entirely
 
 mix format                    # formatter
 mix credo --strict            # lint (must stay clean)
@@ -57,9 +57,18 @@ Read `ARCHITECTURE.md` first. The short version:
 - `@moduledoc` on every module, `@spec` on public functions, doctests on
   pure functions. `mix credo --strict` and `mix dialyzer` must stay clean.
 - `alias Csv2sql.File, as: CsvFile` (it clashes with Elixir's `File`).
-- Tests: `use Csv2sql.EngineCase` for engine runs (tmp dirs, `csv!/3`,
-  `run_import/2`, `assert_event/2`, `db_query!/2`, auto cleanup);
+- Tests: DB-backed modules use ExUnit **parameterized tests** (no
+  per-DB macros):
+  `use Csv2sql.EngineCase, async: true, parameterize: Csv2sql.EngineCase.db_parameters()`
+  + `@moduletag :db`. Parameters (`db_adapter`, `db_url`) merge into the
+  test context; helpers (`run_import/3`, `build_config/3`, `db_query!/3`)
+  take the context. Adapter selection: `CSV2SQL_TEST_ADAPTERS` env
+  (pinned in CI), defaulting to what's reachable locally.
   `unique_name/1` for anything hitting the DB so `async: true` stays safe.
+- **DB compatibility floors: MySQL 5.7, PostgreSQL 12.** Adapter SQL
+  stays conservative (no CTEs, no MySQL-8-only collations — utf8mb4_general_ci,
+  `SUM(CASE WHEN …)` over vendor niceties). CI runs the suite against
+  newest AND oldest supported servers.
 - Commits are granular; PRs target `develop` per repo convention (the v5
   branch will merge when the rewrite reaches parity).
 

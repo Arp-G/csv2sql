@@ -27,6 +27,10 @@ stages of the [rewrite roadmap](#roadmap) land.
    overridable defaults) render SQL. No `ecto_sql`/repos — drivers
    (Postgrex/MyXQL) are used directly; core `ecto` provides embedded
    schemas + changesets for boundary data and config validation only.
+   **Compatibility floors: MySQL 5.7 and PostgreSQL 12** — adapter SQL
+   stays conservative (no CTEs, no MySQL-8-only collations, portable
+   aggregates), and CI exercises both the newest and the oldest
+   supported servers.
 
 ## Process architecture
 
@@ -106,16 +110,26 @@ event can be missed.
 
 ## Testing
 
+- DB-backed modules use ExUnit **parameterized tests** (since 1.18) —
+  the whole module runs once per adapter, concurrently:
+
+  ```elixir
+  use Csv2sql.EngineCase, async: true,
+    parameterize: Csv2sql.EngineCase.db_parameters()
+  ```
+
+  Parameters (`db_adapter`, `db_url`) merge straight into the test
+  context. Selection is decided once at load: `CSV2SQL_TEST_ADAPTERS`
+  env (pinned in CI) or local reachability, Postgres as baseline.
 - `Csv2sql.EngineCase`: per-test tmp dirs, `csv!/3` fixture builder,
   `unique_name/1` (collision-free tables → DB tests run `async: true`),
-  `run_import/2` (subscribed run + collected events + auto table
-  cleanup), `assert_event/2`, `db_query!/2`.
+  `run_import/3` (subscribed run + collected events + auto table
+  cleanup), `assert_event/2`, `db_query!/3` — all context-aware.
 - Doctests document and pin the pure functions (TypeCheck, Inference,
   Resolve, Encoder, Ledger, Db URL parsing).
 - Integration tests drive full runs and verify against
   `information_schema` and real row data.
-- DB-backed tests are tagged (`:postgres`) and excludable:
-  `mix test --exclude postgres`.
+- DB-backed tests are tagged `:db` and excludable: `mix test --exclude db`.
 - **Local gotcha:** this machine exports `MIX_ENV=dev`, so run tests as
   `MIX_ENV=test mix test`.
 

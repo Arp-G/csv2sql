@@ -79,9 +79,11 @@ defmodule Csv2sql.Config do
     |> validate_source_dir()
   end
 
+  @adapter_modules %{postgres: Csv2sql.Adapters.Postgres}
+
   @doc "Resolves the adapter module for this config."
   @spec adapter(t()) :: module()
-  def adapter(%__MODULE__{db: %Db{adapter: :postgres}}), do: Csv2sql.Adapters.Postgres
+  def adapter(%__MODULE__{db: %Db{adapter: adapter}}), do: Map.fetch!(@adapter_modules, adapter)
 
   defp put_default(changeset, field, default_fun) do
     case get_field(changeset, field) do

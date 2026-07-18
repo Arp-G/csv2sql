@@ -41,13 +41,66 @@ defmodule Csv2sql.EngineCase do
 
   @await_timeout :timer.seconds(60)
 
-  @doc "The Postgres URL used by DB-backed tests."
-  @spec test_db_url() :: String.t()
-  def test_db_url do
+  @adapter_names %{"postgres" => :postgres}
+
+  @doc """
+  Parameter sets for DB-backed test modules (ExUnit `:parameterize`).
+
+      use Csv2sql.EngineCase, async: true,
+        parameterize: Csv2sql.EngineCase.db_parameters()
+
+  Each set merges `%{db_adapter: ..., db_url: ...}` into the test context,
+  and the whole module runs once per set. Selection: the
+  `CSV2SQL_TEST_ADAPTERS` env var (comma-separated, pinned in CI) wins;
+  otherwise Postgres is the baseline and optional adapters join when their
+  server is reachable. Memoized so every test file sees one decision.
+  """
+  @spec db_parameters() :: [map()]
+  def db_parameters do
+    case :persistent_term.get({__MODULE__, :db_parameters}, nil) do
+      nil ->
+        params = compute_db_parameters()
+        :persistent_term.put({__MODULE__, :db_parameters}, params)
+        params
+
+      params ->
+        params
+    end
+  end
+
+  @doc "The connection URL DB-backed tests use for `adapter`."
+  @spec test_db_url(atom()) :: String.t()
+  def test_db_url(:postgres) do
     System.get_env(
       "CSV2SQL_TEST_POSTGRES_URL",
       "postgres://postgres:postgres@localhost:5432/postgres"
     )
+  end
+
+  @doc "The DB settings for the current test, from its (parameterized) context."
+  @spec db_params(map()) :: %{adapter: atom(), url: String.t()}
+  def db_params(context) do
+    adapter = Map.get(context, :db_adapter, :postgres)
+    %{adapter: adapter, url: Map.get(context, :db_url, test_db_url(adapter))}
+  end
+
+  defp compute_db_parameters do
+    "CSV2SQL_TEST_ADAPTERS"
+    |> System.get_env()
+    |> selected_adapters()
+    |> Enum.map(&%{db_adapter: &1, db_url: test_db_url(&1)})
+  end
+
+  defp selected_adapters(nil) do
+    # Postgres is the baseline; optional adapters (MySQL, from stage 2)
+    # will join here when their server is reachable locally.
+    [:postgres]
+  end
+
+  defp selected_adapters(env_value) do
+    env_value
+    |> String.split(",", trim: true)
+    |> Enum.map(&Map.fetch!(@adapter_names, String.trim(&1)))
   end
 
   @doc "Writes `rows` (lists of strings, header first) as `dir/name`."
@@ -62,9 +115,10 @@ defmodule Csv2sql.EngineCase do
   @spec unique_name(String.t()) :: String.t()
   def unique_name(base), do: "#{base}_#{System.unique_integer([:positive])}"
 
-  @doc "Builds a valid test `%Config{}` for `source_dir` with overrides."
-  @spec build_config(Path.t(), map()) :: Config.t()
-  def build_config(source_dir, overrides \\ %{}) do
+  @doc "Builds a valid test `%Config{}` for `source_dir` using the context's DB."
+  @spec build_config(Path.t(), map(), map()) :: Config.t()
+  def build_config(source_dir, context, overrides \\ %{}) do
+    db = db_params(context)
     {db_overrides, top_overrides} = Map.pop(overrides, :db, %{})
 
     params =
@@ -72,8 +126,8 @@ defmodule Csv2sql.EngineCase do
         %{
           source_dir: source_dir,
           # Small pools: many async tests run concurrently against one
-          # local Postgres; the auto-sized pool would exhaust max_connections.
-          db: Map.merge(%{adapter: :postgres, url: test_db_url(), pool_size: 2}, db_overrides)
+          # local server; the auto-sized pool would exhaust max_connections.
+          db: Map.merge(%{adapter: db.adapter, url: db.url, pool_size: 2}, db_overrides)
         },
         top_overrides
       )
@@ -91,9 +145,10 @@ defmodule Csv2sql.EngineCase do
   event list is complete (ending in the terminal event). Created tables
   are dropped on test exit.
   """
-  @spec run_import(Path.t(), map()) :: %{run_id: String.t(), run: Run.t(), events: [struct()]}
-  def run_import(source_dir, overrides \\ %{}) do
-    config = build_config(source_dir, overrides)
+  @spec run_import(Path.t(), map(), map()) ::
+          %{run_id: String.t(), run: Run.t(), events: [struct()]}
+  def run_import(source_dir, context, overrides \\ %{}) do
+    config = build_config(source_dir, context, overrides)
     {:ok, run_id} = Csv2sql.start_run(config, subscribe: true)
 
     events = collect_events(run_id, [])
@@ -123,21 +178,23 @@ defmodule Csv2sql.EngineCase do
   @spec register_table_cleanup(Run.t()) :: :ok
   def register_table_cleanup(%Run{} = run) do
     tables = run |> Run.files_in_order() |> Enum.map(& &1.table_name)
-    url = test_db_url()
+    db = run.config.db
 
-    ExUnit.Callbacks.on_exit(fn -> drop_tables(url, tables) end)
+    ExUnit.Callbacks.on_exit(fn -> drop_tables(db, tables) end)
   end
 
-  defp drop_tables(url, tables) do
-    with_test_conn(url, fn conn ->
+  defp drop_tables(%Db{} = db, tables) do
+    with_test_conn(db, fn conn ->
       Enum.each(tables, &Postgrex.query!(conn, ~s(DROP TABLE IF EXISTS "#{&1}"), []))
     end)
   end
 
-  @doc "Runs a SQL query against the test database, returning rows."
-  @spec db_query!(String.t(), [term()]) :: [[term()]]
-  def db_query!(sql, params \\ []) do
-    with_test_conn(test_db_url(), fn conn ->
+  @doc "Runs a SQL query against the context's test database, returning rows."
+  @spec db_query!(map(), String.t(), [term()]) :: [[term()]]
+  def db_query!(context, sql, params \\ []) do
+    db = db_params(context)
+
+    with_test_conn(%Db{adapter: db.adapter, url: db.url}, fn conn ->
       Postgrex.query!(conn, sql, params).rows
     end)
   end
@@ -162,8 +219,8 @@ defmodule Csv2sql.EngineCase do
     end
   end
 
-  defp with_test_conn(url, fun) do
-    opts = Db.conn_opts(%Db{adapter: :postgres, url: url})
+  defp with_test_conn(%Db{} = db, fun) do
+    opts = Db.conn_opts(db)
     {:ok, conn} = Postgrex.start_link(opts ++ [pool_size: 1])
 
     try do

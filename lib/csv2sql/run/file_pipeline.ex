@@ -81,8 +81,11 @@ defmodule Csv2sql.Run.FilePipeline do
           file.path
           |> Reader.data_stream()
           |> Stream.chunk_every(ctx.config.analyze_chunk_rows)
+          # CPU-bound: cap at core count regardless of file_workers — the
+          # file-level fan-out is bounded separately, and N files × N chunk
+          # tasks would oversubscribe quadratically.
           |> Task.async_stream(&Inference.chunk_stats(&1, column_count),
-            max_concurrency: ctx.config.file_workers,
+            max_concurrency: System.schedulers_online(),
             ordered: false,
             timeout: :infinity
           )
