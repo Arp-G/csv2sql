@@ -26,6 +26,8 @@ defmodule Csv2sql.Config do
     field(:insert_chunk_bytes, :integer, default: 4_194_304)
     field(:varchar_limit, :integer, default: 200)
     field(:ordered, :boolean, default: false)
+    field(:delimiter, Ecto.Enum, values: [:auto, :comma, :semicolon, :tab, :pipe], default: :auto)
+    field(:encoding, Ecto.Enum, values: [:auto, :utf8, :utf16, :latin1], default: :auto)
     field(:date_patterns, {:array, :string}, default: ["{YYYY}-{0M}-{0D}"])
 
     field(:datetime_patterns, {:array, :string},
@@ -33,6 +35,7 @@ defmodule Csv2sql.Config do
     )
 
     embeds_one(:db, Db)
+    embeds_one(:error_policy, Csv2sql.Config.ErrorPolicy)
   end
 
   @type t :: %__MODULE__{
@@ -46,9 +49,12 @@ defmodule Csv2sql.Config do
           insert_chunk_bytes: pos_integer(),
           varchar_limit: pos_integer(),
           ordered: boolean(),
+          delimiter: :auto | :comma | :semicolon | :tab | :pipe,
+          encoding: :auto | :utf8 | :utf16 | :latin1,
           date_patterns: [String.t()],
           datetime_patterns: [String.t()],
-          db: Db.t() | nil
+          db: Db.t() | nil,
+          error_policy: Csv2sql.Config.ErrorPolicy.t() | nil
         }
 
   @doc """
@@ -80,10 +86,14 @@ defmodule Csv2sql.Config do
       :insert_chunk_bytes,
       :varchar_limit,
       :ordered,
+      :delimiter,
+      :encoding,
       :date_patterns,
       :datetime_patterns
     ])
     |> cast_embed(:db, required: true)
+    |> cast_embed(:error_policy)
+    |> default_error_policy()
     |> validate_required([:source_dir])
     |> put_default(:file_workers, &System.schedulers_online/0)
     |> validate_number(:file_workers, greater_than: 0, less_than_or_equal_to: 100)
@@ -110,6 +120,13 @@ defmodule Csv2sql.Config do
     case get_field(changeset, field) do
       nil -> put_change(changeset, field, default_fun.())
       _value -> changeset
+    end
+  end
+
+  defp default_error_policy(changeset) do
+    case get_field(changeset, :error_policy) do
+      nil -> put_embed(changeset, :error_policy, %Csv2sql.Config.ErrorPolicy{})
+      _policy -> changeset
     end
   end
 

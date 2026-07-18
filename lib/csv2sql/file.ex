@@ -33,6 +33,8 @@ defmodule Csv2sql.File do
     field(:row_count, :integer, default: 0)
     field(:timings, :map, default: %{})
     field(:errors_csv, :string)
+    field(:encoding, Ecto.Enum, values: [:utf8, :utf16le, :utf16be, :latin1])
+    field(:delimiter, Ecto.Enum, values: [:comma, :semicolon, :tab, :pipe])
 
     embeds_many(:columns, ColumnSpec)
     embeds_one(:ledger, Ledger)
@@ -58,6 +60,8 @@ defmodule Csv2sql.File do
           row_count: non_neg_integer(),
           timings: %{optional(atom()) => non_neg_integer()},
           errors_csv: String.t() | nil,
+          encoding: :utf8 | :utf16le | :utf16be | :latin1 | nil,
+          delimiter: :comma | :semicolon | :tab | :pipe | nil,
           columns: [ColumnSpec.t()],
           ledger: Ledger.t() | nil,
           errors: [Error.t()]

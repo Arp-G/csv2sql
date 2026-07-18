@@ -55,6 +55,15 @@ defmodule Csv2sql.Run.Server do
   @spec cancel(String.t()) :: :ok
   def cancel(run_id), do: GenServer.call(Run.server_name(run_id), :cancel)
 
+  @doc """
+  Fails the whole run (idempotent): stops the core, marks unfinished
+  files `:skipped`, emits `RunFailed`. Used for run-fatal errors
+  (database unreachable) and strict mode.
+  """
+  @spec fail_run(String.t(), Error.t()) :: :ok
+  def fail_run(run_id, %Error{} = error),
+    do: GenServer.call(Run.server_name(run_id), {:fail_run, error})
+
   # -- Server -----------------------------------------------------------------
 
   @impl true
@@ -104,6 +113,25 @@ defmodule Csv2sql.Run.Server do
     end
   end
 
+  def handle_call({:fail_run, error}, _from, %{run: run} = state) do
+    if Run.terminal?(run) do
+      {:reply, :ok, state}
+    else
+      stop_core(run.id)
+
+      run = %{
+        run
+        | files: skip_unfinished(run.files),
+          status: :failed,
+          finished_at: DateTime.utc_now(),
+          error: error
+      }
+
+      Events.emit(run.id, RunFailed, error: error)
+      {:reply, :ok, schedule_teardown(%{state | run: run})}
+    end
+  end
+
   @impl true
   def handle_cast({:file_update, file}, %{run: run} = state) do
     {:noreply, %{state | run: Run.put_file(run, file)}}
@@ -143,6 +171,16 @@ defmodule Csv2sql.Run.Server do
   end
 
   def handle_info(_message, state), do: {:noreply, state}
+
+  defp skip_unfinished(files) do
+    Map.new(files, fn
+      {path, %CsvFile{status: status} = file} when status not in [:done, :failed, :skipped] ->
+        {path, %{file | status: :skipped}}
+
+      {path, file} ->
+        {path, file}
+    end)
+  end
 
   defp stop_core(run_id) do
     case Run.whereis(Run.core_name(run_id)) do

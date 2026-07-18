@@ -72,6 +72,19 @@ defmodule Csv2sql.Adapter do
   @doc "Exact row count of a table. *(default provided)*"
   @callback exact_count(conn(), String.t()) :: {:ok, non_neg_integer()} | {:error, Exception.t()}
 
+  @doc """
+  Classifies a driver error to decide the reaction:
+
+    * `:row_data` — some row in the statement is bad → isolate row-by-row
+    * `:transient` — may heal (deadlock, lock timeout) → retry with backoff
+    * `:connection` — no connection available → retry; exhaustion is
+      run-fatal (everything else is about to fail the same way)
+    * `:fatal` — deterministic failure (bad SQL, permissions) → no retry
+
+  *(default: `DBConnection.ConnectionError` → `:connection`, else `:fatal`)*
+  """
+  @callback classify_error(Exception.t()) :: :row_data | :transient | :connection | :fatal
+
   defmacro __using__(_opts) do
     quote do
       @behaviour Csv2sql.Adapter
@@ -167,13 +180,18 @@ defmodule Csv2sql.Adapter do
         end
       end
 
+      @impl Csv2sql.Adapter
+      def classify_error(%DBConnection.ConnectionError{}), do: :connection
+      def classify_error(_error), do: :fatal
+
       defoverridable table_options: 0,
                      max_params: 0,
                      max_packet_bytes: 1,
                      create_table_sql: 2,
                      drop_table_sql: 1,
                      insert_rows: 4,
-                     exact_count: 2
+                     exact_count: 2,
+                     classify_error: 1
     end
   end
 end

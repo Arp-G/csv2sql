@@ -21,12 +21,15 @@ defmodule Csv2sql.Run.FilePipeline do
     FileCompleted,
     FileFailed,
     LoadProgress,
+    RowsRejected,
     SchemaCreated
   }
 
   alias Csv2sql.File, as: CsvFile
   alias Csv2sql.Load.Chunker
   alias Csv2sql.Load.Encoder
+  alias Csv2sql.Load.ErrorsCsv
+  alias Csv2sql.Load.Inserter
   alias Csv2sql.Run.Artifacts
   alias Csv2sql.Run.Server
   alias Csv2sql.Schema.Inference
@@ -64,9 +67,24 @@ defmodule Csv2sql.Run.FilePipeline do
         file = CsvFile.fail(file, error)
         update(ctx, file)
         Events.emit(ctx.run_id, FileFailed, path: file.path, error: error)
+        maybe_strict_halt(error, ctx)
         file
     end
   end
+
+  # Run-class errors already halt the run; strict mode escalates any
+  # file failure into a run halt.
+  defp maybe_strict_halt(%Error{class: :run}, _ctx), do: :ok
+
+  defp maybe_strict_halt(
+         %Error{} = error,
+         %{config: %Config{error_policy: %{strict: true}}} = ctx
+       ) do
+    strict_error = %{error | class: :run, reason: "strict_file_failure"}
+    Server.fail_run(ctx.run_id, strict_error)
+  end
+
+  defp maybe_strict_halt(_error, _ctx), do: :ok
 
   # -- Pass 1: analyze --------------------------------------------------------
 
@@ -75,7 +93,10 @@ defmodule Csv2sql.Run.FilePipeline do
     Events.emit(ctx.run_id, AnalyzeStarted, path: file.path)
     started = System.monotonic_time(:millisecond)
 
-    case Reader.headers!(file.path) do
+    source = Reader.detect(file.path, ctx.config)
+    file = %{file | encoding: source.encoding, delimiter: source.delimiter}
+
+    case Reader.headers!(file.path, source) do
       [] ->
         {:error, file, Error.file_error(:parse, file.path, :empty_file, "file has no header row")}
 
@@ -84,7 +105,7 @@ defmodule Csv2sql.Run.FilePipeline do
 
         acc =
           file.path
-          |> Reader.data_stream()
+          |> Reader.data_stream(source)
           |> Stream.chunk_every(ctx.config.analyze_chunk_rows)
           # CPU-bound: cap at core count regardless of file_workers — the
           # file-level fan-out is bounded separately, and N files × N chunk
@@ -115,7 +136,7 @@ defmodule Csv2sql.Run.FilePipeline do
         {:ok, file}
     end
   rescue
-    exception in NimbleCSV.ParseError ->
+    exception in [NimbleCSV.ParseError, Reader.EncodingError] ->
       {:error, file, Error.from_exception(:parse, file.path, exception)}
 
     exception ->
@@ -192,31 +213,62 @@ defmodule Csv2sql.Run.FilePipeline do
         length(file.columns)
       )
 
-    ledger =
+    errors_csv = ErrorsCsv.new(ctx.artifacts_dir, file.name, csv_headers(file))
+
+    outcome =
       file.path
-      |> Reader.data_stream()
-      |> maybe_add_ordering(ctx.config.ordered)
+      |> Reader.data_stream(%{encoding: file.encoding, delimiter: file.delimiter})
+      |> Stream.with_index(1)
       |> Chunker.chunks(limits)
-      |> Task.async_stream(&insert_chunk(&1, file, ctx),
+      |> Task.async_stream(&Inserter.insert_chunk(&1, file, ctx),
         max_concurrency: ctx.config.insert_workers,
         ordered: false,
         timeout: :infinity
       )
-      |> Enum.reduce(Ledger.new(), fn {:ok, delta}, acc ->
-        acc = Ledger.merge(acc, delta)
+      |> Enum.reduce_while({Ledger.new(), errors_csv}, &accumulate(&1, &2, file, ctx))
 
-        Events.emit(ctx.run_id, LoadProgress,
-          path: file.path,
-          rows_inserted: acc.rows_inserted,
-          rows_rejected: acc.rows_rejected
-        )
+    finalize_load(outcome, file, ctx, started)
+  rescue
+    exception -> {:error, file, Error.from_exception(:load, file.path, exception)}
+  end
 
-        acc
-      end)
+  # The single-writer accumulation fold: merges chunk ledgers, writes
+  # rejected rows, emits progress, and trips the per-file circuit breaker.
+  # Halting closes the stream, which shuts down in-flight insert tasks.
+  defp accumulate(
+         {:ok, {:ok, %{ledger: delta, rejected: rejected}}},
+         {ledger, errors_csv},
+         file,
+         ctx
+       ) do
+    ledger = Ledger.merge(ledger, delta)
+    errors_csv = ErrorsCsv.append(errors_csv, rejected)
+    emit_rejections(rejected, file, ctx)
 
-    file =
-      %{file | ledger: ledger}
-      |> CsvFile.put_timing(:load_ms, System.monotonic_time(:millisecond) - started)
+    Events.emit(ctx.run_id, LoadProgress,
+      path: file.path,
+      rows_inserted: ledger.rows_inserted,
+      rows_rejected: ledger.rows_rejected
+    )
+
+    if threshold_tripped?(ledger, ctx.config.error_policy) do
+      {:halt, {:threshold, ledger, errors_csv}}
+    else
+      {:cont, {ledger, errors_csv}}
+    end
+  end
+
+  defp accumulate({:ok, {kind, %Error{} = error}}, {ledger, errors_csv}, _file, _ctx)
+       when kind in [:file_error, :run_abort] do
+    {:halt, {kind, error, ledger, errors_csv}}
+  end
+
+  defp accumulate({:exit, reason}, {ledger, errors_csv}, file, _ctx) do
+    {:halt, {:file_error, Error.from_caught(:load, file.path, :exit, reason), ledger, errors_csv}}
+  end
+
+  defp finalize_load({ledger, errors_csv}, file, _ctx, started) do
+    file = close_load(file, ledger, errors_csv, started)
 
     if Ledger.balanced?(ledger) do
       {:ok, file}
@@ -227,47 +279,58 @@ defmodule Csv2sql.Run.FilePipeline do
 
       {:error, file, Error.file_error(:load, file.path, :ledger_mismatch, message)}
     end
-  rescue
-    exception -> {:error, file, Error.from_exception(:load, file.path, exception)}
   end
 
-  # The ordering column's value is injected as a string and cast like any
-  # other cell — everything downstream (chunking, encoding, inserts) stays
-  # uniform.
-  defp maybe_add_ordering(stream, false), do: stream
+  defp finalize_load({:threshold, ledger, errors_csv}, file, ctx, started) do
+    file = close_load(file, ledger, errors_csv, started)
+    policy = ctx.config.error_policy
+    percent = Float.round(ledger.rows_rejected * 100 / max(ledger.rows_read, 1), 1)
 
-  defp maybe_add_ordering(stream, true) do
-    stream
-    |> Stream.with_index(1)
-    |> Stream.map(fn {row, index} -> [Integer.to_string(index) | row] end)
+    message =
+      "#{percent}% of rows rejected (threshold #{policy.row_error_threshold_pct}%) " <>
+        "after #{ledger.rows_read} rows; #{ledger.rows_inserted} rows were inserted " <>
+        "before stopping"
+
+    {:error, file, Error.file_error(:load, file.path, :rejection_threshold_exceeded, message)}
   end
 
-  defp insert_chunk(rows, file, ctx) do
-    {reversed_encoded, rejected} =
-      Enum.reduce(rows, {[], 0}, fn row, {encoded, rejected} ->
-        case Encoder.encode_row(row, file.columns, ctx.parsers) do
-          {:ok, encoded_row} -> {[encoded_row | encoded], rejected}
-          # Rejected-row reasons feed <file>.errors.csv in the error-model stage.
-          {:error, _reason} -> {encoded, rejected + 1}
-        end
-      end)
+  defp finalize_load({:file_error, error, ledger, errors_csv}, file, _ctx, started) do
+    {:error, close_load(file, ledger, errors_csv, started), error}
+  end
 
-    encoded = Enum.reverse(reversed_encoded)
+  defp finalize_load({:run_abort, error, ledger, errors_csv}, file, ctx, started) do
+    # Everything is about to fail the same way — halt the whole run with
+    # one honest cause instead of N identical per-file failures.
+    Server.fail_run(ctx.run_id, error)
+    {:error, close_load(file, ledger, errors_csv, started), error}
+  end
 
-    case ctx.adapter.insert_rows(ctx.conn, file.table_name, file.columns, encoded) do
-      {:ok, inserted} ->
-        %Ledger{
-          rows_read: length(rows),
-          rows_inserted: inserted,
-          rows_rejected: rejected,
-          chunks_ok: 1
-        }
+  defp close_load(file, ledger, errors_csv, started) do
+    %{file | ledger: ledger, errors_csv: ErrorsCsv.path(errors_csv)}
+    |> CsvFile.put_timing(:load_ms, System.monotonic_time(:millisecond) - started)
+  end
 
-      {:error, exception} ->
-        # Row-isolation retry lands in the error-model stage; for now an
-        # insert failure fails the file (crash propagates to the file task).
-        raise exception
-    end
+  defp emit_rejections([], _file, _ctx), do: :ok
+
+  defp emit_rejections(rejected, file, ctx) do
+    Events.emit(ctx.run_id, RowsRejected,
+      path: file.path,
+      count: length(rejected),
+      sample_reasons: rejected |> Enum.take(3) |> Enum.map(& &1.reason)
+    )
+  end
+
+  defp threshold_tripped?(ledger, policy) do
+    ledger.rows_read >= policy.row_error_min_sample and
+      ledger.rows_rejected * 100 > ledger.rows_read * policy.row_error_threshold_pct
+  end
+
+  # The original CSV headers (ordering column excluded) — errors.csv rows
+  # mirror the source file so they can be fixed and re-imported.
+  defp csv_headers(file) do
+    file.columns
+    |> Enum.reject(&(&1.name == Resolve.ordering_column()))
+    |> Enum.map(& &1.original_name)
   end
 
   defp update(ctx, file), do: Server.file_update(ctx.run_id, file)

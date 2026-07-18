@@ -167,11 +167,62 @@ Every run writes `schema.sql` into its artifacts directory
 (`<source>/csv2sql_runs/<run_id>/`) — analyze mode included, so a dry
 run yields a reviewable schema.
 
+## Error model
+
+`%Csv2sql.Error{}` classes define blast radius: `:row` (rejected into
+`<file>.errors.csv` with row number + reason + original cells — fix and
+re-import), `:file` (siblings continue), `:run` (graceful halt,
+unfinished files `:skipped`), plus `:preflight`/`:transient`. Adapters
+classify driver errors (`classify_error/1` → `:row_data | :transient |
+:connection | :fatal`).
+
+Chunk failures are handled **in place, never queued**: `:row_data` →
+immediate row-by-row isolation (a failed multi-VALUES statement inserted
+nothing, so re-sending cannot duplicate); `:transient`/`:connection` →
+same statement retried after doubling backoff (`error_policy.max_retries`
+× `backoff_ms`, `ChunkRetried` events); exhausted `:connection` →
+run-fatal (`database_unreachable`); `:fatal` → file failure. The
+per-file circuit breaker (`row_error_threshold_pct`, default 5%, armed
+after `row_error_min_sample` rows) fails a systematically-broken file
+early instead of grinding through millions of rejects. `strict: true`
+escalates any file failure into a run halt. Note: cast-time rejects
+cannot occur naturally (inference sees every value and widens the type);
+they become reachable with user type-overrides.
+
+## Encodings & delimiters
+
+`Reader.detect/2` runs once per file: BOM sniffing picks UTF-8/UTF-16
+LE/BE (config can force `:utf8`/`:utf16`/`:latin1`), delimiter `:auto`
+samples the first lines (quote-aware consistency vote across comma/
+semicolon/tab/pipe — compile-time NimbleCSV parsers per delimiter).
+UTF-16 is transcoded streamingly with carry across chunk boundaries;
+invalid sequences raise `Reader.EncodingError` → a parse-stage file
+error (refusing beats corrupting). Detected encoding/delimiter are
+recorded on the file (surfaced in UI/report).
+
+## UI notes (for stage 7 — agreed with Arpan 2026-07)
+
+- **Live activity, out of the way:** a status strip of live counter chips
+  (retries · isolated chunks · rejected rows · failed files) that pulse on
+  change; clicking opens a slide-over Activity panel — a live, filterable
+  event feed (LiveView streams, ring buffer of ~200 entries) with each
+  entry expandable to the full `%Error{}` + errors.csv link. Per-file rows
+  get small inline badges (retrying dot, rejected count). Toasts only for
+  escalations (file failed / run aborted), never row-level noise. Powered
+  entirely by the event bus — `ChunkRetried` / `RowsRejected` are emitted
+  by the engine (stage 4) precisely so the UI can subscribe later.
+- **File table at scale:** LiveView `streams` + windowed rendering with
+  pagination (bounded DOM); server-side debounced search by file name;
+  status filter chips (pending/analyzing/loading/done/failed/rejected>0);
+  sorts by status, size, progress %, rows, rejected count, duration,
+  throughput. All filtering/sorting is server-side over `Run.Server`
+  state — the browser only ever holds the visible window.
+
 ## Roadmap
 
 Stages (from the approved v5 plan): **1. walking skeleton ✅** ·
 **2. adapters + MySQL + insert engine ✅** · **3. full type system ✅** ·
-4. error model (row isolation → errors.csv), encodings, delimiters ·
+**4. error model, encodings, delimiters ✅** ·
 5. validation ladder + preflight + run_report.json · 6. CLI + config
 sources/persistence · 7. LiveView UI + PWA · 8. Burrito packaging +
 Sentry + docs.

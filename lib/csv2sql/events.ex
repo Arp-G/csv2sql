@@ -81,6 +81,34 @@ defmodule Csv2sql.Events do
           }
   end
 
+  defmodule ChunkRetried do
+    @moduledoc "A chunk insert hit a transient/connection error and is being retried."
+    @enforce_keys [:run_id, :at, :path, :attempt, :reason]
+    defstruct [:run_id, :at, :path, :attempt, :reason]
+
+    @type t :: %__MODULE__{
+            run_id: String.t(),
+            at: DateTime.t(),
+            path: String.t(),
+            attempt: pos_integer(),
+            reason: String.t()
+          }
+  end
+
+  defmodule RowsRejected do
+    @moduledoc "Rows were rejected (cast failure or per-row DB rejection) into errors.csv."
+    @enforce_keys [:run_id, :at, :path, :count, :sample_reasons]
+    defstruct [:run_id, :at, :path, :count, :sample_reasons]
+
+    @type t :: %__MODULE__{
+            run_id: String.t(),
+            at: DateTime.t(),
+            path: String.t(),
+            count: pos_integer(),
+            sample_reasons: [String.t()]
+          }
+  end
+
   defmodule FileCompleted do
     @moduledoc "A file finished successfully (imported or analyzed)."
     @enforce_keys [:run_id, :at, :path, :ledger, :timings]
@@ -139,6 +167,8 @@ defmodule Csv2sql.Events do
           | AnalyzeCompleted.t()
           | SchemaCreated.t()
           | LoadProgress.t()
+          | ChunkRetried.t()
+          | RowsRejected.t()
           | FileCompleted.t()
           | FileFailed.t()
           | RunCompleted.t()

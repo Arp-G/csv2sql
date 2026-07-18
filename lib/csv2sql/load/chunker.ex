@@ -83,7 +83,10 @@ defmodule Csv2sql.Load.Chunker do
   end
 
   # Cell bytes plus a small per-cell overhead for the wire protocol.
-  defp row_size(row) do
+  # Elements may be `{row, metadata}` tuples (e.g. numbered rows).
+  defp row_size({row, _metadata}), do: row_size(row)
+
+  defp row_size(row) when is_list(row) do
     Enum.reduce(row, 0, fn cell, acc -> acc + byte_size(cell) + 8 end)
   end
 end

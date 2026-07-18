@@ -133,6 +133,23 @@ defmodule Csv2sql.Adapters.MySql do
     end
   end
 
+  # 1048 null violation · 1062 duplicate key · 1264 out of range ·
+  # 1265 data truncated · 1292 incorrect datetime · 1366 incorrect string ·
+  # 1406 data too long
+  @row_data_codes [1048, 1062, 1264, 1265, 1292, 1366, 1406]
+  # 1205 lock wait timeout · 1213 deadlock
+  @transient_codes [1205, 1213]
+
+  @impl true
+  def classify_error(%MyXQL.Error{mysql: %{code: code}}) when code in @row_data_codes,
+    do: :row_data
+
+  def classify_error(%MyXQL.Error{mysql: %{code: code}}) when code in @transient_codes,
+    do: :transient
+
+  def classify_error(%DBConnection.ConnectionError{}), do: :connection
+  def classify_error(_error), do: :fatal
+
   @impl true
   def table_exists?(conn, table) do
     sql =

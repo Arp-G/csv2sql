@@ -108,6 +108,30 @@ defmodule Csv2sql.Adapters.Postgres do
     result
   end
 
+  @row_data_codes [
+    :invalid_text_representation,
+    :numeric_value_out_of_range,
+    :string_data_right_truncation,
+    :datetime_field_overflow,
+    :character_not_in_repertoire,
+    :untranslatable_character,
+    :not_null_violation,
+    :check_violation,
+    :unique_violation,
+    :foreign_key_violation
+  ]
+  @transient_codes [:deadlock_detected, :serialization_failure, :lock_not_available]
+
+  @impl true
+  def classify_error(%Postgrex.Error{postgres: %{code: code}}) when code in @row_data_codes,
+    do: :row_data
+
+  def classify_error(%Postgrex.Error{postgres: %{code: code}}) when code in @transient_codes,
+    do: :transient
+
+  def classify_error(%DBConnection.ConnectionError{}), do: :connection
+  def classify_error(_error), do: :fatal
+
   @impl true
   def table_exists?(conn, table) do
     sql =
