@@ -47,9 +47,14 @@ defmodule Csv2sqlWeb.ImportLive do
     end
   end
 
-  def handle_event("probe", %{"config" => params}, socket) do
+  # A plain phx-click carries no form data — probe from the tracked
+  # params, which "validate" keeps current on every form change.
+  def handle_event("probe", _params, socket) do
     normalized =
-      params |> normalize_params() |> Map.put("mode", "analyze") |> Map.put("source_dir", ".")
+      socket.assigns.pending_params
+      |> normalize_params()
+      |> Map.put("mode", "analyze")
+      |> Map.put("source_dir", ".")
 
     case Config.new(normalized) do
       {:ok, config} ->

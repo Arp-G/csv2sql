@@ -26,6 +26,24 @@ defmodule Csv2sqlWeb.ImportLiveTest do
     assert invalid =~ "must start with postgres:// or mysql://"
   end
 
+  # Clicked with no payload on purpose: a browser button click carries no
+  # form data, so the handler must probe from the tracked params.
+  test "test connection probes the database from the current form", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/")
+
+    # Empty URL: instant validation error, no async work.
+    assert view |> element("[data-role=probe-button]") |> render_click() =~
+             "fix the database URL first"
+
+    view
+    |> form("#config-form", config: %{db: %{url: test_db_url(:postgres)}})
+    |> render_change()
+
+    view |> element("[data-role=probe-button]") |> render_click()
+    assert render_async(view, 15_000) =~ "Connection OK"
+    assert has_element?(view, "[data-role=probe-ok]")
+  end
+
   test "starting an import navigates to a detached run that completes",
        %{conn: conn, tmp_dir: dir} do
     table = unique_name("ui_users")
