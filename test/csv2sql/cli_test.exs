@@ -6,6 +6,7 @@ defmodule Csv2sql.CliTest do
   import ExUnit.CaptureIO
 
   alias Csv2sql.Cli
+  alias Csv2sql.Config.Store
 
   @moduletag :db
   @moduletag :tmp_dir
@@ -13,6 +14,10 @@ defmodule Csv2sql.CliTest do
   @env ~w(CSV2SQL_SOURCE_DIR CSV2SQL_DB_URL CSV2SQL_DB_PASSWORD CSV2SQL_STRICT)
 
   setup do
+    # Sources also reads saved defaults — start from an empty store so a
+    # url persisted by another test can't make "invalid config" valid.
+    File.rm(Store.path())
+
     saved = Map.new(@env, &{&1, System.get_env(&1)})
     Enum.each(@env, &System.delete_env/1)
 

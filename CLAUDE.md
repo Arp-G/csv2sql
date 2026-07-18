@@ -29,9 +29,12 @@ mix compile --warnings-as-errors
 mix phx.server                # web UI at localhost:4000 (ImportLive + RunLive)
 ```
 
-DB-backed tests default to `postgres://postgres:postgres@localhost:5432/postgres`;
-override with `CSV2SQL_TEST_POSTGRES_URL`. Tables are per-test unique and
-dropped automatically — safe to run against a local server.
+DB-backed tests default to `postgres://postgres:postgres@localhost:5432/postgres`
+and `mysql://root:mysql@localhost:3306/csv2sql_test` (Docker container
+`csv2sql-mysql`); override with `CSV2SQL_TEST_POSTGRES_URL` /
+`CSV2SQL_TEST_MYSQL_URL`, pick adapters with `CSV2SQL_TEST_ADAPTERS`.
+Tables are per-test unique and dropped automatically — safe to run
+against a local server.
 
 ## Architecture
 
@@ -74,8 +77,29 @@ Read `ARCHITECTURE.md` first. The short version:
 
 ## Roadmap position
 
-Stage 1 (walking skeleton) is complete: Postgres-only happy path,
-minimal types (int/bigint/float/varchar/text), ledger validation, full
-event bus, 44 tests. Next stages: 2 adapters+MySQL, 3 full type system,
-4 error model/encodings, 5 validation+report, 6 CLI+config, 7 UI+PWA,
-8 Burrito+Sentry. Details in ARCHITECTURE.md and the plan file.
+All 8 planned stages are implemented (engine, adapters, type system,
+error model, validation, CLI, LiveView UI + PWA, Burrito packaging +
+opt-in Sentry); the deferred-past-v1 list lives at the end of
+ARCHITECTURE.md. 180 tests. Awaiting Arpan's review before merge.
+
+## Packaging notes
+
+- `mix release csv2sql` runs Burrito as a release step — it needs Zig
+  0.15.2 **exactly** (`asdf install zig 0.15.2`, select via
+  `ASDF_ZIG_VERSION`) and xz. On macOS 26 (Tahoe) Zig 0.15.2 cannot link
+  against the SDK (TBD-v5 stubs) — build binaries via CI
+  (`release.yml`) or test the plain assembled release under
+  `_build/prod/rel/csv2sql/bin/csv2sql` instead (that path works
+  locally and is how the GUI + headless import were smoke-tested).
+- Prod assets: `MIX_ENV=prod mix compile && MIX_ENV=prod mix
+  assets.deploy` (compile first — Tailwind reads the colocated-CSS
+  artifact from `_build/prod`). Digested copies land in `priv/static`
+  and are gitignored; `MIX_ENV=prod mix phx.digest.clean --all` removes
+  them.
+- `/manifest.webmanifest` and `/sw.js` are referenced by **literal**
+  stable URLs on purpose — `~p` would digest the filename, which
+  `Plug.Static`'s allow-list rejects and which breaks service-worker
+  update semantics. Don't "fix" them to `~p`.
+- Sentry: dormant unless `CSV2SQL_SENTRY_DSN` is set (prod runtime);
+  transport is `Csv2sql.SentryClient` (`:httpc`) — do not add an HTTP
+  client dep for it.

@@ -223,7 +223,59 @@ invalid sequences raise `Reader.EncodingError` → a parse-stage file
 error (refusing beats corrupting). Detected encoding/delimiter are
 recorded on the file (surfaced in UI/report).
 
-## Web UI (stage 7 core)
+## CLI (stage 6)
+
+`Csv2sql.Cli.main/1` is a thin subscriber over the same engine facade the
+UI uses — no engine code is CLI-aware.
+
+- **Subcommands:** `import` (full run), `analyze` (dry-run: prints the
+  inferred schema as a table per file), `--help`, `--version`.
+- **Config sources** (`Csv2sql.Config.Sources`), highest wins: CLI flags
+  → `CSV2SQL_*` env vars → saved defaults (`Config.Store` JSON under
+  `:filename.basedir(:user_config, "csv2sql")`) → schema defaults. All
+  four sources funnel through the one `Config.changeset/2`; a config
+  error prints each field problem and exits `3`.
+- **Secrets:** `Config.Store` strips passwords before persisting;
+  `CSV2SQL_DB_PASSWORD` fills a password-less URL at load time so the
+  secret never lands in files or shell history. `Db.url` is a
+  `redact: true` field.
+- **Reporter** (`Cli.Reporter`) subscribes to the run topic and renders
+  line-based progress: preflight checks, per-file completion lines,
+  retries/rejections, validation outcomes, final summary + report path.
+- **Exit codes:** `0` clean · `1` completed with errors (rejected rows or
+  failed files) · `2` run failed · `3` invalid config.
+
+## Packaging (stage 8)
+
+One Burrito binary per OS (macOS arm/intel, Linux x64, Windows x64),
+built by `release.yml` with Zig 0.15.2 + xz. `Csv2sql.Entry` runs as the
+last application child only when `:boot_entry` is set (prod releases):
+subcommand args (via `Burrito.Util.Args`, falling back to
+`System.argv/0`) dispatch to `Cli.main/1` and `System.halt` with its exit
+code; no args prints the URL and opens the browser (`open`/`xdg-open`/
+`cmd /c start`).
+
+Desktop-first prod defaults in `runtime.exs`: loopback bind
+(`127.0.0.1`), ephemeral `SECRET_KEY_BASE` (sessions reset per start —
+there are none worth keeping), HTTP server disabled for headless CLI
+subcommands. `SECRET_KEY_BASE`/`PHX_HOST`/`PORT`/`PHX_SERVER` still
+override for hosted setups. Known limitation: Burrito's pinned Zig
+0.15.2 cannot link on macOS 26 (TBD-v5 SDK stubs need Zig 0.16), so
+macOS binaries build on CI (macos-14 runners) or older-SDK machines; the
+plain `mix release` underneath works everywhere.
+
+## Crash reporting (stage 8)
+
+Sentry is strictly opt-in: `attach_sentry/0` installs
+`Sentry.LoggerHandler` only when a DSN is configured, and only
+`CSV2SQL_SENTRY_DSN` sets one (prod runtime). `capture_log_messages:
+false` — crashes only; expected `%Csv2sql.Error{}` domain errors are
+never sent. The transport is `Csv2sql.SentryClient`, ~40 lines on OTP's
+built-in `:httpc` with `verify_peer` TLS — chosen over hackney to keep
+the binary lean (and hackney's current release carries a SOCKS5-related
+advisory; unused here, but no dep is better than a flagged one).
+
+## Web UI (stage 7)
 
 Two LiveViews, fully decoupled from the engine:
 
@@ -238,42 +290,38 @@ Two LiveViews, fully decoupled from the engine:
   run (it lives under `RunsSupervisor`). Per-file updates arrive as
   `FileUpdated` events — status transitions broadcast immediately,
   progress-only changes throttled to ~6/s per file by `Run.Server` —
-  feeding a LiveView **stream** (bounded DOM). Server-side search/
-  status-filter/sort re-query run state on demand. Retries/rejections/
-  file failures fill a 100-entry ring-buffer activity feed behind
-  counter chips. Artifacts (report, schema.sql) download via
-  `ArtifactController` while the run is in memory.
+  feeding a LiveView **stream**. Server-side search/status-filter/sort
+  re-query run state on demand. Artifacts (report, schema.sql) download
+  via `ArtifactController` while the run is in memory.
+
+The DOM stays bounded on huge directories: the file table streams at
+most 200 rows (snapshot-stable window — visible rows update in place,
+rows leaving the filter free slots, a filter change or snapshot
+re-windows) with a "showing 200 of N" notice prompting narrower
+filters. Live error visibility is a status strip of counter chips
+(retries · rejected rows · failed files) backed by a 100-entry
+ring-buffer activity feed in a toggleable panel, fed by
+`ChunkRetried`/`RowsRejected`/`FileFailed` events — row-level noise
+never raises toasts.
 
 Presentation is decomposed into `Csv2sqlWeb.UI` function components
 (card, status_badge, stat, progress_bar, activity_chip,
 validation_pill, empty_state) with declared `attr`/`slot` contracts and
 `data-role` attributes — tests select semantically, never by CSS class.
 
-## UI notes (for stage 7 — agreed with Arpan 2026-07)
-
-- **Live activity, out of the way:** a status strip of live counter chips
-  (retries · isolated chunks · rejected rows · failed files) that pulse on
-  change; clicking opens a slide-over Activity panel — a live, filterable
-  event feed (LiveView streams, ring buffer of ~200 entries) with each
-  entry expandable to the full `%Error{}` + errors.csv link. Per-file rows
-  get small inline badges (retrying dot, rejected count). Toasts only for
-  escalations (file failed / run aborted), never row-level noise. Powered
-  entirely by the event bus — `ChunkRetried` / `RowsRejected` are emitted
-  by the engine (stage 4) precisely so the UI can subscribe later.
-- **File table at scale:** LiveView `streams` + windowed rendering with
-  pagination (bounded DOM); server-side debounced search by file name;
-  status filter chips (pending/analyzing/loading/done/failed/rejected>0);
-  sorts by status, size, progress %, rows, rejected count, duration,
-  throughput. All filtering/sorting is server-side over `Run.Server`
-  state — the browser only ever holds the visible window.
-
 ## Roadmap
 
-Stages (from the approved v5 plan): **1. walking skeleton ✅** ·
-**2. adapters + MySQL + insert engine ✅** · **3. full type system ✅** ·
-**4. error model, encodings, delimiters ✅** ·
+All eight stages of the approved v5 plan are implemented:
+**1. walking skeleton ✅** · **2. adapters + MySQL + insert engine ✅** ·
+**3. full type system ✅** · **4. error model, encodings, delimiters ✅** ·
 **5. validation ladder + preflight + run_report.json ✅** ·
-6. CLI + config sources/persistence (deferred) ·
-**7. LiveView UI 🔶 core done** (remaining: schema editor/overrides,
-file selection & naming, sample preview, dir browser, settings drawer,
-config persistence, PWA) · 8. Burrito packaging + Sentry + docs.
+**6. CLI + config sources/persistence ✅** · **7. LiveView UI + PWA ✅** ·
+**8. Burrito packaging + Sentry + docs ✅**.
+
+Designed-for but deferred past v1: `move_after` post-success file moving
+(config slot reserved, engine hook point is `FilePipeline` completion) ·
+server-side directory-browser component (UI uses a path input) · deep
+checksum validation layer · watch-folder mode · SQLite adapter ·
+PG `COPY` / MySQL `LOAD DATA` fast-path adapter callbacks · import
+history + retry-failed · named config profiles · gzip/xlsx input ·
+sampling-based analyze.

@@ -16,6 +16,7 @@ defmodule Csv2sqlWeb.RunLive do
   alias Csv2sqlWeb.UI
 
   @activity_limit 100
+  @files_limit 200
 
   @impl true
   def mount(%{"id" => run_id}, _session, socket) do
@@ -53,16 +54,12 @@ defmodule Csv2sqlWeb.RunLive do
       socket
       |> update(:file_index, &Map.put(&1, file.path, index_entry(file)))
       |> then(&assign(&1, :counters, counters(&1.assigns.file_index)))
+      |> then(
+        &assign(&1, :matching_count, count_matching(&1.assigns.file_index, &1.assigns.filters))
+      )
       |> maybe_refresh_expanded(file)
 
-    socket =
-      if matches_filters?(file, socket.assigns.filters) do
-        stream_insert(socket, :files, file)
-      else
-        stream_delete(socket, :files, file)
-      end
-
-    {:noreply, socket}
+    {:noreply, update_file_row(socket, file)}
   end
 
   def handle_info(%Events.PreflightCheck{check: check}, socket) do
@@ -125,7 +122,7 @@ defmodule Csv2sqlWeb.RunLive do
     case Csv2sql.run_state(socket.assigns.run_id) do
       {:ok, run} ->
         files = run |> Run.files_in_order() |> filter_and_sort(filters)
-        {:noreply, stream(socket, :files, files, reset: true, dom_id: &file_dom_id/1)}
+        {:noreply, stream_window(socket, files)}
 
       {:error, :not_found} ->
         {:noreply, socket}
@@ -190,7 +187,55 @@ defmodule Csv2sqlWeb.RunLive do
     |> assign(:preflight, run.preflight)
     |> assign(:file_index, file_index)
     |> assign(:counters, counters(file_index))
-    |> stream(:files, filter_and_sort(files, filters), reset: true, dom_id: &file_dom_id/1)
+    |> stream_window(filter_and_sort(files, filters))
+  end
+
+  # The DOM never holds more than @files_limit rows. The window is
+  # snapshot-stable: visible rows update in place, rows that stop
+  # matching free a slot, new matches fill spare capacity only; a full
+  # re-window happens on every filter change and run snapshot.
+  defp stream_window(socket, files) do
+    visible = Enum.take(files, @files_limit)
+
+    socket
+    |> assign(:matching_count, length(files))
+    |> assign(:visible_paths, MapSet.new(visible, & &1.path))
+    |> stream(:files, visible, reset: true, dom_id: &file_dom_id/1)
+  end
+
+  defp update_file_row(socket, file) do
+    %{visible_paths: visible, filters: filters} = socket.assigns
+
+    cond do
+      not matches_filters?(file, filters) ->
+        socket
+        |> stream_delete(:files, file)
+        |> assign(:visible_paths, MapSet.delete(visible, file.path))
+
+      MapSet.member?(visible, file.path) ->
+        stream_insert(socket, :files, file)
+
+      MapSet.size(visible) < @files_limit ->
+        socket
+        |> stream_insert(:files, file)
+        |> assign(:visible_paths, MapSet.put(visible, file.path))
+
+      true ->
+        socket
+    end
+  end
+
+  defp count_matching(file_index, filters) do
+    Enum.count(file_index, fn {path, entry} ->
+      matches_filters?(
+        %{
+          name: Path.basename(path),
+          status: entry.status,
+          ledger: %{rows_rejected: entry.rejected}
+        },
+        filters
+      )
+    end)
   end
 
   defp index_entry(file) do
@@ -273,6 +318,8 @@ defmodule Csv2sqlWeb.RunLive do
   defp sort_files(files, _name), do: Enum.sort_by(files, & &1.name)
 
   defp file_dom_id(file), do: "file-#{:erlang.phash2(file.path)}"
+
+  defp files_limit, do: @files_limit
 
   defp progress_percent(%{status: :done}), do: 100
 
@@ -718,6 +765,14 @@ defmodule Csv2sqlWeb.RunLive do
               </tr>
             </tbody>
           </table>
+          <div
+            :if={@matching_count > files_limit()}
+            class="mt-2 text-center text-xs text-base-content/60"
+            data-role="files-window-notice"
+          >
+            Showing {files_limit()} of {@matching_count} matching files — refine the search or
+            filters to narrow down.
+          </div>
           <UI.empty_state :if={@counters.total == 0}>
             No files discovered yet.
           </UI.empty_state>

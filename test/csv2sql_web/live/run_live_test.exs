@@ -122,6 +122,38 @@ defmodule Csv2sqlWeb.RunLiveTest do
     assert {:error, {:live_redirect, %{to: "/"}}} = live(conn, ~p"/runs/nope123")
   end
 
+  test "the file table windows huge directories", %{conn: conn, tmp_dir: dir} do
+    for i <- 1..205 do
+      name = "bulk_" <> String.pad_leading(Integer.to_string(i), 3, "0")
+      csv!(dir, name <> ".csv", [~w(id), ["1"]])
+    end
+
+    # Analyze mode needs no database — inference only, so 205 files stay fast.
+    {:ok, config} = Config.new(%{mode: :analyze, source_dir: dir})
+    {:ok, run_id} = Csv2sql.start_run(config)
+    {:ok, run} = Csv2sql.await(run_id)
+    assert run.status == :completed
+
+    {:ok, view, _html} = live(conn, ~p"/runs/#{run_id}")
+    assert_eventually(fn -> render(view) =~ "bulk_001" end)
+
+    assert count_file_rows(render(view)) == 200
+    assert render(element(view, "[data-role=files-window-notice]")) =~ "200 of 205"
+
+    # Narrowing below the cap shows everything and drops the notice.
+    narrowed =
+      view
+      |> element("form[phx-change=filter]")
+      |> render_change(%{q: "bulk_20", status: "all", sort: "name"})
+
+    assert count_file_rows(narrowed) == 6
+    refute narrowed =~ "files-window-notice"
+  end
+
+  defp count_file_rows(html) do
+    length(String.split(html, ~s(data-role="file-row"))) - 1
+  end
+
   test "analyze → edit schema → import with overrides", %{conn: conn, tmp_dir: dir} do
     file = unique_name("editable")
     target = unique_name("edited_target")

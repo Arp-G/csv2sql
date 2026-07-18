@@ -8,6 +8,9 @@ defmodule Csv2sqlWeb.SettingsTest do
 
   setup do
     File.rm(Store.path())
+    # Saved defaults leak into any later test that consults Sources
+    # (e.g. the CLI's "missing db exits 3") — leave the store empty.
+    on_exit(fn -> File.rm(Store.path()) end)
     :ok
   end
 
