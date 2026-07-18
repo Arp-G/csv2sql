@@ -95,7 +95,8 @@ defmodule Csv2sql.Config do
       :date_patterns,
       :datetime_patterns
     ])
-    |> cast_embed(:db, required: true)
+    # Analyze mode is fully offline — a database is only required to import.
+    |> then(&cast_embed(&1, :db, required: get_field(&1, :mode) == :import))
     |> cast_embed(:error_policy)
     |> cast_embed(:validations)
     |> cast_embed(:overrides)
@@ -119,9 +120,13 @@ defmodule Csv2sql.Config do
 
   @adapter_modules %{postgres: Csv2sql.Adapters.Postgres, mysql: Csv2sql.Adapters.MySql}
 
-  @doc "Resolves the adapter module for this config."
+  @doc """
+  Resolves the adapter module for this config. Analyze runs without a
+  database use the Postgres dialect for the generated `schema.sql`.
+  """
   @spec adapter(t()) :: module()
   def adapter(%__MODULE__{db: %Db{adapter: adapter}}), do: Map.fetch!(@adapter_modules, adapter)
+  def adapter(%__MODULE__{db: nil}), do: Csv2sql.Adapters.Postgres
 
   @doc "The override entry for a file name, if any."
   @spec override_for(t(), String.t()) :: Csv2sql.Config.FileOverride.t() | nil
