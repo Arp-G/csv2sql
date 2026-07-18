@@ -1,0 +1,18 @@
+{
+  "name": "csv2sql",
+  "short_name": "csv2sql",
+  "description": "Bulk-load CSV files into a database with automatic schema inference.",
+  "start_url": ".",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1d232a",
+  "theme_color": "#1d232a",
+  "icons": [
+    {
+      "src": "/images/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

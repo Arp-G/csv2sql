@@ -11,28 +11,33 @@ defmodule Csv2sqlWeb.ImportLive do
   use Csv2sqlWeb, :live_view
 
   alias Csv2sql.Config
+  alias Csv2sql.Config.Store
   alias Csv2sql.Events
   alias Csv2sqlWeb.UI
 
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket), do: Events.subscribe_runs()
+    params = deep_merge(default_params(), Store.load())
 
     {:ok,
      socket
      |> assign(:page_title, "New import")
-     |> assign(:form, config_form(default_params()))
+     |> assign(:form, config_form(params))
+     |> assign(:pending_params, params)
      |> assign(:probe, nil)
      |> assign(:runs, Csv2sql.list_runs())}
   end
 
   @impl true
   def handle_event("validate", %{"config" => params}, socket) do
-    {:noreply, assign(socket, form: config_form(params), probe: nil)}
+    params = normalize_params(params)
+
+    {:noreply, assign(socket, form: config_form(params), pending_params: params, probe: nil)}
   end
 
   def handle_event("start", %{"config" => params}, socket) do
-    case Config.new(params) do
+    case params |> normalize_params() |> Config.new() do
       {:ok, config} ->
         {:ok, run_id} = Csv2sql.start_run(config)
         {:noreply, push_navigate(socket, to: ~p"/runs/#{run_id}")}
@@ -43,7 +48,10 @@ defmodule Csv2sqlWeb.ImportLive do
   end
 
   def handle_event("probe", %{"config" => params}, socket) do
-    case Config.new(Map.put(params, "mode", "analyze") |> Map.put("source_dir", ".")) do
+    normalized =
+      params |> normalize_params() |> Map.put("mode", "analyze") |> Map.put("source_dir", ".")
+
+    case Config.new(normalized) do
       {:ok, config} ->
         adapter = Config.adapter(config)
         db = config.db
@@ -55,6 +63,17 @@ defmodule Csv2sqlWeb.ImportLive do
 
       {:error, _changeset} ->
         {:noreply, assign(socket, :probe, {:error, "fix the database URL first"})}
+    end
+  end
+
+  def handle_event("save_defaults", _params, socket) do
+    case Store.save(socket.assigns.pending_params) do
+      :ok ->
+        {:noreply,
+         put_flash(socket, :info, "Saved as defaults (database password is never stored)")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "could not save defaults: #{inspect(reason)}")}
     end
   end
 
@@ -104,6 +123,37 @@ defmodule Csv2sqlWeb.ImportLive do
       "ordered" => "false",
       "db" => %{"url" => ""}
     }
+  end
+
+  # Pattern lists arrive from the form as one semicolon-separated string.
+  defp normalize_params(params) do
+    Enum.reduce(["date_patterns", "datetime_patterns"], params, fn key, params ->
+      case params[key] do
+        value when is_binary(value) ->
+          Map.put(
+            params,
+            key,
+            value |> String.split(";") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+          )
+
+        _list_or_missing ->
+          params
+      end
+    end)
+  end
+
+  defp deep_merge(base, override) when is_map(base) and is_map(override) do
+    Map.merge(base, override, fn _key, a, b ->
+      if is_map(a) and is_map(b), do: deep_merge(a, b), else: b
+    end)
+  end
+
+  defp patterns_value(field) do
+    case field.value do
+      list when is_list(list) -> Enum.join(list, ";")
+      value when is_binary(value) -> value
+      _nil -> ""
+    end
   end
 
   @impl true
@@ -178,6 +228,115 @@ defmodule Csv2sqlWeb.ImportLive do
                 />
               </div>
 
+              <details class="collapse collapse-arrow border border-base-300 rounded-lg">
+                <summary
+                  class="collapse-title text-sm font-medium py-2 min-h-0"
+                  data-role="advanced-toggle"
+                >
+                  Advanced settings
+                </summary>
+                <div class="collapse-content space-y-4" data-role="advanced-settings">
+                  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <.input
+                      field={@form[:file_workers]}
+                      type="number"
+                      label="File workers"
+                      placeholder="auto (CPU cores)"
+                    />
+                    <.input
+                      field={@form[:insert_workers]}
+                      type="number"
+                      label="Insert workers / file"
+                    />
+                    <.input field={@form[:varchar_limit]} type="number" label="Varchar limit" />
+                    <.input
+                      field={@form[:analyze_chunk_rows]}
+                      type="number"
+                      label="Analyze chunk rows"
+                    />
+                    <.input field={@form[:insert_chunk_rows]} type="number" label="Insert chunk rows" />
+                    <.input
+                      field={@form[:insert_chunk_bytes]}
+                      type="number"
+                      label="Insert chunk bytes"
+                    />
+                  </div>
+
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="form-control">
+                      <span class="label-text text-xs">Date patterns (separate with ;)</span>
+                      <input
+                        type="text"
+                        name="config[date_patterns]"
+                        value={patterns_value(@form[:date_patterns])}
+                        class="input input-sm input-bordered font-mono"
+                        data-role="date-patterns"
+                      />
+                      <p
+                        :for={{message, _opts} <- @form[:date_patterns].errors}
+                        class="text-error text-sm mt-1"
+                      >
+                        {message}
+                      </p>
+                    </label>
+                    <label class="form-control">
+                      <span class="label-text text-xs">Datetime patterns (separate with ;)</span>
+                      <input
+                        type="text"
+                        name="config[datetime_patterns]"
+                        value={patterns_value(@form[:datetime_patterns])}
+                        class="input input-sm input-bordered font-mono"
+                        data-role="datetime-patterns"
+                      />
+                      <p
+                        :for={{message, _opts} <- @form[:datetime_patterns].errors}
+                        class="text-error text-sm mt-1"
+                      >
+                        {message}
+                      </p>
+                    </label>
+                  </div>
+
+                  <.inputs_for :let={policy} field={@form[:error_policy]}>
+                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                      <.input
+                        field={policy[:strict]}
+                        type="checkbox"
+                        label="Strict (halt on first failure)"
+                      />
+                      <.input
+                        field={policy[:row_error_threshold_pct]}
+                        type="number"
+                        step="0.1"
+                        label="Reject threshold %"
+                      />
+                      <.input
+                        field={policy[:row_error_min_sample]}
+                        type="number"
+                        label="Threshold min rows"
+                      />
+                      <.input field={policy[:max_retries]} type="number" label="Max retries" />
+                      <.input field={policy[:backoff_ms]} type="number" label="Backoff ms" />
+                    </div>
+                  </.inputs_for>
+
+                  <.inputs_for :let={validations} field={@form[:validations]}>
+                    <div class="flex flex-wrap gap-6">
+                      <.input
+                        field={validations[:counts]}
+                        type="checkbox"
+                        label="Validate row counts"
+                      />
+                      <.input
+                        field={validations[:fingerprints]}
+                        type="checkbox"
+                        label="Validate column fingerprints"
+                      />
+                    </div>
+                  </.inputs_for>
+                </div>
+              </details>
+
               <div class="flex flex-wrap items-center gap-3 pt-2">
                 <button
                   type="button"
@@ -186,6 +345,14 @@ defmodule Csv2sqlWeb.ImportLive do
                   data-role="probe-button"
                 >
                   Test connection
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  phx-click="save_defaults"
+                  data-role="save-defaults"
+                >
+                  Save as default
                 </button>
                 <span :if={@probe == :running} class="loading loading-dots loading-sm"></span>
                 <span :if={@probe == :ok} data-role="probe-ok" class="badge badge-success">
