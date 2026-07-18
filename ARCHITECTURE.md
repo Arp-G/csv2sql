@@ -112,12 +112,35 @@ event can be missed.
 
 ## Validation ladder
 
-1. **Ledger** (always on, free): in-run double-entry accounting, checked
-   per chunk. Implemented.
-2. **Counts** (planned): post-load `COUNT(*)` vs ledger, append-aware.
-3. **Fingerprints** (planned, default-on toggle): per-column O(1)
-   aggregates over post-transform values vs one aggregate query per table.
+All report-only (`ValidationResult` events + outcomes on the file; a
+failed layer never fails the file):
+
+1. **Ledger** (always on, free): in-run double-entry accounting
+   (`rows_read == rows_inserted + rows_rejected`), checked per chunk
+   from driver-reported counts.
+2. **Counts** (default on): post-load `COUNT(*)` vs baseline + inserted —
+   append-aware (baseline captured before the load).
+3. **Fingerprints** (default on): per-column O(1) aggregates accumulated
+   over the **post-transform values actually inserted** (nulls, min/max,
+   sums, true-counts, char/byte lengths — `Validate.Fingerprint`) vs ONE
+   portable aggregate query per table. Mismatches name the exact column
+   and statistic. Skipped in append mode (pre-existing rows would pollute
+   the DB side). Fingerprints stay on the file, and
+   `Validate.Runner.check_fingerprints/5` re-validates a table any time
+   (the future UI "re-validate" button).
 4. **Deep checksum** (planned, opt-in).
+
+## Preflight & report
+
+Before any file is touched, `Csv2sql.Preflight` runs a checklist —
+source dir readable/has CSVs, artifacts dir writable, database
+reachable/created (`ensure_database`, isolated), CREATE/INSERT/DROP
+privileges probed via a throwaway table. Every check is a
+`PreflightCheck` event; any failure blocks the run with a graceful
+`RunFailed` (analyze mode skips the DB checks). On every terminal
+transition — completed, failed, or cancelled — `Run.Report` writes
+`<artifacts>/run_report.json`: run metadata, preflight results, summary,
+and per-file ledger/timings/validation/errors.
 
 ## Testing
 
@@ -223,6 +246,6 @@ recorded on the file (surfaced in UI/report).
 Stages (from the approved v5 plan): **1. walking skeleton ✅** ·
 **2. adapters + MySQL + insert engine ✅** · **3. full type system ✅** ·
 **4. error model, encodings, delimiters ✅** ·
-5. validation ladder + preflight + run_report.json · 6. CLI + config
-sources/persistence · 7. LiveView UI + PWA · 8. Burrito packaging +
-Sentry + docs.
+**5. validation ladder + preflight + run_report.json ✅** ·
+6. CLI + config sources/persistence · 7. LiveView UI + PWA ·
+8. Burrito packaging + Sentry + docs.

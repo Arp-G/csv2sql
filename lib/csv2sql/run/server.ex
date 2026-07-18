@@ -19,6 +19,7 @@ defmodule Csv2sql.Run.Server do
   alias Csv2sql.Events.{RunCancelled, RunCompleted, RunFailed, RunStarted}
   alias Csv2sql.File, as: CsvFile
   alias Csv2sql.Run
+  alias Csv2sql.Run.Report
   alias Csv2sql.Run.Summary
 
   @teardown_after :timer.seconds(60)
@@ -38,6 +39,10 @@ defmodule Csv2sql.Run.Server do
   @doc "Records discovered files and emits `RunStarted` (synchronous, so ordering is deterministic)."
   @spec started(String.t(), [CsvFile.t()]) :: :ok
   def started(run_id, files), do: GenServer.call(Run.server_name(run_id), {:started, files})
+
+  @doc "Stores the preflight checklist."
+  @spec preflight(String.t(), [struct()]) :: :ok
+  def preflight(run_id, checks), do: GenServer.call(Run.server_name(run_id), {:preflight, checks})
 
   @doc "Posts an updated per-file state."
   @spec file_update(String.t(), CsvFile.t()) :: :ok
@@ -77,6 +82,10 @@ defmodule Csv2sql.Run.Server do
     {:reply, :ok, %{state | pipeline_ref: Process.monitor(pid)}}
   end
 
+  def handle_call({:preflight, checks}, _from, %{run: run} = state) do
+    {:reply, :ok, %{state | run: %{run | preflight: checks}}}
+  end
+
   def handle_call({:started, files}, _from, %{run: run} = state) do
     run = %{Run.set_files(run, files) | status: :running}
     Events.emit(run.id, RunStarted, file_count: length(files))
@@ -96,6 +105,7 @@ defmodule Csv2sql.Run.Server do
       |> Map.put(:finished_at, DateTime.utc_now())
       |> Map.put(:summary, summary)
 
+    Report.write(run)
     Events.emit(run.id, RunCompleted, summary: summary)
     {:reply, :ok, schedule_teardown(%{state | run: run})}
   end
@@ -108,6 +118,7 @@ defmodule Csv2sql.Run.Server do
     else
       stop_core(run.id)
       run = %{run | status: :cancelled, finished_at: DateTime.utc_now()}
+      Report.write(run)
       Events.emit(run.id, RunCancelled)
       {:reply, :ok, schedule_teardown(%{state | run: run})}
     end
@@ -127,6 +138,7 @@ defmodule Csv2sql.Run.Server do
           error: error
       }
 
+      Report.write(run)
       Events.emit(run.id, RunFailed, error: error)
       {:reply, :ok, schedule_teardown(%{state | run: run})}
     end
@@ -150,6 +162,7 @@ defmodule Csv2sql.Run.Server do
         )
 
       run = %{run | status: :failed, finished_at: DateTime.utc_now(), error: error}
+      Report.write(run)
       Events.emit(run.id, RunFailed, error: error)
       {:noreply, schedule_teardown(%{state | run: run})}
     end

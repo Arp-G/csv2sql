@@ -73,6 +73,19 @@ defmodule Csv2sql.Adapter do
   @callback exact_count(conn(), String.t()) :: {:ok, non_neg_integer()} | {:error, Exception.t()}
 
   @doc """
+  Verifies CREATE/INSERT/DROP privileges via a throwaway probe table.
+  *(default provided, built from the adapter's own primitives)*
+  """
+  @callback permissions_probe(conn()) :: :ok | {:error, term()}
+
+  @doc """
+  The database-side fingerprint aggregate expressions for a column, as
+  `{check_key, sql}` pairs matching `Csv2sql.Validate.Fingerprint`'s
+  expected checks. *(default: portable ANSI SQL)*
+  """
+  @callback fingerprint_exprs(ColumnSpec.t()) :: [{atom(), iodata()}]
+
+  @doc """
   Classifies a driver error to decide the reaction:
 
     * `:row_data` — some row in the statement is bad → isolate row-by-row
@@ -184,6 +197,29 @@ defmodule Csv2sql.Adapter do
       def classify_error(%DBConnection.ConnectionError{}), do: :connection
       def classify_error(_error), do: :fatal
 
+      @impl Csv2sql.Adapter
+      def permissions_probe(conn) do
+        table = "csv2sql_probe_#{System.unique_integer([:positive])}"
+        column = %ColumnSpec{name: "probe", type: :integer, position: 0}
+
+        with {:ok, _} <- query(conn, IO.iodata_to_binary(create_table_sql(table, [column])), []),
+             {:ok, _} <- insert_rows(conn, table, [column], [[1]]),
+             {:ok, _} <- query(conn, IO.iodata_to_binary(drop_table_sql(table)), []) do
+          :ok
+        else
+          {:error, error} ->
+            query(conn, IO.iodata_to_binary(drop_table_sql(table)), [])
+            {:error, error}
+        end
+      end
+
+      # Module attribute rather than an alias: __using__ must not inject
+      # aliases into the adapter's namespace.
+      @csv2sql_fingerprint Csv2sql.Validate.Fingerprint
+
+      @impl Csv2sql.Adapter
+      def fingerprint_exprs(column), do: @csv2sql_fingerprint.exprs(__MODULE__, column)
+
       defoverridable table_options: 0,
                      max_params: 0,
                      max_packet_bytes: 1,
@@ -191,7 +227,9 @@ defmodule Csv2sql.Adapter do
                      drop_table_sql: 1,
                      insert_rows: 4,
                      exact_count: 2,
-                     classify_error: 1
+                     classify_error: 1,
+                     permissions_probe: 1,
+                     fingerprint_exprs: 1
     end
   end
 end

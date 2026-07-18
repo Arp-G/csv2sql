@@ -36,9 +36,12 @@ defmodule Csv2sql.File do
     field(:encoding, Ecto.Enum, values: [:utf8, :utf16le, :utf16be, :latin1])
     field(:delimiter, Ecto.Enum, values: [:comma, :semicolon, :tab, :pipe])
 
+    field(:fingerprints, {:array, :map}, default: [])
+
     embeds_many(:columns, ColumnSpec)
     embeds_one(:ledger, Ledger)
     embeds_many(:errors, Error)
+    embeds_many(:validation, Csv2sql.Validate.Outcome)
   end
 
   @type status ::
@@ -62,9 +65,11 @@ defmodule Csv2sql.File do
           errors_csv: String.t() | nil,
           encoding: :utf8 | :utf16le | :utf16be | :latin1 | nil,
           delimiter: :comma | :semicolon | :tab | :pipe | nil,
+          fingerprints: [map()],
           columns: [ColumnSpec.t()],
           ledger: Ledger.t() | nil,
-          errors: [Error.t()]
+          errors: [Error.t()],
+          validation: [Csv2sql.Validate.Outcome.t()]
         }
 
   @doc "Marks the file failed with the given error attached."

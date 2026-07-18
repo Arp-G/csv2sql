@@ -49,8 +49,10 @@ defmodule Csv2sql.WalkingSkeletonTest do
       orders_file = Enum.find(files, &(&1.table_name == orders))
       assert [%{type: :integer}, %{type: :float}, %{type: :varchar}] = orders_file.columns
 
-      # Events: lifecycle order + per-file completeness.
-      assert %Events.RunStarted{file_count: 2} = hd(events)
+      # Events: lifecycle order + per-file completeness. Preflight checks
+      # come first, then RunStarted, terminal event last.
+      assert %Events.PreflightCheck{check: %{id: :source_dir, status: :passed}} = hd(events)
+      assert_event(events, %Events.RunStarted{file_count: 2})
       assert %Events.RunCompleted{} = List.last(events)
       assert_event(events, %Events.AnalyzeStarted{path: path} when path == users_file.path)
       assert_event(events, %Events.AnalyzeCompleted{row_count: 3})

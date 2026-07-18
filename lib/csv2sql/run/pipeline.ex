@@ -16,6 +16,7 @@ defmodule Csv2sql.Run.Pipeline do
   alias Csv2sql.Events
   alias Csv2sql.Events.FileFailed
   alias Csv2sql.File, as: CsvFile
+  alias Csv2sql.Preflight
   alias Csv2sql.Run
   alias Csv2sql.Run.Artifacts
   alias Csv2sql.Run.FilePipeline
@@ -28,11 +29,24 @@ defmodule Csv2sql.Run.Pipeline do
   def run(run_id, %Config{} = config) do
     Server.pipeline_started(run_id, self())
 
-    files = Discovery.discover(config.source_dir)
-    Server.started(run_id, files)
-
     adapter = Config.adapter(config)
     conn = Run.pool_name(run_id)
+
+    checks = Preflight.run(run_id, config, adapter, conn)
+    Server.preflight(run_id, checks)
+
+    if Preflight.blocked?(checks) do
+      error = Error.run_error(:preflight, :preflight_failed, Preflight.failure_summary(checks))
+      Server.fail_run(run_id, error)
+      :ok
+    else
+      execute(run_id, config, adapter, conn)
+    end
+  end
+
+  defp execute(run_id, config, adapter, conn) do
+    files = Discovery.discover(config.source_dir)
+    Server.started(run_id, files)
 
     # Config validation guarantees these compile.
     {:ok, date_patterns} = TimeParse.compile_all(config.date_patterns)

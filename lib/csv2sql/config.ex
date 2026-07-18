@@ -36,6 +36,7 @@ defmodule Csv2sql.Config do
 
     embeds_one(:db, Db)
     embeds_one(:error_policy, Csv2sql.Config.ErrorPolicy)
+    embeds_one(:validations, Csv2sql.Config.Validations)
   end
 
   @type t :: %__MODULE__{
@@ -54,7 +55,8 @@ defmodule Csv2sql.Config do
           date_patterns: [String.t()],
           datetime_patterns: [String.t()],
           db: Db.t() | nil,
-          error_policy: Csv2sql.Config.ErrorPolicy.t() | nil
+          error_policy: Csv2sql.Config.ErrorPolicy.t() | nil,
+          validations: Csv2sql.Config.Validations.t() | nil
         }
 
   @doc """
@@ -93,7 +95,9 @@ defmodule Csv2sql.Config do
     ])
     |> cast_embed(:db, required: true)
     |> cast_embed(:error_policy)
-    |> default_error_policy()
+    |> cast_embed(:validations)
+    |> default_embed(:error_policy, %Csv2sql.Config.ErrorPolicy{})
+    |> default_embed(:validations, %Csv2sql.Config.Validations{})
     |> validate_required([:source_dir])
     |> put_default(:file_workers, &System.schedulers_online/0)
     |> validate_number(:file_workers, greater_than: 0, less_than_or_equal_to: 100)
@@ -123,10 +127,10 @@ defmodule Csv2sql.Config do
     end
   end
 
-  defp default_error_policy(changeset) do
-    case get_field(changeset, :error_policy) do
-      nil -> put_embed(changeset, :error_policy, %Csv2sql.Config.ErrorPolicy{})
-      _policy -> changeset
+  defp default_embed(changeset, field, default_struct) do
+    case get_field(changeset, field) do
+      nil -> put_embed(changeset, field, default_struct)
+      _value -> changeset
     end
   end
 

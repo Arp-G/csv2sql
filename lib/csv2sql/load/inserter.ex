@@ -22,12 +22,18 @@ defmodule Csv2sql.Load.Inserter do
   alias Csv2sql.Events.ChunkRetried
   alias Csv2sql.File, as: CsvFile
   alias Csv2sql.Load.Encoder
+  alias Csv2sql.Validate.Fingerprint
   alias Csv2sql.Validate.Ledger
 
   @typedoc "A rejected row: original cells, 1-based data row number, reason."
   @type rejected :: %{row: [String.t()], row_number: pos_integer(), reason: String.t()}
 
-  @type outcome :: %{ledger: Ledger.t(), rejected: [rejected()]}
+  @typedoc "Ledger delta + fingerprints over the successfully inserted rows."
+  @type outcome :: %{
+          ledger: Ledger.t(),
+          fingerprints: [Fingerprint.acc()],
+          rejected: [rejected()]
+        }
 
   @type result ::
           {:ok, outcome()}
@@ -43,7 +49,9 @@ defmodule Csv2sql.Load.Inserter do
   def insert_chunk(numbered_rows, file, ctx) do
     {encoded, encode_rejects} = encode_rows(numbered_rows, file, ctx)
 
-    case insert_with_retry(Enum.map(encoded, &elem(&1, 0)), file, ctx) do
+    encoded_terms = Enum.map(encoded, &elem(&1, 0))
+
+    case insert_with_retry(encoded_terms, file, ctx) do
       {:ok, inserted, retries} ->
         {:ok,
          %{
@@ -54,6 +62,7 @@ defmodule Csv2sql.Load.Inserter do
              chunks_ok: 1,
              retries: retries
            },
+           fingerprints: Fingerprint.add_rows(Fingerprint.init(file.columns), encoded_terms),
            rejected: encode_rejects
          }}
 
@@ -161,13 +170,24 @@ defmodule Csv2sql.Load.Inserter do
   # -- Row-by-row isolation ----------------------------------------------------
 
   defp isolate_rows(encoded, encode_rejects, retries, numbered_rows, file, ctx) do
-    initial = %{inserted: 0, rejected: encode_rejects, retries: retries}
+    initial = %{
+      inserted: 0,
+      rejected: encode_rejects,
+      retries: retries,
+      fingerprints: Fingerprint.init(file.columns)
+    }
 
     encoded
     |> Enum.reduce_while(initial, fn {terms, row, row_number}, acc ->
       case insert_with_retry([terms], file, ctx) do
         {:ok, inserted, row_retries} ->
-          {:cont, %{acc | inserted: acc.inserted + inserted, retries: acc.retries + row_retries}}
+          {:cont,
+           %{
+             acc
+             | inserted: acc.inserted + inserted,
+               retries: acc.retries + row_retries,
+               fingerprints: Fingerprint.add_rows(acc.fingerprints, [terms])
+           }}
 
         {:isolate, error, row_retries} ->
           rejected = %{row: row, row_number: row_number, reason: Exception.message(error)}
@@ -197,6 +217,7 @@ defmodule Csv2sql.Load.Inserter do
              chunks_isolated: 1,
              retries: acc.retries
            },
+           fingerprints: acc.fingerprints,
            rejected: acc.rejected |> Enum.sort_by(& &1.row_number)
          }}
     end

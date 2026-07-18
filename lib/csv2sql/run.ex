@@ -22,7 +22,8 @@ defmodule Csv2sql.Run do
     :error,
     status: :pending,
     files: %{},
-    file_order: []
+    file_order: [],
+    preflight: []
   ]
 
   @type status :: :pending | :running | :completed | :completed_with_errors | :failed | :cancelled
@@ -36,7 +37,8 @@ defmodule Csv2sql.Run do
           error: Error.t() | nil,
           status: status(),
           files: %{optional(String.t()) => CsvFile.t()},
-          file_order: [String.t()]
+          file_order: [String.t()],
+          preflight: [struct()]
         }
 
   @terminal [:completed, :completed_with_errors, :failed, :cancelled]

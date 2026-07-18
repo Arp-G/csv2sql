@@ -10,5 +10,6 @@ defmodule Csv2sql.DoctestTest do
   doctest Csv2sql.Schema.TypeCheck
   doctest Csv2sql.TimeParse
   doctest Csv2sql.TimeParse.Pattern
+  doctest Csv2sql.Validate.Fingerprint
   doctest Csv2sql.Validate.Ledger
 end

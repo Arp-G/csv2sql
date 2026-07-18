@@ -22,7 +22,8 @@ defmodule Csv2sql.Run.FilePipeline do
     FileFailed,
     LoadProgress,
     RowsRejected,
-    SchemaCreated
+    SchemaCreated,
+    ValidationResult
   }
 
   alias Csv2sql.File, as: CsvFile
@@ -35,7 +36,9 @@ defmodule Csv2sql.Run.FilePipeline do
   alias Csv2sql.Schema.Inference
   alias Csv2sql.Schema.Resolve
   alias Csv2sql.Source.Reader
+  alias Csv2sql.Validate.Fingerprint
   alias Csv2sql.Validate.Ledger
+  alias Csv2sql.Validate.Runner
 
   @type ctx :: %{
           run_id: String.t(),
@@ -154,9 +157,44 @@ defmodule Csv2sql.Run.FilePipeline do
   end
 
   defp maybe_import(file, ctx) do
-    with {:ok, file} <- create_schema(file, ctx) do
-      load(file, ctx)
+    with {:ok, file} <- create_schema(file, ctx),
+         baseline = capture_baseline(file, ctx),
+         {:ok, file} <- load(file, ctx) do
+      validate(file, baseline, ctx)
     end
+  end
+
+  # Append mode adds to existing rows — counts must be baseline-aware.
+  defp capture_baseline(_file, %{config: %Config{table_mode: :drop}}), do: 0
+
+  defp capture_baseline(file, ctx) do
+    case ctx.adapter.exact_count(ctx.conn, file.table_name) do
+      {:ok, count} -> count
+      {:error, _error} -> 0
+    end
+  end
+
+  defp validate(file, baseline, ctx) do
+    update(ctx, %{file | status: :validating})
+    started = System.monotonic_time(:millisecond)
+    outcomes = Runner.run(file, file.fingerprints, baseline, ctx)
+
+    Enum.each(outcomes, fn outcome ->
+      Events.emit(ctx.run_id, ValidationResult,
+        path: file.path,
+        layer: outcome.layer,
+        status: outcome.status,
+        detail: outcome.detail
+      )
+    end)
+
+    file =
+      %{file | validation: outcomes}
+      |> CsvFile.put_timing(:validate_ms, System.monotonic_time(:millisecond) - started)
+
+    {:ok, file}
+  rescue
+    exception -> {:error, file, Error.from_exception(:validate, file.path, exception)}
   end
 
   defp create_schema(file, ctx) do
@@ -214,6 +252,7 @@ defmodule Csv2sql.Run.FilePipeline do
       )
 
     errors_csv = ErrorsCsv.new(ctx.artifacts_dir, file.name, csv_headers(file))
+    initial = %{ledger: Ledger.new(), fps: Fingerprint.init(file.columns), errors_csv: errors_csv}
 
     outcome =
       file.path
@@ -225,50 +264,51 @@ defmodule Csv2sql.Run.FilePipeline do
         ordered: false,
         timeout: :infinity
       )
-      |> Enum.reduce_while({Ledger.new(), errors_csv}, &accumulate(&1, &2, file, ctx))
+      |> Enum.reduce_while(initial, &accumulate(&1, &2, file, ctx))
 
     finalize_load(outcome, file, ctx, started)
   rescue
     exception -> {:error, file, Error.from_exception(:load, file.path, exception)}
   end
 
-  # The single-writer accumulation fold: merges chunk ledgers, writes
-  # rejected rows, emits progress, and trips the per-file circuit breaker.
-  # Halting closes the stream, which shuts down in-flight insert tasks.
-  defp accumulate(
-         {:ok, {:ok, %{ledger: delta, rejected: rejected}}},
-         {ledger, errors_csv},
-         file,
-         ctx
-       ) do
-    ledger = Ledger.merge(ledger, delta)
-    errors_csv = ErrorsCsv.append(errors_csv, rejected)
-    emit_rejections(rejected, file, ctx)
+  # The single-writer accumulation fold: merges chunk ledgers and
+  # fingerprints, writes rejected rows, emits progress, and trips the
+  # per-file circuit breaker. Halting closes the stream, which shuts
+  # down in-flight insert tasks.
+  defp accumulate({:ok, {:ok, chunk_outcome}}, state, file, ctx) do
+    state = %{
+      state
+      | ledger: Ledger.merge(state.ledger, chunk_outcome.ledger),
+        fps: Fingerprint.merge(state.fps, chunk_outcome.fingerprints),
+        errors_csv: ErrorsCsv.append(state.errors_csv, chunk_outcome.rejected)
+    }
+
+    emit_rejections(chunk_outcome.rejected, file, ctx)
 
     Events.emit(ctx.run_id, LoadProgress,
       path: file.path,
-      rows_inserted: ledger.rows_inserted,
-      rows_rejected: ledger.rows_rejected
+      rows_inserted: state.ledger.rows_inserted,
+      rows_rejected: state.ledger.rows_rejected
     )
 
-    if threshold_tripped?(ledger, ctx.config.error_policy) do
-      {:halt, {:threshold, ledger, errors_csv}}
+    if threshold_tripped?(state.ledger, ctx.config.error_policy) do
+      {:halt, {:threshold, state}}
     else
-      {:cont, {ledger, errors_csv}}
+      {:cont, state}
     end
   end
 
-  defp accumulate({:ok, {kind, %Error{} = error}}, {ledger, errors_csv}, _file, _ctx)
+  defp accumulate({:ok, {kind, %Error{} = error}}, state, _file, _ctx)
        when kind in [:file_error, :run_abort] do
-    {:halt, {kind, error, ledger, errors_csv}}
+    {:halt, {kind, error, state}}
   end
 
-  defp accumulate({:exit, reason}, {ledger, errors_csv}, file, _ctx) do
-    {:halt, {:file_error, Error.from_caught(:load, file.path, :exit, reason), ledger, errors_csv}}
+  defp accumulate({:exit, reason}, state, file, _ctx) do
+    {:halt, {:file_error, Error.from_caught(:load, file.path, :exit, reason), state}}
   end
 
-  defp finalize_load({ledger, errors_csv}, file, _ctx, started) do
-    file = close_load(file, ledger, errors_csv, started)
+  defp finalize_load(%{ledger: ledger} = state, file, _ctx, started) do
+    file = close_load(file, state, started)
 
     if Ledger.balanced?(ledger) do
       {:ok, file}
@@ -281,9 +321,10 @@ defmodule Csv2sql.Run.FilePipeline do
     end
   end
 
-  defp finalize_load({:threshold, ledger, errors_csv}, file, ctx, started) do
-    file = close_load(file, ledger, errors_csv, started)
+  defp finalize_load({:threshold, state}, file, ctx, started) do
+    file = close_load(file, state, started)
     policy = ctx.config.error_policy
+    ledger = state.ledger
     percent = Float.round(ledger.rows_rejected * 100 / max(ledger.rows_read, 1), 1)
 
     message =
@@ -294,19 +335,24 @@ defmodule Csv2sql.Run.FilePipeline do
     {:error, file, Error.file_error(:load, file.path, :rejection_threshold_exceeded, message)}
   end
 
-  defp finalize_load({:file_error, error, ledger, errors_csv}, file, _ctx, started) do
-    {:error, close_load(file, ledger, errors_csv, started), error}
+  defp finalize_load({:file_error, error, state}, file, _ctx, started) do
+    {:error, close_load(file, state, started), error}
   end
 
-  defp finalize_load({:run_abort, error, ledger, errors_csv}, file, ctx, started) do
+  defp finalize_load({:run_abort, error, state}, file, ctx, started) do
     # Everything is about to fail the same way — halt the whole run with
     # one honest cause instead of N identical per-file failures.
     Server.fail_run(ctx.run_id, error)
-    {:error, close_load(file, ledger, errors_csv, started), error}
+    {:error, close_load(file, state, started), error}
   end
 
-  defp close_load(file, ledger, errors_csv, started) do
-    %{file | ledger: ledger, errors_csv: ErrorsCsv.path(errors_csv)}
+  defp close_load(file, state, started) do
+    %{
+      file
+      | ledger: state.ledger,
+        fingerprints: state.fps,
+        errors_csv: ErrorsCsv.path(state.errors_csv)
+    }
     |> CsvFile.put_timing(:load_ms, System.monotonic_time(:millisecond) - started)
   end
 

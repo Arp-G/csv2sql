@@ -62,29 +62,13 @@ defmodule Csv2sql.Run.Supervisor do
   # database creation/verification.
   defp db_children(_run_id, %Config{mode: :analyze}), do: []
 
+  # The database itself is verified/created by the preflight step inside
+  # the pipeline (with proper events and a graceful RunFailed); the pool
+  # reconnects with backoff until preflight has ensured the database.
   defp db_children(run_id, config) do
     adapter = Config.adapter(config)
     pool_size = Db.pool_size(config.db, config)
 
-    [
-      %{
-        id: :ensure_database,
-        restart: :temporary,
-        start: {__MODULE__, :start_ensure_database, [adapter, config.db]}
-      },
-      adapter.pool_spec(config.db, name: Run.pool_name(run_id), pool_size: pool_size)
-    ]
-  end
-
-  @doc false
-  # Runs as a child "start" before the pool: does its work and returns
-  # :ignore (nothing to supervise) or fails the whole run tree startup
-  # with a meaningful reason.
-  @spec start_ensure_database(module(), Db.t()) :: :ignore | {:error, term()}
-  def start_ensure_database(adapter, db) do
-    case adapter.ensure_database(db) do
-      :ok -> :ignore
-      {:error, reason} -> {:error, {:ensure_database_failed, reason}}
-    end
+    [adapter.pool_spec(config.db, name: Run.pool_name(run_id), pool_size: pool_size)]
   end
 end

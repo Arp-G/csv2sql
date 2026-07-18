@@ -31,6 +31,29 @@ defmodule Csv2sql.Events do
     @type t :: %__MODULE__{run_id: String.t(), at: DateTime.t(), file: Csv2sql.File.t()}
   end
 
+  defmodule PreflightCheck do
+    @moduledoc "One preflight check finished."
+    @enforce_keys [:run_id, :at, :check]
+    defstruct [:run_id, :at, :check]
+
+    @type t :: %__MODULE__{run_id: String.t(), at: DateTime.t(), check: struct()}
+  end
+
+  defmodule ValidationResult do
+    @moduledoc "One validation layer finished for a file (report-only)."
+    @enforce_keys [:run_id, :at, :path, :layer, :status, :detail]
+    defstruct [:run_id, :at, :path, :layer, :status, :detail]
+
+    @type t :: %__MODULE__{
+            run_id: String.t(),
+            at: DateTime.t(),
+            path: String.t(),
+            layer: atom(),
+            status: atom(),
+            detail: map()
+          }
+  end
+
   defmodule AnalyzeStarted do
     @moduledoc "Type inference started for a file."
     @enforce_keys [:run_id, :at, :path]
@@ -162,6 +185,8 @@ defmodule Csv2sql.Events do
 
   @type event ::
           RunStarted.t()
+          | PreflightCheck.t()
+          | ValidationResult.t()
           | FileDiscovered.t()
           | AnalyzeStarted.t()
           | AnalyzeCompleted.t()
