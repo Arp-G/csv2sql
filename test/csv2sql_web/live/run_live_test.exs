@@ -121,4 +121,65 @@ defmodule Csv2sqlWeb.RunLiveTest do
   test "a vanished run redirects home with an explanation", %{conn: conn} do
     assert {:error, {:live_redirect, %{to: "/"}}} = live(conn, ~p"/runs/nope123")
   end
+
+  test "analyze → edit schema → import with overrides", %{conn: conn, tmp_dir: dir} do
+    file = unique_name("editable")
+    target = unique_name("edited_target")
+
+    csv!(dir, file <> ".csv", [
+      ~w(id secret age),
+      ["1", "classified", "34"],
+      ["2", "hidden", "29"]
+    ])
+
+    {:ok, config} =
+      Config.new(%{
+        mode: :analyze,
+        source_dir: dir,
+        db: %{adapter: :postgres, url: test_db_url(:postgres), pool_size: 2}
+      })
+
+    {:ok, analyze_id} = Csv2sql.start_run(config)
+    {:ok, analyze_run} = Csv2sql.await(analyze_id)
+    assert analyze_run.status == :completed
+
+    {:ok, view, _html} = live(conn, ~p"/runs/#{analyze_id}")
+
+    # Open the editor: sample rows + inferred schema appear.
+    view |> element("[data-role=expand-file]", file) |> render_click()
+    assert has_element?(view, "[data-role=editor-card]")
+    assert has_element?(view, "[data-role=sample-table]")
+    assert render(view) =~ "classified"
+
+    # Rename the table, drop the "secret" column, widen age to bigint.
+    view
+    |> element("#override-form")
+    |> render_change(%{
+      "override" => %{
+        "include" => "true",
+        "table_name" => target,
+        "columns" => %{
+          "0" => %{"include" => "true", "name" => "id", "type" => "integer", "length" => ""},
+          "1" => %{"include" => "false", "name" => "secret", "type" => "varchar", "length" => ""},
+          "2" => %{"include" => "true", "name" => "age", "type" => "bigint", "length" => ""}
+        }
+      }
+    })
+
+    {:error, {:live_redirect, %{to: to}}} =
+      view |> element("[data-role=reimport]") |> render_click()
+
+    assert "/runs/" <> import_id = to
+    {:ok, import_run} = Csv2sql.await(import_id)
+    assert import_run.status == :completed
+    register_table_cleanup(import_run)
+
+    [imported] = Csv2sql.Run.files_in_order(import_run)
+    assert imported.table_name == target
+    assert Enum.map(imported.columns, &{&1.name, &1.type}) == [{"id", :integer}, {"age", :bigint}]
+
+    ctx = %{db_adapter: :postgres, db_url: test_db_url(:postgres)}
+    assert Csv2sql.EngineCase.column_types!(ctx, target) == [:integer, :bigint]
+    assert Csv2sql.EngineCase.select!(ctx, target, ~w(age), "id") == [[34], [29]]
+  end
 end

@@ -30,6 +30,8 @@ defmodule Csv2sqlWeb.RunLive do
          |> assign(:filters, %{"q" => "", "status" => "all", "sort" => "name"})
          |> assign(:activity, [])
          |> assign(:activity_open, false)
+         |> assign(:expanded, nil)
+         |> assign(:override_params, %{})
          |> apply_snapshot(run)}
 
       {:error, :not_found} ->
@@ -51,6 +53,7 @@ defmodule Csv2sqlWeb.RunLive do
       socket
       |> update(:file_index, &Map.put(&1, file.path, index_entry(file)))
       |> then(&assign(&1, :counters, counters(&1.assigns.file_index)))
+      |> maybe_refresh_expanded(file)
 
     socket =
       if matches_filters?(file, socket.assigns.filters) do
@@ -98,6 +101,14 @@ defmodule Csv2sqlWeb.RunLive do
 
   def handle_info(_event, socket), do: {:noreply, socket}
 
+  defp maybe_refresh_expanded(
+         %{assigns: %{expanded: %{path: path}}} = socket,
+         %{path: path} = file
+       ),
+       do: assign(socket, :expanded, file)
+
+  defp maybe_refresh_expanded(socket, _file), do: socket
+
   # -- User actions ------------------------------------------------------------
 
   @impl true
@@ -125,6 +136,41 @@ defmodule Csv2sqlWeb.RunLive do
     {:noreply, update(socket, :activity_open, &(!&1))}
   end
 
+  def handle_event("expand", %{"path" => path}, socket) do
+    case Csv2sql.run_state(socket.assigns.run_id) do
+      {:ok, run} -> {:noreply, assign(socket, :expanded, run.files[path])}
+      {:error, :not_found} -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("collapse", _params, socket) do
+    {:noreply, assign(socket, :expanded, nil)}
+  end
+
+  def handle_event("edit_override", %{"override" => params}, socket) do
+    file = socket.assigns.expanded
+
+    {:noreply, update(socket, :override_params, &Map.put(&1, file.name, params))}
+  end
+
+  def handle_event("reimport", _params, socket) do
+    params =
+      socket.assigns.config
+      |> Csv2sql.Config.to_params()
+      |> Map.put("mode", "import")
+      |> Map.put("overrides", override_list(socket.assigns.override_params))
+
+    case Csv2sql.Config.new(params) do
+      {:ok, config} ->
+        {:ok, run_id} = Csv2sql.start_run(config)
+        {:noreply, push_navigate(socket, to: ~p"/runs/#{run_id}")}
+
+      {:error, changeset} ->
+        {:noreply,
+         put_flash(socket, :error, "override configuration invalid: #{inspect(changeset.errors)}")}
+    end
+  end
+
   # -- State building ----------------------------------------------------------
 
   defp apply_snapshot(socket, run) do
@@ -133,6 +179,7 @@ defmodule Csv2sqlWeb.RunLive do
     filters = socket.assigns[:filters] || %{"q" => "", "status" => "all", "sort" => "name"}
 
     socket
+    |> assign(:config, run.config)
     |> assign(:status, run.status)
     |> assign(:mode, run.config.mode)
     |> assign(:adapter, run.config.db && run.config.db.adapter)
@@ -237,6 +284,71 @@ defmodule Csv2sqlWeb.RunLive do
   defp progress_percent(_file), do: 0
 
   defp terminal?(status), do: status in [:completed, :completed_with_errors, :failed, :cancelled]
+
+  # -- Schema editor -----------------------------------------------------------
+
+  @type_options [
+    {"varchar", "varchar"},
+    {"text", "text"},
+    {"longtext", "longtext"},
+    {"integer", "integer"},
+    {"bigint", "bigint"},
+    {"float", "float"},
+    {"boolean", "boolean"},
+    {"date", "date"},
+    {"datetime", "datetime"}
+  ]
+
+  defp type_options, do: @type_options
+
+  # One editor row per SOURCE column: saved edits win, else the inferred
+  # spec, else raw header defaults (covers columns excluded by an earlier
+  # override, which have no spec).
+  defp editor_rows(file, override_params) do
+    saved = Map.get(override_params, file.name, %{})
+
+    file.source_headers
+    |> Enum.with_index()
+    |> Enum.map(fn {header, position} ->
+      spec = Enum.find(file.columns, &(&1.source_position == position))
+      saved_column = get_in(saved, ["columns", Integer.to_string(position)]) || %{}
+      editor_row(header, position, spec, saved_column)
+    end)
+  end
+
+  defp editor_row(header, position, spec, saved_column) do
+    %{
+      position: position,
+      header: header,
+      name: first_present([saved_column["name"], spec && spec.name, header]),
+      type: first_present([saved_column["type"], spec && Atom.to_string(spec.type), "varchar"]),
+      length: first_present([saved_column["length"], spec && spec.length, ""]),
+      include: Map.get(saved_column, "include", if(spec, do: "true", else: "false")),
+      inferred: spec
+    }
+  end
+
+  defp first_present(candidates), do: Enum.find(candidates, &(&1 not in [nil, false]))
+
+  defp saved_file_setting(override_params, file, key, default) do
+    override_params |> Map.get(file.name, %{}) |> Map.get(key, default)
+  end
+
+  defp override_list(override_params) do
+    Enum.map(override_params, fn {file_name, params} ->
+      columns =
+        params
+        |> Map.get("columns", %{})
+        |> Enum.map(fn {position, column} -> Map.put(column, "position", position) end)
+
+      %{
+        "file" => file_name,
+        "include" => Map.get(params, "include", "true"),
+        "table_name" => Map.get(params, "table_name", ""),
+        "columns" => columns
+      }
+    end)
+  end
 
   defp format_bytes(bytes) when bytes >= 1_073_741_824,
     do: "#{Float.round(bytes / 1_073_741_824, 1)} GB"
@@ -367,6 +479,159 @@ defmodule Csv2sqlWeb.RunLive do
         </ul>
       </UI.card>
 
+      <UI.card :if={@expanded} title={"Inspect · #{@expanded.name}"} role="editor-card">
+        <:actions>
+          <button
+            type="button"
+            class="btn btn-ghost btn-xs"
+            phx-click="collapse"
+            data-role="collapse-editor"
+          >
+            close
+          </button>
+        </:actions>
+
+        <div :if={@expanded.sample_rows != []} class="space-y-1">
+          <h3 class="text-xs font-semibold uppercase text-base-content/50">
+            Sample ({length(@expanded.sample_rows)} rows)
+          </h3>
+          <div class="overflow-x-auto rounded-lg border border-base-300">
+            <table class="table table-xs" data-role="sample-table">
+              <thead>
+                <tr>
+                  <th :for={header <- @expanded.source_headers} class="whitespace-nowrap">
+                    {header}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr :for={row <- @expanded.sample_rows}>
+                  <td :for={cell <- row} class="max-w-40 truncate" title={cell}>{cell}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <form id="override-form" phx-change="edit_override" class="space-y-3">
+          <div class="flex flex-wrap items-end gap-4">
+            <label class="flex items-center gap-2 text-sm">
+              <input type="hidden" name="override[include]" value="false" />
+              <input
+                type="checkbox"
+                name="override[include]"
+                value="true"
+                checked={saved_file_setting(@override_params, @expanded, "include", "true") == "true"}
+                class="checkbox checkbox-sm"
+                data-role="file-include"
+              /> include this file
+            </label>
+            <label class="form-control">
+              <span class="label-text text-xs">Target table</span>
+              <input
+                type="text"
+                name="override[table_name]"
+                value={
+                  saved_file_setting(@override_params, @expanded, "table_name", @expanded.table_name)
+                }
+                class="input input-sm input-bordered w-56"
+                data-role="table-name-input"
+              />
+            </label>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="table table-xs" data-role="column-editor">
+              <thead>
+                <tr class="text-xs uppercase text-base-content/50">
+                  <th>Include</th>
+                  <th>Source column</th>
+                  <th>Name in table</th>
+                  <th>Type</th>
+                  <th>Varchar length</th>
+                  <th>Inferred</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr :for={row <- editor_rows(@expanded, @override_params)} data-role="column-row">
+                  <td>
+                    <input
+                      type="hidden"
+                      name={"override[columns][#{row.position}][include]"}
+                      value="false"
+                    />
+                    <input
+                      type="checkbox"
+                      name={"override[columns][#{row.position}][include]"}
+                      value="true"
+                      checked={row.include == "true"}
+                      class="checkbox checkbox-xs"
+                      data-role="column-include"
+                    />
+                  </td>
+                  <td class="font-mono text-xs">{row.header}</td>
+                  <td>
+                    <input
+                      type="text"
+                      name={"override[columns][#{row.position}][name]"}
+                      value={row.name}
+                      class="input input-xs input-bordered w-36"
+                      data-role="column-name"
+                    />
+                  </td>
+                  <td>
+                    <select
+                      name={"override[columns][#{row.position}][type]"}
+                      class="select select-xs select-bordered"
+                      data-role="column-type"
+                    >
+                      <option
+                        :for={{label, value} <- type_options()}
+                        value={value}
+                        selected={row.type == value}
+                      >
+                        {label}
+                      </option>
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      name={"override[columns][#{row.position}][length]"}
+                      value={row.length}
+                      disabled={row.type != "varchar"}
+                      class="input input-xs input-bordered w-20"
+                      data-role="column-length"
+                    />
+                  </td>
+                  <td class="text-xs text-base-content/60">
+                    <span :if={row.inferred}>
+                      {row.inferred.type}{if row.inferred.length, do: "(#{row.inferred.length})"} · max {row.inferred.max_length}
+                    </span>
+                    <span :if={!row.inferred}>excluded in this run</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </form>
+
+        <div class="flex items-center justify-end gap-3">
+          <span class="text-xs text-base-content/50">
+            Edits apply to a new import of this directory.
+          </span>
+          <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            phx-click="reimport"
+            disabled={not terminal?(@status)}
+            data-role="reimport"
+          >
+            Start import with these settings
+          </button>
+        </div>
+      </UI.card>
+
       <UI.card title="Files" role="files-card">
         <:actions>
           <form id="file-filters" phx-change="filter" class="flex items-center gap-2">
@@ -414,7 +679,16 @@ defmodule Csv2sqlWeb.RunLive do
             <tbody id="files" phx-update="stream" data-role="file-rows">
               <tr :for={{dom_id, file} <- @streams.files} id={dom_id} data-role="file-row">
                 <td class="max-w-60">
-                  <div class="truncate font-medium" title={file.path}>{file.name}</div>
+                  <button
+                    type="button"
+                    phx-click="expand"
+                    phx-value-path={file.path}
+                    data-role="expand-file"
+                    class="truncate font-medium link link-hover text-left"
+                    title={"#{file.path} — click to inspect/edit"}
+                  >
+                    {file.name}
+                  </button>
                   <div
                     :if={file.errors_csv}
                     class="truncate text-xs text-warning"
