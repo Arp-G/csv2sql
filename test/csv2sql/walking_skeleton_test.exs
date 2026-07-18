@@ -58,20 +58,14 @@ defmodule Csv2sql.WalkingSkeletonTest do
       assert_event(events, %Events.LoadProgress{rows_inserted: n} when n > 0)
       assert_event(events, %Events.FileCompleted{path: path} when path == orders_file.path)
 
-      # Database truth: counts, types, and values.
-      assert db_query!(ctx, ~s{SELECT COUNT(*) FROM "#{users}"}) == [[3]]
+      # Database truth: counts, types, and values — adapter-neutral.
+      assert count!(ctx, users) == 3
+      assert column_types!(ctx, users) == [:integer, :varchar, :integer]
 
-      assert db_query!(
-               ctx,
-               "SELECT data_type FROM information_schema.columns " <>
-                 "WHERE table_name = $1 ORDER BY ordinal_position",
-               [users]
-             ) == [["integer"], ["character varying"], ["integer"]]
-
-      assert db_query!(ctx, ~s(SELECT name, age FROM "#{users}" ORDER BY id)) ==
+      assert select!(ctx, users, ~w(name age), "id") ==
                [["Alice", 34], ["Bob", nil], ["Zoé", 29]]
 
-      assert db_query!(ctx, ~s(SELECT total FROM "#{orders}" ORDER BY id)) == [[9.99], [120.5]]
+      assert select!(ctx, orders, ~w(total), "id") == [[9.99], [120.5]]
     end
 
     test "header-only and unicode files import cleanly", %{tmp_dir: dir} = ctx do
@@ -85,7 +79,7 @@ defmodule Csv2sql.WalkingSkeletonTest do
       assert file.status == :done
       assert file.row_count == 0
       assert file.ledger.rows_read == 0
-      assert db_query!(ctx, ~s{SELECT COUNT(*) FROM "#{empty_table}"}) == [[0]]
+      assert count!(ctx, empty_table) == 0
     end
   end
 
@@ -110,7 +104,7 @@ defmodule Csv2sql.WalkingSkeletonTest do
       assert [%{stage: :parse, class: :file}] = bad_file.errors
 
       assert_event(events, %Events.FileFailed{path: path} when path == bad_file.path)
-      assert db_query!(ctx, ~s{SELECT COUNT(*) FROM "#{good}"}) == [[2]]
+      assert count!(ctx, good) == 2
     end
 
     test "an empty (zero-byte) file fails with a clear reason", %{tmp_dir: dir} = ctx do
@@ -139,12 +133,21 @@ defmodule Csv2sql.WalkingSkeletonTest do
       assert [%{type: :integer}, %{type: :varchar}] = file.columns
 
       refute Enum.any?(events, &match?(%Events.SchemaCreated{}, &1))
+      refute table_exists?(ctx, table)
+    end
 
-      assert db_query!(
-               ctx,
-               "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = $1",
-               [table]
-             ) == [[0]]
+    test "analyze mode needs no reachable database at all", %{tmp_dir: dir} = ctx do
+      table = unique_name("offline_dry")
+      csv!(dir, table <> ".csv", [~w(id), ["1"]])
+
+      # A guaranteed-unreachable server: analyze must still complete.
+      unreachable = %{db: %{url: unreachable_url(ctx), adapter: ctx.db_adapter}}
+
+      %{run: run} = run_import(dir, ctx, Map.merge(%{mode: :analyze}, unreachable))
+
+      assert run.status == :completed
+      [file] = Run.files_in_order(run)
+      assert file.status == :done
     end
   end
 
@@ -169,8 +172,8 @@ defmodule Csv2sql.WalkingSkeletonTest do
       register_table_cleanup(state_a)
       register_table_cleanup(state_b)
 
-      assert db_query!(ctx, ~s{SELECT COUNT(*) FROM "#{table_a}"}) == [[2]]
-      assert db_query!(ctx, ~s{SELECT COUNT(*) FROM "#{table_b}"}) == [[3]]
+      assert count!(ctx, table_a) == 2
+      assert count!(ctx, table_b) == 3
     end
 
     @tag timeout: 120_000
@@ -194,11 +197,12 @@ defmodule Csv2sql.WalkingSkeletonTest do
       # The core (pool + tasks + pipeline) must be gone shortly after.
       wait_until(fn -> Run.whereis(Run.core_name(run_id)) == nil end)
 
-      on_exit(fn ->
-        db_query!(ctx, ~s(DROP TABLE IF EXISTS "#{table}"))
-      end)
+      on_exit(fn -> drop_table!(ctx, table) end)
     end
   end
+
+  defp unreachable_url(%{db_adapter: :postgres}), do: "postgres://localhost:59999/nope"
+  defp unreachable_url(%{db_adapter: :mysql}), do: "mysql://localhost:59999/nope"
 
   defp wait_until(fun, attempts \\ 50) do
     cond do

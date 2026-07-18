@@ -11,8 +11,7 @@ permissions:
 env:
   CSV2SQL_TEST_POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres
   CSV2SQL_TEST_MYSQL_URL: mysql://root:mysql@localhost:3306/mysql
-  # Flips to "postgres,mysql" when the MySQL adapter lands (stage 2).
-  CSV2SQL_TEST_ADAPTERS: postgres
+  CSV2SQL_TEST_ADAPTERS: postgres,mysql
 
 jobs:
   ci:

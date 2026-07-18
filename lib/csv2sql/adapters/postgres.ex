@@ -1,14 +1,16 @@
 defmodule Csv2sql.Adapters.Postgres do
   @moduledoc """
-  PostgreSQL adapter on `Postgrex` (no Ecto repos).
+  PostgreSQL adapter on `Postgrex` (no Ecto repos). Supports PostgreSQL 12+.
 
   Dialect notes: double-quoted identifiers, `$n` placeholders, real
   `DATE`/`TIMESTAMP` types (an intentional improvement over v3, which fell
-  back to VARCHAR on Postgres).
+  back to VARCHAR on Postgres). Databases are **not** auto-created —
+  `ensure_database/1` verifies and reports clearly.
   """
 
   use Csv2sql.Adapter
 
+  alias Csv2sql.Adapters.Probe
   alias Csv2sql.Config.Db
 
   @impl true
@@ -25,6 +27,19 @@ defmodule Csv2sql.Adapters.Postgres do
       start: {Postgrex, :start_link, [start_opts]},
       restart: :temporary
     }
+  end
+
+  @impl true
+  def ensure_database(%Db{} = db) do
+    # Pool start always succeeds (connections are async), so the only
+    # honest verification is running a query — isolated, because a probe
+    # pool takes its starter down when the connection dies. When it
+    # fails, a check against the maintenance database turns the generic
+    # connection error into a precise "database not found".
+    case Probe.isolated(fn -> probe(Db.conn_opts(db)) end) do
+      :ok -> :ok
+      {:error, direct_error} -> classify_missing(db, direct_error)
+    end
   end
 
   @impl true
@@ -52,6 +67,56 @@ defmodule Csv2sql.Adapters.Postgres do
 
       {:error, error} ->
         {:error, error}
+    end
+  end
+
+  defp probe(opts) do
+    {:ok, conn} = Postgrex.start_link(opts ++ [backoff_type: :stop, pool_size: 1])
+
+    result =
+      case Postgrex.query(conn, "SELECT 1", [], timeout: 5_000) do
+        {:ok, _result} -> :ok
+        {:error, error} -> {:error, error}
+      end
+
+    Probe.safe_stop(conn)
+    result
+  end
+
+  defp classify_missing(%Db{} = db, direct_error) do
+    database = Db.database(db)
+
+    case Probe.isolated(fn -> database_listed?(db, database) end) do
+      {:ok, false} -> {:error, {:database_not_found, database}}
+      _other -> {:error, direct_error}
+    end
+  end
+
+  defp database_listed?(%Db{} = db, database) do
+    opts = db |> Db.conn_opts() |> Keyword.put(:database, "postgres")
+    {:ok, conn} = Postgrex.start_link(opts ++ [backoff_type: :stop, pool_size: 1])
+
+    result =
+      case Postgrex.query(conn, "SELECT 1 FROM pg_database WHERE datname = $1", [database],
+             timeout: 5_000
+           ) do
+        {:ok, %Postgrex.Result{rows: rows}} -> {:ok, rows != []}
+        {:error, error} -> {:error, error}
+      end
+
+    Probe.safe_stop(conn)
+    result
+  end
+
+  @impl true
+  def table_exists?(conn, table) do
+    sql =
+      "SELECT 1 FROM information_schema.tables " <>
+        "WHERE table_schema = 'public' AND table_name = $1"
+
+    case query(conn, sql, [table]) do
+      {:ok, %{rows: rows}} -> rows != []
+      {:error, _error} -> false
     end
   end
 end

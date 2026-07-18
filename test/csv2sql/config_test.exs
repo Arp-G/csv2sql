@@ -39,14 +39,37 @@ defmodule Csv2sql.ConfigTest do
 
   test "db url scheme and database are validated", %{tmp_dir: dir} do
     assert {:error, changeset} =
-             Config.new(%{source_dir: dir, db: %{url: "mysql://localhost/x"}})
+             Config.new(%{source_dir: dir, db: %{url: "foo://localhost/x"}})
 
-    assert %{db: %{url: ["must start with postgres://"]}} = errors_on(changeset)
+    assert %{db: %{url: ["must start with postgres:// or mysql://"]}} = errors_on(changeset)
 
     assert {:error, changeset} =
              Config.new(%{source_dir: dir, db: %{url: "postgres://localhost"}})
 
     assert %{db: %{url: ["must include a database name"]}} = errors_on(changeset)
+  end
+
+  test "the adapter is derived from the URL scheme", %{tmp_dir: dir} do
+    assert {:ok, config} = Config.new(%{source_dir: dir, db: %{url: "mysql://localhost/x"}})
+    assert config.db.adapter == :mysql
+
+    assert {:ok, config} = Config.new(%{source_dir: dir, db: %{url: "postgres://localhost/x"}})
+    assert config.db.adapter == :postgres
+  end
+
+  test "an explicit adapter must match the URL scheme", %{tmp_dir: dir} do
+    assert {:error, changeset} =
+             Config.new(%{source_dir: dir, db: %{adapter: :postgres, url: "mysql://localhost/x"}})
+
+    assert %{db: %{url: ["scheme does not match adapter postgres"]}} = errors_on(changeset)
+  end
+
+  test "insert_chunk_bytes bounds are enforced", %{tmp_dir: dir} do
+    params = Map.put(valid_params(dir), :insert_chunk_bytes, 1000)
+    assert {:error, _changeset} = Config.new(params)
+
+    assert {:ok, config} = Config.new(valid_params(dir))
+    assert config.insert_chunk_bytes == 4_194_304
   end
 
   test "numeric bounds are enforced", %{tmp_dir: dir} do

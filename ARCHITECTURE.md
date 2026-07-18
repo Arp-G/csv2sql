@@ -85,6 +85,17 @@ FilePipeline.run/2 (per file)
 ```
 
 `mode: :analyze` stops after pass 1 — the dry-run behind schema preview.
+Analyze runs start **no database children at all** (no pool, no
+ensure_database): dry runs work fully offline.
+
+Insert chunks respect three limits at once (`Csv2sql.Load.Chunker`,
+issue #21): the configured row bound, the adapter's positional-parameter
+cap (`max_params / column_count`), and a byte budget = configured bytes
+capped by the server's probed packet size (`@@max_allowed_packet` on
+MySQL). Before the pool starts, `ensure_database/1` runs isolated in
+`ProbeSupervisor` (a crashing probe pool must never kill its caller):
+MySQL auto-creates the database; Postgres verifies it and reports
+`{:database_not_found, name}` via a maintenance-database check.
 
 ## Events
 

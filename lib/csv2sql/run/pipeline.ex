@@ -29,11 +29,18 @@ defmodule Csv2sql.Run.Pipeline do
     files = Discovery.discover(config.source_dir)
     Server.started(run_id, files)
 
+    adapter = Config.adapter(config)
+    conn = Run.pool_name(run_id)
+
     ctx = %{
       run_id: run_id,
       config: config,
-      adapter: Config.adapter(config),
-      conn: Run.pool_name(run_id)
+      adapter: adapter,
+      conn: conn,
+      # Probed once per run (import mode only — analyze has no pool): the
+      # byte budget for one INSERT is the configured chunk budget, capped
+      # by the server's packet limit.
+      max_insert_bytes: if(config.mode == :import, do: max_insert_bytes(adapter, conn, config))
     }
 
     results =
@@ -48,6 +55,11 @@ defmodule Csv2sql.Run.Pipeline do
 
     Server.complete(run_id, results)
     :ok
+  end
+
+  defp max_insert_bytes(adapter, conn, config) do
+    packet = adapter.max_packet_bytes(conn)
+    min(config.insert_chunk_bytes, div(packet * 8, 10))
   end
 
   defp unwrap({{:ok, %CsvFile{} = file}, _original}, _run_id), do: file

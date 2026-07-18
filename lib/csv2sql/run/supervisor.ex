@@ -47,17 +47,44 @@ defmodule Csv2sql.Run.Supervisor do
   end
 
   defp core_children(run_id, config) do
+    db_children(run_id, config) ++
+      [
+        {Task.Supervisor, name: Run.tasks_name(run_id)},
+        Supervisor.child_spec(
+          {Task, fn -> Pipeline.run(run_id, config) end},
+          id: :pipeline,
+          restart: :temporary
+        )
+      ]
+  end
+
+  # Analyze mode (dry run) never touches a database — no pool, no
+  # database creation/verification.
+  defp db_children(_run_id, %Config{mode: :analyze}), do: []
+
+  defp db_children(run_id, config) do
     adapter = Config.adapter(config)
     pool_size = Db.pool_size(config.db, config)
 
     [
-      adapter.pool_spec(config.db, name: Run.pool_name(run_id), pool_size: pool_size),
-      {Task.Supervisor, name: Run.tasks_name(run_id)},
-      Supervisor.child_spec(
-        {Task, fn -> Pipeline.run(run_id, config) end},
-        id: :pipeline,
-        restart: :temporary
-      )
+      %{
+        id: :ensure_database,
+        restart: :temporary,
+        start: {__MODULE__, :start_ensure_database, [adapter, config.db]}
+      },
+      adapter.pool_spec(config.db, name: Run.pool_name(run_id), pool_size: pool_size)
     ]
+  end
+
+  @doc false
+  # Runs as a child "start" before the pool: does its work and returns
+  # :ignore (nothing to supervise) or fails the whole run tree startup
+  # with a meaningful reason.
+  @spec start_ensure_database(module(), Db.t()) :: :ignore | {:error, term()}
+  def start_ensure_database(adapter, db) do
+    case adapter.ensure_database(db) do
+      :ok -> :ignore
+      {:error, reason} -> {:error, {:ensure_database_failed, reason}}
+    end
   end
 end

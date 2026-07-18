@@ -26,7 +26,7 @@ the tables, loads the rows in parallel, and validates what arrived.
 | Stage | | |
 |---|---|---|
 | 1 | Walking skeleton — engine, events, Postgres, ledger, test harness | ✅ |
-| 2 | Adapter behaviour + MySQL + byte/param-aware inserts | ⬜ |
+| 2 | Adapter behaviour + MySQL + byte/param-aware inserts | ✅ |
 | 3 | Full type system (dates, booleans, dynamic sizing) | ⬜ |
 | 4 | Error model, encodings, delimiters | ⬜ |
 | 5 | Validation ladder + preflight + report | ⬜ |

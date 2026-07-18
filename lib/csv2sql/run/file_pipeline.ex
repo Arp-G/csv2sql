@@ -25,6 +25,7 @@ defmodule Csv2sql.Run.FilePipeline do
   }
 
   alias Csv2sql.File, as: CsvFile
+  alias Csv2sql.Load.Chunker
   alias Csv2sql.Load.Encoder
   alias Csv2sql.Run.Server
   alias Csv2sql.Schema.Inference
@@ -36,7 +37,8 @@ defmodule Csv2sql.Run.FilePipeline do
           run_id: String.t(),
           config: Config.t(),
           adapter: module(),
-          conn: Csv2sql.Adapter.conn()
+          conn: Csv2sql.Adapter.conn(),
+          max_insert_bytes: pos_integer() | nil
         }
 
   @doc "Processes one file; always returns the file's final state."
@@ -173,10 +175,18 @@ defmodule Csv2sql.Run.FilePipeline do
     update(ctx, %{file | status: :loading})
     started = System.monotonic_time(:millisecond)
 
+    limits =
+      Chunker.limits(
+        ctx.config.insert_chunk_rows,
+        ctx.adapter.max_params(),
+        ctx.max_insert_bytes,
+        length(file.columns)
+      )
+
     ledger =
       file.path
       |> Reader.data_stream()
-      |> Stream.chunk_every(ctx.config.insert_chunk_rows)
+      |> Chunker.chunks(limits)
       |> Task.async_stream(&insert_chunk(&1, file, ctx),
         max_concurrency: ctx.config.insert_workers,
         ordered: false,

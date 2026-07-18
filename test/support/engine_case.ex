@@ -8,12 +8,14 @@ defmodule Csv2sql.EngineCase do
     * `csv!/3` — write a CSV fixture from row lists
     * `unique_name/1` — collision-free table/file names, so DB-backed
       tests run `async: true` safely
-    * `run_import/2` — start a run subscribed to its events, wait for the
+    * `run_import/3` — start a run subscribed to its events, wait for the
       terminal event, auto-register table cleanup, and return
       `%{run_id, run, events}`
     * `assert_event/2` — assert an event matching a pattern was emitted
-    * `db_query!/1` — verify database state directly
+    * adapter-neutral DB verification: `count!/2`, `select!/4`,
+      `column_types!/2`, `table_exists?/2`, `drop_table!/2`, `db_query!/3`
 
+  DB-backed modules are parameterized over adapters — see `db_parameters/1`.
   """
 
   use ExUnit.CaseTemplate
@@ -24,6 +26,7 @@ defmodule Csv2sql.EngineCase do
   alias Csv2sql.Config.Db
   alias Csv2sql.Events
   alias Csv2sql.Run
+
   alias NimbleCSV.RFC4180, as: CSV
 
   using do
@@ -41,7 +44,32 @@ defmodule Csv2sql.EngineCase do
 
   @await_timeout :timer.seconds(60)
 
-  @adapter_names %{"postgres" => :postgres}
+  @adapter_names %{"postgres" => :postgres, "mysql" => :mysql}
+  @adapter_modules %{postgres: Csv2sql.Adapters.Postgres, mysql: Csv2sql.Adapters.MySql}
+  @probe_ports %{postgres: 5432, mysql: 3306}
+
+  # Normalized column types per adapter, for `column_types!/2`.
+  @pg_column_types %{
+    "integer" => :integer,
+    "bigint" => :bigint,
+    "character varying" => :varchar,
+    "text" => :text,
+    "double precision" => :float,
+    "boolean" => :boolean,
+    "date" => :date,
+    "timestamp without time zone" => :datetime
+  }
+  @mysql_column_types %{
+    "int" => :integer,
+    "bigint" => :bigint,
+    "varchar" => :varchar,
+    "text" => :text,
+    "longtext" => :longtext,
+    "double" => :float,
+    "tinyint" => :boolean,
+    "date" => :date,
+    "datetime" => :datetime
+  }
 
   @doc """
   Parameter sets for DB-backed test modules (ExUnit `:parameterize`).
@@ -52,19 +80,30 @@ defmodule Csv2sql.EngineCase do
   Each set merges `%{db_adapter: ..., db_url: ...}` into the test context,
   and the whole module runs once per set. Selection: the
   `CSV2SQL_TEST_ADAPTERS` env var (comma-separated, pinned in CI) wins;
-  otherwise Postgres is the baseline and optional adapters join when their
-  server is reachable. Memoized so every test file sees one decision.
-  """
-  @spec db_parameters() :: [map()]
-  def db_parameters do
-    case :persistent_term.get({__MODULE__, :db_parameters}, nil) do
-      nil ->
-        params = compute_db_parameters()
-        :persistent_term.put({__MODULE__, :db_parameters}, params)
-        params
+  otherwise Postgres is the baseline and optional adapters join when
+  their server is reachable. Memoized so every test file sees one
+  decision.
 
-      params ->
-        params
+  `db_parameters(:mysql)` narrows to one adapter — useful for
+  adapter-specific behavior tests; the module simply runs zero times when
+  that adapter isn't selected.
+  """
+  @spec db_parameters(atom() | nil) :: [map()]
+  def db_parameters(only \\ nil) do
+    params =
+      case :persistent_term.get({__MODULE__, :db_parameters}, nil) do
+        nil ->
+          computed = compute_db_parameters()
+          :persistent_term.put({__MODULE__, :db_parameters}, computed)
+          computed
+
+        computed ->
+          computed
+      end
+
+    case only do
+      nil -> params
+      adapter -> Enum.filter(params, &(&1.db_adapter == adapter))
     end
   end
 
@@ -77,30 +116,18 @@ defmodule Csv2sql.EngineCase do
     )
   end
 
+  def test_db_url(:mysql) do
+    System.get_env(
+      "CSV2SQL_TEST_MYSQL_URL",
+      "mysql://root:mysql@localhost:3306/csv2sql_test"
+    )
+  end
+
   @doc "The DB settings for the current test, from its (parameterized) context."
   @spec db_params(map()) :: %{adapter: atom(), url: String.t()}
   def db_params(context) do
     adapter = Map.get(context, :db_adapter, :postgres)
     %{adapter: adapter, url: Map.get(context, :db_url, test_db_url(adapter))}
-  end
-
-  defp compute_db_parameters do
-    "CSV2SQL_TEST_ADAPTERS"
-    |> System.get_env()
-    |> selected_adapters()
-    |> Enum.map(&%{db_adapter: &1, db_url: test_db_url(&1)})
-  end
-
-  defp selected_adapters(nil) do
-    # Postgres is the baseline; optional adapters (MySQL, from stage 2)
-    # will join here when their server is reachable locally.
-    [:postgres]
-  end
-
-  defp selected_adapters(env_value) do
-    env_value
-    |> String.split(",", trim: true)
-    |> Enum.map(&Map.fetch!(@adapter_names, String.trim(&1)))
   end
 
   @doc "Writes `rows` (lists of strings, header first) as `dir/name`."
@@ -174,8 +201,12 @@ defmodule Csv2sql.EngineCase do
     end
   end
 
-  @doc "Registers an on_exit that drops every table of the run."
+  @doc "Registers an on_exit that drops every table of the run (best-effort)."
   @spec register_table_cleanup(Run.t()) :: :ok
+  # Analyze runs create no tables — and may deliberately point at an
+  # unreachable server.
+  def register_table_cleanup(%Run{config: %Config{mode: :analyze}}), do: :ok
+
   def register_table_cleanup(%Run{} = run) do
     tables = run |> Run.files_in_order() |> Enum.map(& &1.table_name)
     db = run.config.db
@@ -183,19 +214,88 @@ defmodule Csv2sql.EngineCase do
     ExUnit.Callbacks.on_exit(fn -> drop_tables(db, tables) end)
   end
 
-  defp drop_tables(%Db{} = db, tables) do
+  # -- Adapter-neutral DB verification ---------------------------------------
+
+  @doc "Exact row count of `table` (via the adapter itself)."
+  @spec count!(map(), String.t()) :: non_neg_integer()
+  def count!(context, table) do
+    {adapter, db} = adapter_db(context)
+
     with_test_conn(db, fn conn ->
-      Enum.each(tables, &Postgrex.query!(conn, ~s(DROP TABLE IF EXISTS "#{&1}"), []))
+      {:ok, count} = adapter.exact_count(conn, table)
+      count
     end)
   end
 
-  @doc "Runs a SQL query against the context's test database, returning rows."
-  @spec db_query!(map(), String.t(), [term()]) :: [[term()]]
-  def db_query!(context, sql, params \\ []) do
-    db = db_params(context)
+  @doc "Selects `columns` from `table` ordered by `order_by`; returns rows."
+  @spec select!(map(), String.t(), [String.t()], String.t()) :: [[term()]]
+  def select!(context, table, columns, order_by) do
+    {adapter, db} = adapter_db(context)
 
-    with_test_conn(%Db{adapter: db.adapter, url: db.url}, fn conn ->
-      Postgrex.query!(conn, sql, params).rows
+    columns_sql =
+      Enum.map_join(columns, ", ", &IO.iodata_to_binary(adapter.quote_ident(&1)))
+
+    sql =
+      IO.iodata_to_binary([
+        "SELECT ",
+        columns_sql,
+        " FROM ",
+        adapter.quote_ident(table),
+        " ORDER BY ",
+        adapter.quote_ident(order_by)
+      ])
+
+    with_test_conn(db, fn conn ->
+      {:ok, %{rows: rows}} = adapter.query(conn, sql, [])
+      rows
+    end)
+  end
+
+  @doc """
+  The column types of `table` in schema order, normalized to the engine's
+  abstract type names (`:integer`, `:varchar`, `:float`, ...) so
+  assertions are adapter-independent.
+  """
+  @spec column_types!(map(), String.t()) :: [atom()]
+  def column_types!(context, table) do
+    {adapter, db} = adapter_db(context)
+    {sql, mapping} = column_types_query(db.adapter)
+
+    with_test_conn(db, fn conn ->
+      {:ok, %{rows: rows}} = adapter.query(conn, sql, [table])
+
+      Enum.map(rows, fn [type] ->
+        Map.get(mapping, String.downcase(type), {:unknown, type})
+      end)
+    end)
+  end
+
+  @doc "Whether `table` exists (via the adapter itself)."
+  @spec table_exists?(map(), String.t()) :: boolean()
+  def table_exists?(context, table) do
+    {adapter, db} = adapter_db(context)
+    with_test_conn(db, fn conn -> adapter.table_exists?(conn, table) end)
+  end
+
+  @doc "Drops `table` if it exists."
+  @spec drop_table!(map(), String.t()) :: :ok
+  def drop_table!(context, table) do
+    {adapter, db} = adapter_db(context)
+
+    with_test_conn(db, fn conn ->
+      {:ok, _result} = adapter.query(conn, IO.iodata_to_binary(adapter.drop_table_sql(table)), [])
+      :ok
+    end)
+  end
+
+  @doc "Runs raw SQL (caller supplies dialect) against the context's DB."
+  @spec db_query!(map(), String.t(), [term()]) :: [[term()]] | nil
+  def db_query!(context, sql, params \\ []) do
+    {adapter, db} = adapter_db(context)
+
+    with_test_conn(db, fn conn ->
+      {:ok, %{rows: rows}} = adapter.query(conn, sql, params)
+      rows
     end)
   end
 
@@ -219,9 +319,90 @@ defmodule Csv2sql.EngineCase do
     end
   end
 
+  # -- Internals --------------------------------------------------------------
+
+  defp compute_db_parameters do
+    "CSV2SQL_TEST_ADAPTERS"
+    |> System.get_env()
+    |> selected_adapters()
+    |> Enum.map(&%{db_adapter: &1, db_url: test_db_url(&1)})
+  end
+
+  # Postgres is the baseline; optional adapters join when their server is
+  # reachable locally. CI pins the selection via the env var instead.
+  defp selected_adapters(nil) do
+    optional = for adapter <- [:mysql], reachable?(adapter), do: adapter
+
+    case optional do
+      [] -> IO.puts("[EngineCase] DB adapters: postgres (mysql not reachable — skipped)")
+      _some -> IO.puts("[EngineCase] DB adapters: #{Enum.join([:postgres | optional], ", ")}")
+    end
+
+    [:postgres | optional]
+  end
+
+  defp selected_adapters(env_value) do
+    env_value
+    |> String.split(",", trim: true)
+    |> Enum.map(&Map.fetch!(@adapter_names, String.trim(&1)))
+  end
+
+  defp reachable?(adapter) do
+    uri = adapter |> test_db_url() |> URI.parse()
+    host = String.to_charlist(uri.host || "localhost")
+    port = uri.port || @probe_ports[adapter]
+
+    case :gen_tcp.connect(host, port, [], 300) do
+      {:ok, socket} ->
+        :gen_tcp.close(socket)
+        true
+
+      {:error, _reason} ->
+        false
+    end
+  end
+
+  defp adapter_db(context) do
+    db = db_params(context)
+    {Map.fetch!(@adapter_modules, db.adapter), %Db{adapter: db.adapter, url: db.url}}
+  end
+
+  defp column_types_query(:postgres) do
+    {"SELECT data_type FROM information_schema.columns " <>
+       "WHERE table_schema = 'public' AND table_name = $1 ORDER BY ordinal_position",
+     @pg_column_types}
+  end
+
+  defp column_types_query(:mysql) do
+    {"SELECT DATA_TYPE FROM information_schema.columns " <>
+       "WHERE table_schema = DATABASE() AND table_name = ? ORDER BY ORDINAL_POSITION",
+     @mysql_column_types}
+  end
+
+  defp drop_tables(_db, []), do: :ok
+
+  defp drop_tables(%Db{} = db, tables) do
+    adapter = Map.fetch!(@adapter_modules, db.adapter)
+
+    with_test_conn(db, fn conn ->
+      Enum.each(tables, fn table ->
+        adapter.query(conn, IO.iodata_to_binary(adapter.drop_table_sql(table)), [])
+      end)
+    end)
+  rescue
+    # Cleanup is best-effort: a run that failed before touching the DB
+    # (or a dropped test database) must not fail the test from on_exit.
+    _error -> :ok
+  end
+
   defp with_test_conn(%Db{} = db, fun) do
-    opts = Db.conn_opts(db)
-    {:ok, conn} = Postgrex.start_link(opts ++ [pool_size: 1])
+    opts = Db.conn_opts(db) ++ [pool_size: 1]
+
+    {:ok, conn} =
+      case db.adapter do
+        :postgres -> Postgrex.start_link(opts)
+        :mysql -> MyXQL.start_link(opts)
+      end
 
     try do
       fun.(conn)

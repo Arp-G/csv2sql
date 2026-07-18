@@ -6,8 +6,8 @@ defmodule Csv2sql.EngineCaseTest do
   use Csv2sql.EngineCase, async: true, parameterize: Csv2sql.EngineCase.db_parameters()
 
   test "db parameters are merged into the test context", ctx do
-    assert Map.fetch!(ctx, :db_adapter) == :postgres
-    assert ctx |> Map.fetch!(:db_url) |> is_binary()
+    assert Map.fetch!(ctx, :db_adapter) in [:postgres, :mysql]
+    assert Map.fetch!(ctx, :db_url) == Csv2sql.EngineCase.test_db_url(ctx.db_adapter)
     assert db_params(ctx) == %{adapter: ctx.db_adapter, url: ctx.db_url}
   end
 

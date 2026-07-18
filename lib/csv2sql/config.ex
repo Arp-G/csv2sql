@@ -23,6 +23,7 @@ defmodule Csv2sql.Config do
     field(:insert_workers, :integer, default: 4)
     field(:analyze_chunk_rows, :integer, default: 1000)
     field(:insert_chunk_rows, :integer, default: 2000)
+    field(:insert_chunk_bytes, :integer, default: 4_194_304)
     field(:varchar_limit, :integer, default: 200)
 
     embeds_one(:db, Db)
@@ -36,6 +37,7 @@ defmodule Csv2sql.Config do
           insert_workers: pos_integer(),
           analyze_chunk_rows: pos_integer(),
           insert_chunk_rows: pos_integer(),
+          insert_chunk_bytes: pos_integer(),
           varchar_limit: pos_integer(),
           db: Db.t() | nil
         }
@@ -66,6 +68,7 @@ defmodule Csv2sql.Config do
       :insert_workers,
       :analyze_chunk_rows,
       :insert_chunk_rows,
+      :insert_chunk_bytes,
       :varchar_limit
     ])
     |> cast_embed(:db, required: true)
@@ -75,11 +78,15 @@ defmodule Csv2sql.Config do
     |> validate_number(:insert_workers, greater_than: 0, less_than_or_equal_to: 100)
     |> validate_number(:analyze_chunk_rows, greater_than: 0, less_than_or_equal_to: 100_000)
     |> validate_number(:insert_chunk_rows, greater_than: 0, less_than_or_equal_to: 100_000)
+    |> validate_number(:insert_chunk_bytes,
+      greater_than_or_equal_to: 65_536,
+      less_than_or_equal_to: 268_435_456
+    )
     |> validate_number(:varchar_limit, greater_than: 0, less_than_or_equal_to: 65_535)
     |> validate_source_dir()
   end
 
-  @adapter_modules %{postgres: Csv2sql.Adapters.Postgres}
+  @adapter_modules %{postgres: Csv2sql.Adapters.Postgres, mysql: Csv2sql.Adapters.MySql}
 
   @doc "Resolves the adapter module for this config."
   @spec adapter(t()) :: module()
