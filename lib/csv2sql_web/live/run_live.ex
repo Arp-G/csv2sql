@@ -332,6 +332,37 @@ defmodule Csv2sqlWeb.RunLive do
 
   defp terminal?(status), do: status in [:completed, :completed_with_errors, :failed, :cancelled]
 
+  # -- Validation detail -------------------------------------------------------
+
+  defp validation_summary(%{layer: :counts, detail: %{"expected" => e, "actual" => a}}),
+    do: "#{a} row(s) in the table, #{e} expected"
+
+  defp validation_summary(%{layer: :fingerprints, detail: %{"error" => message}}),
+    do: "could not verify: #{message}"
+
+  defp validation_summary(%{layer: :fingerprints, detail: %{"columns" => columns}}) do
+    case Enum.count(columns, &(!&1["ok"])) do
+      0 -> "#{length(columns)} column(s) match"
+      some -> "#{some} of #{length(columns)} column(s) mismatched"
+    end
+  end
+
+  defp validation_summary(%{layer: :ledger, status: :passed}), do: "row ledger balanced"
+  defp validation_summary(%{status: :skipped}), do: "skipped"
+  defp validation_summary(_outcome), do: nil
+
+  defp mismatched_checks(%{layer: :fingerprints, detail: %{"columns" => columns}}) do
+    for %{"column" => column, "checks" => checks} <- columns,
+        {check, %{"ok" => false, "expected" => sent, "actual" => db}} <- Enum.sort(checks) do
+      {column, check, sent, db}
+    end
+  end
+
+  defp mismatched_checks(_outcome), do: []
+
+  defp format_check_value(nil), do: "∅"
+  defp format_check_value(value), do: to_string(value)
+
   # -- Schema editor -----------------------------------------------------------
 
   @type_options [
@@ -557,6 +588,39 @@ defmodule Csv2sqlWeb.RunLive do
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <div :if={@expanded.validation != []} class="space-y-2" data-role="validation-detail">
+          <h3 class="text-xs font-semibold uppercase text-base-content/50">Validation</h3>
+          <div :for={outcome <- @expanded.validation} class="space-y-1">
+            <div class="flex items-center gap-2 text-sm">
+              <UI.validation_pill layer={outcome.layer} status={outcome.status} />
+              <span class="text-base-content/70">{validation_summary(outcome)}</span>
+            </div>
+            <div
+              :if={mismatched_checks(outcome) != []}
+              class="overflow-x-auto rounded-lg border border-base-300"
+            >
+              <table class="table table-xs" data-role="fingerprint-mismatches">
+                <thead>
+                  <tr class="text-xs uppercase text-base-content/50">
+                    <th>Column</th>
+                    <th>Check</th>
+                    <th>Sent to DB</th>
+                    <th>In database</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr :for={{column, check, sent, db} <- mismatched_checks(outcome)}>
+                    <td class="font-mono">{column}</td>
+                    <td>{check}</td>
+                    <td class="font-mono">{format_check_value(sent)}</td>
+                    <td class="font-mono">{format_check_value(db)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 

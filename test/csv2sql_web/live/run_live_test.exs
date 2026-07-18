@@ -65,6 +65,11 @@ defmodule Csv2sqlWeb.RunLiveTest do
              view2,
              "[data-role=preflight-check][data-check=database][data-status=passed]"
            )
+
+    # Expanding a file surfaces the per-layer validation detail.
+    view2 |> element("[data-role=expand-file]") |> render_click()
+    assert has_element?(view2, "[data-role=validation-detail]")
+    assert render(view2) =~ "column(s) match"
   end
 
   test "cancel stops the run from the UI", %{conn: conn, tmp_dir: dir} do

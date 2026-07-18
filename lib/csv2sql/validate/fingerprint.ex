@@ -92,11 +92,19 @@ defmodule Csv2sql.Validate.Fingerprint do
   def check_keys(kind) when kind in [:date, :datetime], do: [:max, :min, :null_count]
   def check_keys(:string), do: [:max_length, :null_count, :total_bytes]
 
+  # Every value expression must yield SQL NULL when the column has no
+  # non-NULL values (MIN/MAX/SUM do; the CASE has deliberately no ELSE so
+  # NULL bools stay NULL) — the accumulators mirror that with nil, so an
+  # empty file or an all-NULL column compares nil == NULL instead of
+  # false-failing 0 vs NULL.
   defp expr_for(:null_count, qi), do: "COUNT(*) - COUNT(#{qi})"
   defp expr_for(:min, qi), do: "MIN(#{qi})"
   defp expr_for(:max, qi), do: "MAX(#{qi})"
   defp expr_for(:sum, qi), do: "SUM(#{qi})"
-  defp expr_for(:true_count, qi), do: "SUM(CASE WHEN #{qi} = TRUE THEN 1 ELSE 0 END)"
+
+  defp expr_for(:true_count, qi),
+    do: "SUM(CASE WHEN #{qi} = TRUE THEN 1 WHEN #{qi} = FALSE THEN 0 END)"
+
   defp expr_for(:max_length, qi), do: "MAX(CHAR_LENGTH(#{qi}))"
   defp expr_for(:total_bytes, qi), do: "SUM(OCTET_LENGTH(#{qi}))"
 
@@ -156,6 +164,9 @@ defmodule Csv2sql.Validate.Fingerprint do
 
   # -- Accumulation ------------------------------------------------------------
 
+  # All value aggregates start at nil ("no values seen") to mirror what
+  # SQL returns over zero non-NULL values; only null_count starts at 0
+  # (COUNT never returns NULL).
   defp new_acc(kind) do
     %{
       kind: kind,
@@ -163,9 +174,9 @@ defmodule Csv2sql.Validate.Fingerprint do
       min: nil,
       max: nil,
       sum: nil,
-      true_count: if(kind == :bool, do: 0),
-      max_length: if(kind == :string, do: 0),
-      total_bytes: if(kind == :string, do: 0)
+      true_count: nil,
+      max_length: nil,
+      total_bytes: nil
     }
   end
 
@@ -181,7 +192,7 @@ defmodule Csv2sql.Validate.Fingerprint do
   end
 
   defp add_value(%{kind: :bool} = acc, value) do
-    %{acc | true_count: acc.true_count + if(value, do: 1, else: 0)}
+    %{acc | true_count: (acc.true_count || 0) + if(value, do: 1, else: 0)}
   end
 
   defp add_value(%{kind: kind} = acc, value) when kind in [:date, :datetime] do
@@ -191,8 +202,8 @@ defmodule Csv2sql.Validate.Fingerprint do
   defp add_value(%{kind: :string} = acc, value) do
     %{
       acc
-      | max_length: max(acc.max_length, String.length(value)),
-        total_bytes: acc.total_bytes + byte_size(value)
+      | max_length: max(acc.max_length || 0, String.length(value)),
+        total_bytes: (acc.total_bytes || 0) + byte_size(value)
     }
   end
 

@@ -26,6 +26,23 @@ defmodule Csv2sqlWeb.ImportLiveTest do
     assert invalid =~ "must start with postgres:// or mysql://"
   end
 
+  # The drawer is server-driven: a native <details> loses its client-side
+  # open state on every form-change patch (it collapsed while typing).
+  test "advanced drawer stays open across form changes", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/")
+
+    assert has_element?(view, "[data-role=advanced-settings].hidden")
+
+    view |> element("[data-role=advanced-toggle]") |> render_click()
+    refute has_element?(view, "[data-role=advanced-settings].hidden")
+
+    view
+    |> form("#config-form", config: %{varchar_limit: "150"})
+    |> render_change()
+
+    refute has_element?(view, "[data-role=advanced-settings].hidden")
+  end
+
   # Clicked with no payload on purpose: a browser button click carries no
   # form data, so the handler must probe from the tracked params.
   test "test connection probes the database from the current form", %{conn: conn} do

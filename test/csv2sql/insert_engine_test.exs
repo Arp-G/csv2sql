@@ -48,4 +48,39 @@ defmodule Csv2sql.InsertEngineTest do
 
     assert select!(ctx, table, ~w(id), "id") == [[1], [2], [3]]
   end
+
+  # Regression: the fold must post its ledger to Run.Server per chunk —
+  # snapshots (and the throttled FileUpdated events feeding the UI) used
+  # to freeze at zero until the loading→done jump.
+  test "run_state exposes live ledger progress during the load", %{tmp_dir: dir} = ctx do
+    table = unique_name("live_progress")
+    rows = for i <- 1..60_000, do: [Integer.to_string(i)]
+    csv!(dir, table <> ".csv", [~w(id) | rows])
+
+    config = build_config(dir, ctx, %{insert_workers: 1, insert_chunk_rows: 300})
+    {:ok, run_id} = Csv2sql.start_run(config)
+
+    partial = poll_partial_insert(run_id, 60_000, 5_000)
+
+    {:ok, run} = Csv2sql.await(run_id)
+    register_table_cleanup(run)
+    assert run.status == :completed
+
+    assert partial, "never observed a mid-load ledger (0 < rows_inserted < 60000)"
+  end
+
+  defp poll_partial_insert(_run_id, _total, tries) when tries <= 0, do: nil
+
+  defp poll_partial_insert(run_id, total, tries) do
+    with {:ok, run} <- Csv2sql.run_state(run_id),
+         [file] <- Map.values(run.files),
+         %{rows_inserted: inserted} when inserted > 0 and inserted < total <-
+           file.ledger || %{rows_inserted: 0} do
+      inserted
+    else
+      _not_yet ->
+        Process.sleep(2)
+        poll_partial_insert(run_id, total, tries - 1)
+    end
+  end
 end

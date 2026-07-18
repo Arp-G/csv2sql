@@ -26,6 +26,7 @@ defmodule Csv2sqlWeb.ImportLive do
      |> assign(:form, config_form(params))
      |> assign(:pending_params, params)
      |> assign(:probe, nil)
+     |> assign(:advanced_open, false)
      |> assign(:runs, Csv2sql.list_runs())}
   end
 
@@ -69,6 +70,12 @@ defmodule Csv2sqlWeb.ImportLive do
       {:error, _changeset} ->
         {:noreply, assign(socket, :probe, {:error, "fix the database URL first"})}
     end
+  end
+
+  # A native <details> would lose its client-side open state on every
+  # form-change patch — the drawer is server-driven instead.
+  def handle_event("toggle-advanced", _params, socket) do
+    {:noreply, update(socket, :advanced_open, &(!&1))}
   end
 
   def handle_event("save_defaults", _params, socket) do
@@ -233,14 +240,28 @@ defmodule Csv2sqlWeb.ImportLive do
                 />
               </div>
 
-              <details class="collapse collapse-arrow border border-base-300 rounded-lg">
-                <summary
-                  class="collapse-title text-sm font-medium py-2 min-h-0"
+              <div class="border border-base-300 rounded-lg">
+                <button
+                  type="button"
+                  phx-click="toggle-advanced"
+                  class="flex w-full items-center justify-between px-4 py-2 text-sm font-medium"
                   data-role="advanced-toggle"
                 >
                   Advanced settings
-                </summary>
-                <div class="collapse-content space-y-4" data-role="advanced-settings">
+                  <.icon
+                    name={(@advanced_open && "hero-chevron-up") || "hero-chevron-down"}
+                    class="size-4"
+                  />
+                </button>
+                <%!-- Hidden, never unmounted: the fields must stay in the form
+                     so submits include them while the drawer is closed. --%>
+                <div
+                  class={[
+                    "space-y-4 px-4 pb-4 [&_.label]:whitespace-normal",
+                    !@advanced_open && "hidden"
+                  ]}
+                  data-role="advanced-settings"
+                >
                   <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <.input
                       field={@form[:file_workers]}
@@ -303,12 +324,12 @@ defmodule Csv2sqlWeb.ImportLive do
                   </div>
 
                   <.inputs_for :let={policy} field={@form[:error_policy]}>
-                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                      <.input
-                        field={policy[:strict]}
-                        type="checkbox"
-                        label="Strict (halt on first failure)"
-                      />
+                    <.input
+                      field={policy[:strict]}
+                      type="checkbox"
+                      label="Strict (halt on first failure)"
+                    />
+                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                       <.input
                         field={policy[:row_error_threshold_pct]}
                         type="number"
@@ -318,7 +339,7 @@ defmodule Csv2sqlWeb.ImportLive do
                       <.input
                         field={policy[:row_error_min_sample]}
                         type="number"
-                        label="Threshold min rows"
+                        label="Min sample rows"
                       />
                       <.input field={policy[:max_retries]} type="number" label="Max retries" />
                       <.input field={policy[:backoff_ms]} type="number" label="Backoff ms" />
@@ -340,7 +361,7 @@ defmodule Csv2sqlWeb.ImportLive do
                     </div>
                   </.inputs_for>
                 </div>
-              </details>
+              </div>
 
               <div class="flex flex-wrap items-center gap-3 pt-2">
                 <button

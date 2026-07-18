@@ -299,6 +299,11 @@ defmodule Csv2sql.Run.FilePipeline do
       rows_rejected: state.ledger.rows_rejected
     )
 
+    # Keep Run.Server's file state live during the load so snapshots and
+    # throttled FileUpdated events carry real progress, not just the
+    # loading→done jump.
+    update(ctx, %{file | ledger: state.ledger})
+
     if threshold_tripped?(state.ledger, ctx.config.error_policy) do
       {:halt, {:threshold, state}}
     else
