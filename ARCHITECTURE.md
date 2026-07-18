@@ -144,11 +144,33 @@ event can be missed.
 - **Local gotcha:** this machine exports `MIX_ENV=dev`, so run tests as
   `MIX_ENV=test mix test`.
 
+## Type system
+
+Inference flags per column: empty / boolean / integer / float / date /
+datetime, with max char length, max byte length, and integer bounds.
+Resolution priority: empty → varchar(limit) · **boolean** (`true/false/
+1/0`; 0/1-only columns are boolean by design, v3 parity) · integer
+(int32 → int64 BIGINT tier; beyond → string) · float · date · datetime ·
+strings sized dynamically — `varchar(actual)` up to `varchar_limit`,
+`text` beyond, `longtext` past 64 KiB of bytes.
+
+Dates/datetimes parse via `Csv2sql.TimeParse` — a small pattern compiler
+for the `{YYYY}-{0M}-{0D}` token syntax (Timex-compatible, but **total**:
+malformed content returns `:error`, never raises — issue #24). Patterns
+come from config (`date_patterns` / `datetime_patterns`, validated at
+config build), are compiled once per run, and drive both inference and
+encoding. All-zero dates (`0000-00-00`) keep a column date-typed and
+load as `NULL`. `ordered: true` prepends a `csv_ordering_id` BIGINT
+column preserving CSV row order.
+
+Every run writes `schema.sql` into its artifacts directory
+(`<source>/csv2sql_runs/<run_id>/`) — analyze mode included, so a dry
+run yields a reviewable schema.
+
 ## Roadmap
 
 Stages (from the approved v5 plan): **1. walking skeleton ✅** ·
-2. adapter behaviour + MySQL + byte/param-aware insert engine ·
-3. full type system (dates via TimeParse compiler, booleans, sizing) ·
+**2. adapters + MySQL + insert engine ✅** · **3. full type system ✅** ·
 4. error model (row isolation → errors.csv), encodings, delimiters ·
 5. validation ladder + preflight + run_report.json · 6. CLI + config
 sources/persistence · 7. LiveView UI + PWA · 8. Burrito packaging +

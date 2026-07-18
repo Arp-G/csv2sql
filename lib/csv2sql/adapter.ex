@@ -95,7 +95,9 @@ defmodule Csv2sql.Adapter do
               quote_ident(column.name),
               " ",
               column |> ColumnSpec.abstract_type() |> sql_type(),
-              " NULL"
+              # Explicit NULL DEFAULT NULL keeps strict-mode servers from
+              # inventing defaults for date/datetime columns (issue #5).
+              " NULL DEFAULT NULL"
             ])
           end)
 

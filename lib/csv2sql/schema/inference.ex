@@ -7,23 +7,36 @@ defmodule Csv2sql.Schema.Inference do
   max the lengths, min/max the integer bounds), so chunks can be processed
   in any order in parallel and the whole file never sits in memory.
 
-  Walking-skeleton scope: empty/integer/float flags + length tracking.
-  Boolean/date/datetime flags join in the full type-system stage.
+  Tracked per column: empty / boolean / integer / float / date / datetime
+  flags, max character length, max byte length, and integer bounds.
+  Date/datetime checks use the run's compiled patterns
+  (`Csv2sql.TimeParse`) and are skipped as soon as the flag is falsified —
+  the expensive checks run only while a column still qualifies.
   """
 
   alias Csv2sql.Schema.TypeCheck
+  alias Csv2sql.TimeParse
+
+  @typedoc "Compiled date/datetime patterns used for the flag checks."
+  @type checkers :: %{date: [TimeParse.compiled()], datetime: [TimeParse.compiled()]}
 
   @typedoc "Per-column inference accumulator."
   @type column_acc :: %{
           empty: boolean(),
+          boolean: boolean(),
           integer: boolean(),
           float: boolean(),
+          date: boolean(),
+          datetime: boolean(),
           max_length: non_neg_integer(),
+          max_bytes: non_neg_integer(),
           int_min: integer() | nil,
           int_max: integer() | nil
         }
 
   @type acc :: %{row_count: non_neg_integer(), columns: [column_acc()]}
+
+  @no_checkers %{date: [], datetime: []}
 
   @doc "A fresh accumulator for `column_count` columns."
   @spec new(non_neg_integer()) :: acc()
@@ -32,15 +45,15 @@ defmodule Csv2sql.Schema.Inference do
   end
 
   @doc "Folds a chunk of rows into a fresh accumulator."
-  @spec chunk_stats([[String.t()]], non_neg_integer()) :: acc()
-  def chunk_stats(rows, column_count) do
-    Enum.reduce(rows, new(column_count), &add_row(&2, &1))
+  @spec chunk_stats([[String.t()]], non_neg_integer(), checkers()) :: acc()
+  def chunk_stats(rows, column_count, checkers \\ @no_checkers) do
+    Enum.reduce(rows, new(column_count), &add_row(&2, &1, checkers))
   end
 
   @doc "Adds one row to an accumulator."
-  @spec add_row(acc(), [String.t()]) :: acc()
-  def add_row(%{row_count: count, columns: columns} = acc, row) do
-    %{acc | row_count: count + 1, columns: add_values(columns, row)}
+  @spec add_row(acc(), [String.t()], checkers()) :: acc()
+  def add_row(%{row_count: count, columns: columns} = acc, row, checkers \\ @no_checkers) do
+    %{acc | row_count: count + 1, columns: add_values(columns, row, checkers)}
   end
 
   @doc """
@@ -68,12 +81,23 @@ defmodule Csv2sql.Schema.Inference do
   end
 
   defp new_column do
-    %{empty: true, integer: true, float: true, max_length: 0, int_min: nil, int_max: nil}
+    %{
+      empty: true,
+      boolean: true,
+      integer: true,
+      float: true,
+      date: true,
+      datetime: true,
+      max_length: 0,
+      max_bytes: 0,
+      int_min: nil,
+      int_max: nil
+    }
   end
 
-  defp add_values(columns, row) do
+  defp add_values(columns, row, checkers) do
     values = pad_row(row, length(columns))
-    Enum.zip_with(columns, values, &add_value/2)
+    Enum.zip_with(columns, values, &add_value(&1, &2, checkers))
   end
 
   # Rows shorter than the header are padded with empty cells; extra cells
@@ -87,7 +111,7 @@ defmodule Csv2sql.Schema.Inference do
     end
   end
 
-  defp add_value(acc, value) do
+  defp add_value(acc, value, checkers) do
     case String.trim(value) do
       "" ->
         acc
@@ -97,12 +121,27 @@ defmodule Csv2sql.Schema.Inference do
 
         %{
           empty: false,
+          boolean: acc.boolean and match?({:ok, _}, TypeCheck.boolean(trimmed)),
           integer: integer?,
           float: acc.float and match?({:ok, _}, TypeCheck.float(trimmed)),
+          date: acc.date and date_like?(trimmed, checkers.date, &TimeParse.date/2),
+          datetime:
+            acc.datetime and date_like?(trimmed, checkers.datetime, &TimeParse.datetime/2),
           max_length: max(acc.max_length, String.length(trimmed)),
+          max_bytes: max(acc.max_bytes, byte_size(trimmed)),
           int_min: int_min,
           int_max: int_max
         }
+    end
+  end
+
+  # All-zero dates keep the flag alive (they load as NULL) without
+  # confirming anything on their own.
+  defp date_like?(value, patterns, parse) do
+    case parse.(value, patterns) do
+      {:ok, _parsed} -> true
+      :zero -> true
+      :error -> false
     end
   end
 
@@ -118,9 +157,13 @@ defmodule Csv2sql.Schema.Inference do
   defp merge_column(a, b) do
     %{
       empty: a.empty and b.empty,
+      boolean: a.boolean and b.boolean,
       integer: a.integer and b.integer,
       float: a.float and b.float,
+      date: a.date and b.date,
+      datetime: a.datetime and b.datetime,
       max_length: max(a.max_length, b.max_length),
+      max_bytes: max(a.max_bytes, b.max_bytes),
       int_min: min_or(a.int_min, b.int_min),
       int_max: max_or(a.int_max, b.int_max)
     }

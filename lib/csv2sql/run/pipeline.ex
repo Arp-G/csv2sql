@@ -17,9 +17,11 @@ defmodule Csv2sql.Run.Pipeline do
   alias Csv2sql.Events.FileFailed
   alias Csv2sql.File, as: CsvFile
   alias Csv2sql.Run
+  alias Csv2sql.Run.Artifacts
   alias Csv2sql.Run.FilePipeline
   alias Csv2sql.Run.Server
   alias Csv2sql.Source.Discovery
+  alias Csv2sql.TimeParse
 
   @doc "Runs the pipeline for `run_id`. Called inside the run's core task."
   @spec run(String.t(), Config.t()) :: :ok
@@ -32,11 +34,17 @@ defmodule Csv2sql.Run.Pipeline do
     adapter = Config.adapter(config)
     conn = Run.pool_name(run_id)
 
+    # Config validation guarantees these compile.
+    {:ok, date_patterns} = TimeParse.compile_all(config.date_patterns)
+    {:ok, datetime_patterns} = TimeParse.compile_all(config.datetime_patterns)
+
     ctx = %{
       run_id: run_id,
       config: config,
       adapter: adapter,
       conn: conn,
+      parsers: %{date: date_patterns, datetime: datetime_patterns},
+      artifacts_dir: Artifacts.ensure_dir!(config, run_id),
       # Probed once per run (import mode only — analyze has no pool): the
       # byte budget for one INSERT is the configured chunk budget, capped
       # by the server's packet limit.

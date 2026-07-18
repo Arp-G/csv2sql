@@ -247,9 +247,14 @@ defmodule Csv2sql.EngineCase do
 
     with_test_conn(db, fn conn ->
       {:ok, %{rows: rows}} = adapter.query(conn, sql, [])
-      rows
+      Enum.map(rows, fn row -> Enum.map(row, &normalize_value/1) end)
     end)
   end
+
+  # Postgres returns microsecond-precision timestamps; comparisons in
+  # tests use second precision.
+  defp normalize_value(%NaiveDateTime{} = naive), do: NaiveDateTime.truncate(naive, :second)
+  defp normalize_value(value), do: value
 
   @doc """
   The column types of `table` in schema order, normalized to the engine's

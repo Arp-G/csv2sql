@@ -27,6 +27,7 @@ defmodule Csv2sql.Run.FilePipeline do
   alias Csv2sql.File, as: CsvFile
   alias Csv2sql.Load.Chunker
   alias Csv2sql.Load.Encoder
+  alias Csv2sql.Run.Artifacts
   alias Csv2sql.Run.Server
   alias Csv2sql.Schema.Inference
   alias Csv2sql.Schema.Resolve
@@ -38,6 +39,8 @@ defmodule Csv2sql.Run.FilePipeline do
           config: Config.t(),
           adapter: module(),
           conn: Csv2sql.Adapter.conn(),
+          parsers: Encoder.parsers(),
+          artifacts_dir: Path.t(),
           max_insert_bytes: pos_integer() | nil
         }
 
@@ -86,7 +89,7 @@ defmodule Csv2sql.Run.FilePipeline do
           # CPU-bound: cap at core count regardless of file_workers — the
           # file-level fan-out is bounded separately, and N files × N chunk
           # tasks would oversubscribe quadratically.
-          |> Task.async_stream(&Inference.chunk_stats(&1, column_count),
+          |> Task.async_stream(&Inference.chunk_stats(&1, column_count, ctx.parsers),
             max_concurrency: System.schedulers_online(),
             ordered: false,
             timeout: :infinity
@@ -122,6 +125,9 @@ defmodule Csv2sql.Run.FilePipeline do
   # -- DDL + Pass 2: load -----------------------------------------------------
 
   defp maybe_import(file, %{config: %Config{mode: :analyze}} = ctx) do
+    # Dry runs still produce a reviewable schema.sql (nothing touches
+    # the database — DDL generation is pure).
+    Artifacts.append_schema(ctx.artifacts_dir, file.name, ddl_statements(file, ctx))
     update(ctx, file)
     {:ok, file}
   end
@@ -135,19 +141,12 @@ defmodule Csv2sql.Run.FilePipeline do
   defp create_schema(file, ctx) do
     update(ctx, %{file | status: :creating_schema})
     started = System.monotonic_time(:millisecond)
-
-    drop_sql = IO.iodata_to_binary(ctx.adapter.drop_table_sql(file.table_name))
-    create_sql = IO.iodata_to_binary(ctx.adapter.create_table_sql(file.table_name, file.columns))
-
-    statements =
-      case ctx.config.table_mode do
-        :drop -> [drop_sql, create_sql]
-        :append -> [create_sql]
-      end
+    statements = ddl_statements(file, ctx)
 
     case run_statements(ctx, statements) do
       :ok ->
         file = CsvFile.put_timing(file, :ddl_ms, System.monotonic_time(:millisecond) - started)
+        Artifacts.append_schema(ctx.artifacts_dir, file.name, statements)
 
         Events.emit(ctx.run_id, SchemaCreated,
           path: file.path,
@@ -159,6 +158,16 @@ defmodule Csv2sql.Run.FilePipeline do
 
       {:error, exception} ->
         {:error, file, %{Error.from_exception(:ddl, file.path, exception) | class: :file}}
+    end
+  end
+
+  defp ddl_statements(file, ctx) do
+    drop_sql = IO.iodata_to_binary(ctx.adapter.drop_table_sql(file.table_name))
+    create_sql = IO.iodata_to_binary(ctx.adapter.create_table_sql(file.table_name, file.columns))
+
+    case ctx.config.table_mode do
+      :drop -> [drop_sql, create_sql]
+      :append -> [create_sql]
     end
   end
 
@@ -186,6 +195,7 @@ defmodule Csv2sql.Run.FilePipeline do
     ledger =
       file.path
       |> Reader.data_stream()
+      |> maybe_add_ordering(ctx.config.ordered)
       |> Chunker.chunks(limits)
       |> Task.async_stream(&insert_chunk(&1, file, ctx),
         max_concurrency: ctx.config.insert_workers,
@@ -221,10 +231,21 @@ defmodule Csv2sql.Run.FilePipeline do
     exception -> {:error, file, Error.from_exception(:load, file.path, exception)}
   end
 
+  # The ordering column's value is injected as a string and cast like any
+  # other cell — everything downstream (chunking, encoding, inserts) stays
+  # uniform.
+  defp maybe_add_ordering(stream, false), do: stream
+
+  defp maybe_add_ordering(stream, true) do
+    stream
+    |> Stream.with_index(1)
+    |> Stream.map(fn {row, index} -> [Integer.to_string(index) | row] end)
+  end
+
   defp insert_chunk(rows, file, ctx) do
     {reversed_encoded, rejected} =
       Enum.reduce(rows, {[], 0}, fn row, {encoded, rejected} ->
-        case Encoder.encode_row(row, file.columns) do
+        case Encoder.encode_row(row, file.columns, ctx.parsers) do
           {:ok, encoded_row} -> {[encoded_row | encoded], rejected}
           # Rejected-row reasons feed <file>.errors.csv in the error-model stage.
           {:error, _reason} -> {encoded, rejected + 1}

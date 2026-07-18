@@ -25,6 +25,12 @@ defmodule Csv2sql.Config do
     field(:insert_chunk_rows, :integer, default: 2000)
     field(:insert_chunk_bytes, :integer, default: 4_194_304)
     field(:varchar_limit, :integer, default: 200)
+    field(:ordered, :boolean, default: false)
+    field(:date_patterns, {:array, :string}, default: ["{YYYY}-{0M}-{0D}"])
+
+    field(:datetime_patterns, {:array, :string},
+      default: ["{YYYY}-{0M}-{0D} {0h24}:{0m}:{0s}", "{YYYY}-{0M}-{0D}T{0h24}:{0m}:{0s}"]
+    )
 
     embeds_one(:db, Db)
   end
@@ -39,6 +45,9 @@ defmodule Csv2sql.Config do
           insert_chunk_rows: pos_integer(),
           insert_chunk_bytes: pos_integer(),
           varchar_limit: pos_integer(),
+          ordered: boolean(),
+          date_patterns: [String.t()],
+          datetime_patterns: [String.t()],
           db: Db.t() | nil
         }
 
@@ -69,7 +78,10 @@ defmodule Csv2sql.Config do
       :analyze_chunk_rows,
       :insert_chunk_rows,
       :insert_chunk_bytes,
-      :varchar_limit
+      :varchar_limit,
+      :ordered,
+      :date_patterns,
+      :datetime_patterns
     ])
     |> cast_embed(:db, required: true)
     |> validate_required([:source_dir])
@@ -84,6 +96,8 @@ defmodule Csv2sql.Config do
     )
     |> validate_number(:varchar_limit, greater_than: 0, less_than_or_equal_to: 65_535)
     |> validate_source_dir()
+    |> validate_patterns(:date_patterns)
+    |> validate_patterns(:datetime_patterns)
   end
 
   @adapter_modules %{postgres: Csv2sql.Adapters.Postgres, mysql: Csv2sql.Adapters.MySql}
@@ -102,6 +116,15 @@ defmodule Csv2sql.Config do
   defp validate_source_dir(changeset) do
     validate_change(changeset, :source_dir, fn :source_dir, dir ->
       if File.dir?(dir), do: [], else: [source_dir: "is not an existing directory"]
+    end)
+  end
+
+  defp validate_patterns(changeset, field) do
+    validate_change(changeset, field, fn ^field, patterns ->
+      case Csv2sql.TimeParse.compile_all(patterns) do
+        {:ok, _compiled} -> []
+        {:error, pattern, reason} -> [{field, "invalid pattern #{pattern}: #{reason}"}]
+      end
     end)
   end
 end

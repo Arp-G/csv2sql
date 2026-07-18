@@ -71,6 +71,45 @@ defmodule Csv2sql.Schema.TypeCheck do
   end
 
   @doc """
+  Parses a boolean: `true`/`false` (any case) and `1`/`0`.
+
+  A column containing only these values infers as boolean — including
+  0/1-only columns (v3 semantics, documented; the priority order in
+  `Csv2sql.Schema.Resolve` puts boolean above integer).
+
+  ## Examples
+
+      iex> Csv2sql.Schema.TypeCheck.boolean("true")
+      {:ok, true}
+
+      iex> Csv2sql.Schema.TypeCheck.boolean("FALSE")
+      {:ok, false}
+
+      iex> Csv2sql.Schema.TypeCheck.boolean("1")
+      {:ok, true}
+
+      iex> Csv2sql.Schema.TypeCheck.boolean("0")
+      {:ok, false}
+
+      iex> Csv2sql.Schema.TypeCheck.boolean("yes")
+      :error
+
+      iex> Csv2sql.Schema.TypeCheck.boolean("2")
+      :error
+
+  """
+  @spec boolean(String.t()) :: {:ok, boolean()} | :error
+  def boolean(value) when is_binary(value) do
+    case String.downcase(value) do
+      "true" -> {:ok, true}
+      "1" -> {:ok, true}
+      "false" -> {:ok, false}
+      "0" -> {:ok, false}
+      _other -> :error
+    end
+  end
+
+  @doc """
   The integer tier an integer value fits into.
 
   ## Examples

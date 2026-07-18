@@ -122,7 +122,7 @@ defmodule Csv2sql.WalkingSkeletonTest do
   describe "analyze mode (dry run)" do
     test "infers schemas without touching the database", %{tmp_dir: dir} = ctx do
       table = unique_name("dry")
-      csv!(dir, table <> ".csv", [~w(id note), ["1", "x"]])
+      csv!(dir, table <> ".csv", [~w(id note), ["7", "x"]])
 
       %{run: run, events: events} = run_import(dir, ctx, %{mode: :analyze})
 
