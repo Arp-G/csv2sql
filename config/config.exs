@@ -58,4 +58,11 @@ config :phoenix, :json_library, Jason
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
+# Sentry stays dormant unless runtime.exs sets a DSN (CSV2SQL_SENTRY_DSN);
+# the transport is our zero-dep :httpc client in every environment.
+config :sentry,
+  dsn: nil,
+  client: Csv2sql.SentryClient,
+  environment_name: to_string(config_env())
+
 import_config "#{config_env()}.exs"

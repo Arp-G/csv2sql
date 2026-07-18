@@ -15,6 +15,26 @@ defmodule Csv2sql.MixProject do
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
         plt_add_apps: [:ex_unit]
+      ],
+      releases: releases()
+    ]
+  end
+
+  # One binary per OS via Burrito: GUI (opens the browser) with no args,
+  # headless CLI via `csv2sql import|analyze`. Build a single target with
+  # e.g. BURRITO_TARGET=macos_arm.
+  defp releases do
+    [
+      csv2sql: [
+        steps: [:assemble, &Burrito.wrap/1],
+        burrito: [
+          targets: [
+            macos_arm: [os: :darwin, cpu: :aarch64],
+            macos_intel: [os: :darwin, cpu: :x86_64],
+            linux: [os: :linux, cpu: :x86_64],
+            windows: [os: :windows, cpu: :x86_64]
+          ]
+        ]
       ]
     ]
   end
@@ -25,7 +45,8 @@ defmodule Csv2sql.MixProject do
   def application do
     [
       mod: {Csv2sql.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      # :inets/:ssl power the zero-dep Sentry HTTP client.
+      extra_applications: [:logger, :runtime_tools, :inets, :ssl]
     ]
   end
 
@@ -79,6 +100,11 @@ defmodule Csv2sql.MixProject do
       # phoenix_ecto bridges changesets to LiveView forms (FormData).
       {:ecto, "~> 3.14"},
       {:phoenix_ecto, "~> 4.6"},
+      # Quality / test tooling
+      # Packaging & crash reporting (stage 8). Sentry's HTTP transport is
+      # our own tiny :httpc client (Csv2sql.SentryClient) — no hackney.
+      {:sentry, "~> 10.1 or ~> 11.0"},
+      {:burrito, "~> 1.5"},
       # Quality / test tooling
       {:stream_data, "~> 1.2", only: [:dev, :test]},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
