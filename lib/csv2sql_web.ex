@@ -83,8 +83,8 @@ defmodule Csv2sqlWeb do
       import Csv2sqlWeb.CoreComponents
 
       # Common modules used in templates
-      alias Phoenix.LiveView.JS
       alias Csv2sqlWeb.Layouts
+      alias Phoenix.LiveView.JS
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())

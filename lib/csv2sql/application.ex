@@ -11,8 +11,10 @@ defmodule Csv2sql.Application do
       Csv2sqlWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:csv2sql, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Csv2sql.PubSub},
-      # Start a worker by calling: Csv2sql.Worker.start_link(arg)
-      # {Csv2sql.Worker, arg},
+      # Engine: per-run process names + run trees + UI connection probes
+      {Registry, keys: :unique, name: Csv2sql.RunRegistry},
+      {DynamicSupervisor, name: Csv2sql.RunsSupervisor, strategy: :one_for_one},
+      {Task.Supervisor, name: Csv2sql.ProbeSupervisor},
       # Start to serve requests, typically the last entry
       Csv2sqlWeb.Endpoint
     ]

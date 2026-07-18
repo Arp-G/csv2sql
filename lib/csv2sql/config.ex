@@ -1,0 +1,98 @@
+defmodule Csv2sql.Config do
+  @moduledoc """
+  The single validated configuration for a run.
+
+  Every configuration source — CLI flags, `CSV2SQL_*` environment variables,
+  the persisted config file, and the web UI — funnels through `changeset/2`
+  and produces one immutable `%Config{}` that is passed down the pipeline.
+  Nothing in the engine reads global application env at runtime.
+  """
+
+  use Ecto.Schema
+
+  import Ecto.Changeset
+
+  alias Csv2sql.Config.Db
+
+  @primary_key false
+  embedded_schema do
+    field(:mode, Ecto.Enum, values: [:import, :analyze], default: :import)
+    field(:source_dir, :string)
+    field(:table_mode, Ecto.Enum, values: [:drop, :append], default: :drop)
+    field(:file_workers, :integer)
+    field(:insert_workers, :integer, default: 4)
+    field(:analyze_chunk_rows, :integer, default: 1000)
+    field(:insert_chunk_rows, :integer, default: 2000)
+    field(:varchar_limit, :integer, default: 200)
+
+    embeds_one(:db, Db)
+  end
+
+  @type t :: %__MODULE__{
+          mode: :import | :analyze,
+          source_dir: String.t() | nil,
+          table_mode: :drop | :append,
+          file_workers: pos_integer() | nil,
+          insert_workers: pos_integer(),
+          analyze_chunk_rows: pos_integer(),
+          insert_chunk_rows: pos_integer(),
+          varchar_limit: pos_integer(),
+          db: Db.t() | nil
+        }
+
+  @doc """
+  Builds a validated `%Config{}` from params.
+
+  Returns `{:ok, config}` or `{:error, changeset}`.
+  """
+  @spec new(map()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
+  def new(params) when is_map(params) do
+    %__MODULE__{}
+    |> changeset(params)
+    |> apply_action(:insert)
+  end
+
+  @doc """
+  The changeset behind every config source (CLI, env, file, UI forms).
+  """
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  def changeset(config, params) do
+    config
+    |> cast(params, [
+      :mode,
+      :source_dir,
+      :table_mode,
+      :file_workers,
+      :insert_workers,
+      :analyze_chunk_rows,
+      :insert_chunk_rows,
+      :varchar_limit
+    ])
+    |> cast_embed(:db, required: true)
+    |> validate_required([:source_dir])
+    |> put_default(:file_workers, &System.schedulers_online/0)
+    |> validate_number(:file_workers, greater_than: 0, less_than_or_equal_to: 100)
+    |> validate_number(:insert_workers, greater_than: 0, less_than_or_equal_to: 100)
+    |> validate_number(:analyze_chunk_rows, greater_than: 0, less_than_or_equal_to: 100_000)
+    |> validate_number(:insert_chunk_rows, greater_than: 0, less_than_or_equal_to: 100_000)
+    |> validate_number(:varchar_limit, greater_than: 0, less_than_or_equal_to: 65_535)
+    |> validate_source_dir()
+  end
+
+  @doc "Resolves the adapter module for this config."
+  @spec adapter(t()) :: module()
+  def adapter(%__MODULE__{db: %Db{adapter: :postgres}}), do: Csv2sql.Adapters.Postgres
+
+  defp put_default(changeset, field, default_fun) do
+    case get_field(changeset, field) do
+      nil -> put_change(changeset, field, default_fun.())
+      _value -> changeset
+    end
+  end
+
+  defp validate_source_dir(changeset) do
+    validate_change(changeset, :source_dir, fn :source_dir, dir ->
+      if File.dir?(dir), do: [], else: [source_dir: "is not an existing directory"]
+    end)
+  end
+end
