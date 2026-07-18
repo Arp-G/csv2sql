@@ -61,6 +61,23 @@ defmodule Csv2sql do
     end
   end
 
+  @doc """
+  All currently known runs (newest first). Runs disappear a grace period
+  after reaching a terminal state (their reports remain on disk).
+  """
+  @spec list_runs() :: [Run.t()]
+  def list_runs do
+    Csv2sql.RunRegistry
+    |> Registry.select([{{{:server, :"$1"}, :_, :_}, [], [:"$1"]}])
+    |> Enum.flat_map(fn run_id ->
+      case run_state(run_id) do
+        {:ok, run} -> [run]
+        {:error, :not_found} -> []
+      end
+    end)
+    |> Enum.sort_by(& &1.started_at, {:desc, DateTime})
+  end
+
   @doc "Cancels a running run (idempotent)."
   @spec cancel_run(String.t()) :: :ok | {:error, :not_found}
   def cancel_run(run_id) do

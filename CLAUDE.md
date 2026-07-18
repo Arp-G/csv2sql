@@ -26,7 +26,7 @@ mix format                    # formatter
 mix credo --strict            # lint (must stay clean)
 mix dialyzer                  # types (must stay clean; PLT in priv/plts)
 mix compile --warnings-as-errors
-mix phx.server                # web UI (stage 7 — stock scaffold for now)
+mix phx.server                # web UI at localhost:4000 (ImportLive + RunLive)
 ```
 
 DB-backed tests default to `postgres://postgres:postgres@localhost:5432/postgres`;

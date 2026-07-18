@@ -75,8 +75,10 @@ defmodule Csv2sql.MixProject do
       {:nimble_csv, "~> 1.3"},
       {:postgrex, "~> 0.22"},
       {:myxql, "~> 0.9"},
-      # Core ecto only (embedded schemas + changesets); no ecto_sql/repos
+      # Core ecto only (embedded schemas + changesets); no ecto_sql/repos.
+      # phoenix_ecto bridges changesets to LiveView forms (FormData).
       {:ecto, "~> 3.14"},
+      {:phoenix_ecto, "~> 4.6"},
       # Quality / test tooling
       {:stream_data, "~> 1.2", only: [:dev, :test]},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},

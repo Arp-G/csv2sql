@@ -31,6 +31,18 @@ defmodule Csv2sql.Events do
     @type t :: %__MODULE__{run_id: String.t(), at: DateTime.t(), file: Csv2sql.File.t()}
   end
 
+  defmodule FileUpdated do
+    @moduledoc """
+    A file's full state changed (status transitions always broadcast;
+    progress-only changes are throttled by `Run.Server`). The UI's
+    primary per-file event.
+    """
+    @enforce_keys [:run_id, :at, :file]
+    defstruct [:run_id, :at, :file]
+
+    @type t :: %__MODULE__{run_id: String.t(), at: DateTime.t(), file: Csv2sql.File.t()}
+  end
+
   defmodule PreflightCheck do
     @moduledoc "One preflight check finished."
     @enforce_keys [:run_id, :at, :check]
@@ -188,6 +200,7 @@ defmodule Csv2sql.Events do
           | PreflightCheck.t()
           | ValidationResult.t()
           | FileDiscovered.t()
+          | FileUpdated.t()
           | AnalyzeStarted.t()
           | AnalyzeCompleted.t()
           | SchemaCreated.t()
@@ -201,6 +214,8 @@ defmodule Csv2sql.Events do
           | RunCancelled.t()
 
   @terminal [RunCompleted, RunFailed, RunCancelled]
+  @lifecycle [RunStarted | @terminal]
+  @runs_topic "csv2sql:runs"
 
   @doc "The PubSub topic for a run."
   @spec topic(String.t()) :: String.t()
@@ -215,16 +230,30 @@ defmodule Csv2sql.Events do
   def unsubscribe(run_id), do: PubSub.unsubscribe(@pubsub, topic(run_id))
 
   @doc """
+  Subscribes to run *lifecycle* events across all runs (`RunStarted` +
+  terminals) — used by overview pages listing runs.
+  """
+  @spec subscribe_runs() :: :ok | {:error, term()}
+  def subscribe_runs, do: PubSub.subscribe(@pubsub, @runs_topic)
+
+  @doc """
   Builds and broadcasts an event.
 
       Events.emit(run_id, AnalyzeStarted, path: file.path)
 
-  The `run_id` and `at` fields are filled in automatically.
+  The `run_id` and `at` fields are filled in automatically. Lifecycle
+  events additionally broadcast on the global runs topic.
   """
   @spec emit(String.t(), module(), Keyword.t()) :: :ok
   def emit(run_id, event_module, fields \\ []) do
     event = struct!(event_module, [run_id: run_id, at: DateTime.utc_now()] ++ fields)
     PubSub.broadcast(@pubsub, topic(run_id), event)
+
+    if event_module in @lifecycle do
+      PubSub.broadcast(@pubsub, @runs_topic, event)
+    end
+
+    :ok
   end
 
   @doc "Whether an event is terminal (no further events will follow)."

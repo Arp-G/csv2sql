@@ -223,6 +223,32 @@ invalid sequences raise `Reader.EncodingError` → a parse-stage file
 error (refusing beats corrupting). Detected encoding/delimiter are
 recorded on the file (surfaced in UI/report).
 
+## Web UI (stage 7 core)
+
+Two LiveViews, fully decoupled from the engine:
+
+- **`ImportLive` (`/`)** — the workspace: a `Config.changeset`-backed
+  form (phoenix_ecto bridges changesets to forms; the same changeset
+  that validates CLI/env params), async connection test through
+  `ProbeSupervisor`, Analyze/Import submit buttons, and a live list of
+  runs (`Csv2sql.list_runs/0` + the global runs topic).
+- **`RunLive` (`/runs/:id`)** — the monitor. Mount **subscribes first,
+  then snapshots** `Run.Server` state, so attaching mid-run or after a
+  reload never loses anything, and killing the view never touches the
+  run (it lives under `RunsSupervisor`). Per-file updates arrive as
+  `FileUpdated` events — status transitions broadcast immediately,
+  progress-only changes throttled to ~6/s per file by `Run.Server` —
+  feeding a LiveView **stream** (bounded DOM). Server-side search/
+  status-filter/sort re-query run state on demand. Retries/rejections/
+  file failures fill a 100-entry ring-buffer activity feed behind
+  counter chips. Artifacts (report, schema.sql) download via
+  `ArtifactController` while the run is in memory.
+
+Presentation is decomposed into `Csv2sqlWeb.UI` function components
+(card, status_badge, stat, progress_bar, activity_chip,
+validation_pill, empty_state) with declared `attr`/`slot` contracts and
+`data-role` attributes — tests select semantically, never by CSS class.
+
 ## UI notes (for stage 7 — agreed with Arpan 2026-07)
 
 - **Live activity, out of the way:** a status strip of live counter chips
@@ -247,5 +273,7 @@ Stages (from the approved v5 plan): **1. walking skeleton ✅** ·
 **2. adapters + MySQL + insert engine ✅** · **3. full type system ✅** ·
 **4. error model, encodings, delimiters ✅** ·
 **5. validation ladder + preflight + run_report.json ✅** ·
-6. CLI + config sources/persistence · 7. LiveView UI + PWA ·
-8. Burrito packaging + Sentry + docs.
+6. CLI + config sources/persistence (deferred) ·
+**7. LiveView UI 🔶 core done** (remaining: schema editor/overrides,
+file selection & naming, sample preview, dir browser, settings drawer,
+config persistence, PWA) · 8. Burrito packaging + Sentry + docs.

@@ -30,9 +30,16 @@ the tables, loads the rows in parallel, and validates what arrived.
 | 3 | Full type system (dates, booleans, dynamic sizing) | ✅ |
 | 4 | Error model, encodings, delimiters | ✅ |
 | 5 | Validation ladder + preflight + report | ✅ |
-| 6 | CLI + config system | ⬜ |
-| 7 | LiveView UI + PWA | ⬜ |
+| 6 | CLI + config system | ⏸ deferred |
+| 7 | LiveView UI + PWA | 🔶 core done |
 | 8 | Burrito packaging + polish | ⬜ |
+
+Stage 7 core: import workspace (config form, connection test, dry-run/
+import), detached live run monitor (streams file table with search/
+filter/sort, activity feed, cancel, validation + report). Remaining:
+schema editor with type overrides, file selection & naming, sample-rows
+preview, directory browser, settings drawer, config persistence, PWA
+manifest/SW. Run the UI with `mix phx.server` → http://localhost:4000.
 
 ## Development
 

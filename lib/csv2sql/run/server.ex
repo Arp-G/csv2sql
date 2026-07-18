@@ -71,10 +71,14 @@ defmodule Csv2sql.Run.Server do
 
   # -- Server -----------------------------------------------------------------
 
+  # Progress-only file updates are rebroadcast at most once per file per
+  # this interval; status *transitions* always broadcast immediately.
+  @file_broadcast_interval_ms 150
+
   @impl true
   def init({run_id, config}) do
     run = %Run{id: run_id, config: config, started_at: DateTime.utc_now()}
-    {:ok, %{run: run, pipeline_ref: nil}}
+    {:ok, %{run: run, pipeline_ref: nil, last_file_broadcast: %{}}}
   end
 
   @impl true
@@ -146,7 +150,19 @@ defmodule Csv2sql.Run.Server do
 
   @impl true
   def handle_cast({:file_update, file}, %{run: run} = state) do
-    {:noreply, %{state | run: Run.put_file(run, file)}}
+    previous = run.files[file.path]
+    state = %{state | run: Run.put_file(run, file)}
+
+    status_changed? = previous == nil or previous.status != file.status
+    now = System.monotonic_time(:millisecond)
+    last = Map.get(state.last_file_broadcast, file.path, 0)
+
+    if status_changed? or now - last >= @file_broadcast_interval_ms do
+      Events.emit(run.id, Events.FileUpdated, file: file)
+      {:noreply, put_in(state.last_file_broadcast[file.path], now)}
+    else
+      {:noreply, state}
+    end
   end
 
   @impl true

@@ -17,7 +17,10 @@ defmodule Csv2sqlWeb.Router do
   scope "/", Csv2sqlWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", ImportLive
+    live "/runs/:id", RunLive
+
+    get "/runs/:id/artifacts/:kind", ArtifactController, :download
   end
 
   # Other scopes may use custom stacks.
