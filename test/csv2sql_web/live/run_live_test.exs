@@ -13,7 +13,7 @@ defmodule Csv2sqlWeb.RunLiveTest do
   @moduletag :tmp_dir
   @moduletag timeout: 120_000
 
-  defp start_run!(dir, rows, overrides \\ %{}) do
+  defp start_run!(dir, rows, overrides) do
     table = unique_name("ui_run")
     data = for i <- 1..rows, do: [Integer.to_string(i), "payload_#{i}"]
     csv!(dir, table <> ".csv", [~w(id payload) | data])

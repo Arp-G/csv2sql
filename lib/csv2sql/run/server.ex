@@ -110,6 +110,9 @@ defmodule Csv2sql.Run.Server do
       |> Map.put(:summary, summary)
 
     Report.write(run)
+    # The core (pool + task supervisor) is done — release its database
+    # connections now; only this server lingers for the grace period.
+    stop_core(run.id)
     Events.emit(run.id, RunCompleted, summary: summary)
     {:reply, :ok, schedule_teardown(%{state | run: run})}
   end
@@ -179,6 +182,7 @@ defmodule Csv2sql.Run.Server do
 
       run = %{run | status: :failed, finished_at: DateTime.utc_now(), error: error}
       Report.write(run)
+      stop_core(run.id)
       Events.emit(run.id, RunFailed, error: error)
       {:noreply, schedule_teardown(%{state | run: run})}
     end

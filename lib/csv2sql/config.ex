@@ -37,6 +37,7 @@ defmodule Csv2sql.Config do
     embeds_one(:db, Db)
     embeds_one(:error_policy, Csv2sql.Config.ErrorPolicy)
     embeds_one(:validations, Csv2sql.Config.Validations)
+    embeds_many(:overrides, Csv2sql.Config.FileOverride)
   end
 
   @type t :: %__MODULE__{
@@ -56,7 +57,8 @@ defmodule Csv2sql.Config do
           datetime_patterns: [String.t()],
           db: Db.t() | nil,
           error_policy: Csv2sql.Config.ErrorPolicy.t() | nil,
-          validations: Csv2sql.Config.Validations.t() | nil
+          validations: Csv2sql.Config.Validations.t() | nil,
+          overrides: [Csv2sql.Config.FileOverride.t()]
         }
 
   @doc """
@@ -96,6 +98,7 @@ defmodule Csv2sql.Config do
     |> cast_embed(:db, required: true)
     |> cast_embed(:error_policy)
     |> cast_embed(:validations)
+    |> cast_embed(:overrides)
     |> default_embed(:error_policy, %Csv2sql.Config.ErrorPolicy{})
     |> default_embed(:validations, %Csv2sql.Config.Validations{})
     |> validate_required([:source_dir])
@@ -119,6 +122,54 @@ defmodule Csv2sql.Config do
   @doc "Resolves the adapter module for this config."
   @spec adapter(t()) :: module()
   def adapter(%__MODULE__{db: %Db{adapter: adapter}}), do: Map.fetch!(@adapter_modules, adapter)
+
+  @doc "The override entry for a file name, if any."
+  @spec override_for(t(), String.t()) :: Csv2sql.Config.FileOverride.t() | nil
+  def override_for(%__MODULE__{overrides: overrides}, file_name) do
+    Enum.find(overrides, &(&1.file == file_name))
+  end
+
+  @doc """
+  Serializes a config back into changeset-castable params — used to
+  start a new run derived from an existing one (e.g. analyze → edit
+  overrides → import).
+  """
+  @spec to_params(t()) :: map()
+  def to_params(%__MODULE__{} = config) do
+    %{
+      "mode" => Atom.to_string(config.mode),
+      "source_dir" => config.source_dir,
+      "table_mode" => Atom.to_string(config.table_mode),
+      "file_workers" => config.file_workers,
+      "insert_workers" => config.insert_workers,
+      "analyze_chunk_rows" => config.analyze_chunk_rows,
+      "insert_chunk_rows" => config.insert_chunk_rows,
+      "insert_chunk_bytes" => config.insert_chunk_bytes,
+      "varchar_limit" => config.varchar_limit,
+      "ordered" => config.ordered,
+      "delimiter" => Atom.to_string(config.delimiter),
+      "encoding" => Atom.to_string(config.encoding),
+      "date_patterns" => config.date_patterns,
+      "datetime_patterns" => config.datetime_patterns,
+      "db" => %{
+        "adapter" => config.db && Atom.to_string(config.db.adapter),
+        "url" => config.db && config.db.url,
+        "pool_size" => config.db && config.db.pool_size
+      },
+      "error_policy" => %{
+        "strict" => config.error_policy.strict,
+        "row_error_threshold_pct" => config.error_policy.row_error_threshold_pct,
+        "row_error_min_sample" => config.error_policy.row_error_min_sample,
+        "max_retries" => config.error_policy.max_retries,
+        "backoff_ms" => config.error_policy.backoff_ms
+      },
+      "validations" => %{
+        "counts" => config.validations.counts,
+        "fingerprints" => config.validations.fingerprints,
+        "checksum" => config.validations.checksum
+      }
+    }
+  end
 
   defp put_default(changeset, field, default_fun) do
     case get_field(changeset, field) do

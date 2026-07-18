@@ -35,7 +35,7 @@ defmodule Csv2sql.Load.InserterTest do
       path: "f.csv",
       name: "f.csv",
       table_name: "t",
-      columns: [%ColumnSpec{name: "id", type: :integer}]
+      columns: [%ColumnSpec{position: 0, name: "id", type: :integer}]
     }
   end
 
@@ -138,8 +138,8 @@ defmodule Csv2sql.Load.InserterTest do
       name: "f.csv",
       table_name: "t",
       columns: [
-        %ColumnSpec{name: "csv_ordering_id", type: :bigint},
-        %ColumnSpec{name: "id", type: :integer}
+        %ColumnSpec{position: 0, name: "csv_ordering_id", type: :bigint},
+        %ColumnSpec{position: 1, name: "id", type: :integer}
       ]
     }
 

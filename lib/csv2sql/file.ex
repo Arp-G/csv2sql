@@ -37,6 +37,8 @@ defmodule Csv2sql.File do
     field(:delimiter, Ecto.Enum, values: [:comma, :semicolon, :tab, :pipe])
 
     field(:fingerprints, {:array, :map}, default: [])
+    field(:source_headers, {:array, :string}, default: [])
+    field(:sample_rows, {:array, {:array, :string}}, default: [])
 
     embeds_many(:columns, ColumnSpec)
     embeds_one(:ledger, Ledger)
@@ -66,6 +68,8 @@ defmodule Csv2sql.File do
           encoding: :utf8 | :utf16le | :utf16be | :latin1 | nil,
           delimiter: :comma | :semicolon | :tab | :pipe | nil,
           fingerprints: [map()],
+          source_headers: [String.t()],
+          sample_rows: [[String.t()]],
           columns: [ColumnSpec.t()],
           ledger: Ledger.t() | nil,
           errors: [Error.t()],

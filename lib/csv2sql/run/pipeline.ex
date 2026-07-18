@@ -45,7 +45,7 @@ defmodule Csv2sql.Run.Pipeline do
   end
 
   defp execute(run_id, config, adapter, conn) do
-    files = Discovery.discover(config.source_dir)
+    files = Discovery.discover(config.source_dir, config.overrides)
     Server.started(run_id, files)
 
     # Config validation guarantees these compile.

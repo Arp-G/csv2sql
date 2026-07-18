@@ -23,13 +23,16 @@ defmodule Csv2sql.Load.Encoder do
   @doc """
   Encodes one row against the column specs.
 
+  Values are picked from the row by each column's `position` — excluded
+  columns simply have no spec, so their cells are skipped.
+
   ## Examples
 
       iex> alias Csv2sql.Schema.ColumnSpec
       iex> columns = [
-      ...>   %ColumnSpec{name: "id", type: :integer},
-      ...>   %ColumnSpec{name: "name", type: :varchar, length: 10},
-      ...>   %ColumnSpec{name: "score", type: :float}
+      ...>   %ColumnSpec{position: 0, name: "id", type: :integer},
+      ...>   %ColumnSpec{position: 1, name: "name", type: :varchar, length: 10},
+      ...>   %ColumnSpec{position: 2, name: "score", type: :float}
       ...> ]
       iex> Csv2sql.Load.Encoder.encode_row(["7", "alice", "1.5"], columns)
       {:ok, [7, "alice", 1.5]}
@@ -38,11 +41,24 @@ defmodule Csv2sql.Load.Encoder do
       iex> Csv2sql.Load.Encoder.encode_row(["x", "alice", "1.5"], columns)
       {:error, "id: cannot cast \\"x\\" to integer"}
 
+  A gap in positions skips the excluded source column:
+
+      iex> alias Csv2sql.Schema.ColumnSpec
+      iex> picked = [
+      ...>   %ColumnSpec{position: 0, name: "id", type: :integer},
+      ...>   %ColumnSpec{position: 2, name: "score", type: :float}
+      ...> ]
+      iex> Csv2sql.Load.Encoder.encode_row(["7", "ignored", "1.5"], picked)
+      {:ok, [7, 1.5]}
+
   Dates use the compiled patterns; zero-dates load as `NULL`:
 
       iex> alias Csv2sql.Schema.ColumnSpec
       iex> {:ok, dates} = Csv2sql.TimeParse.compile_all(["{YYYY}-{0M}-{0D}"])
-      iex> columns = [%ColumnSpec{name: "day", type: :date}, %ColumnSpec{name: "ok", type: :boolean}]
+      iex> columns = [
+      ...>   %ColumnSpec{position: 0, name: "day", type: :date},
+      ...>   %ColumnSpec{position: 1, name: "ok", type: :boolean}
+      ...> ]
       iex> parsers = %{date: dates, datetime: []}
       iex> Csv2sql.Load.Encoder.encode_row(["2024-01-05", "1"], columns, parsers)
       {:ok, [~D[2024-01-05], true]}
@@ -53,11 +69,12 @@ defmodule Csv2sql.Load.Encoder do
   @spec encode_row(row(), [ColumnSpec.t()], parsers()) ::
           {:ok, encoded_row()} | {:error, String.t()}
   def encode_row(row, columns, parsers \\ @no_parsers) do
-    padded = pad_row(row, length(columns))
+    row_tuple = row |> pad_row(required_size(columns)) |> List.to_tuple()
 
-    padded
-    |> Enum.zip(columns)
-    |> Enum.reduce_while([], fn {value, column}, acc ->
+    columns
+    |> Enum.reduce_while([], fn column, acc ->
+      value = elem(row_tuple, column.position)
+
       case encode_value(value, column, parsers) do
         {:ok, term} -> {:cont, [term | acc]}
         {:error, reason} -> {:halt, {:error, reason}}
@@ -69,11 +86,14 @@ defmodule Csv2sql.Load.Encoder do
     end
   end
 
-  defp pad_row(row, column_count) do
+  defp required_size(columns) do
+    Enum.reduce(columns, 0, fn column, acc -> max(acc, column.position + 1) end)
+  end
+
+  defp pad_row(row, size) do
     case length(row) do
-      ^column_count -> row
-      shorter when shorter < column_count -> row ++ List.duplicate("", column_count - shorter)
-      _longer -> Enum.take(row, column_count)
+      length when length >= size -> row
+      shorter -> row ++ List.duplicate("", size - shorter)
     end
   end
 

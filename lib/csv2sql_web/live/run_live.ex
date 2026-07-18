@@ -369,7 +369,7 @@ defmodule Csv2sqlWeb.RunLive do
 
       <UI.card title="Files" role="files-card">
         <:actions>
-          <form phx-change="filter" class="flex items-center gap-2">
+          <form id="file-filters" phx-change="filter" class="flex items-center gap-2">
             <input
               type="text"
               name="q"

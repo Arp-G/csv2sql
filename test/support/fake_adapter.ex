@@ -40,7 +40,7 @@ defmodule Csv2sql.FakeAdapter do
   def placeholder(_index), do: "?"
 
   @impl true
-  def query(_conn, _sql, _params), do: {:ok, %{num_rows: 0, rows: []}}
+  def query(_conn, _sql, _params), do: {:ok, %{num_rows: 0, rows: [[0]]}}
 
   @impl true
   def table_exists?(_conn, _table), do: false

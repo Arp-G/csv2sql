@@ -14,6 +14,7 @@ defmodule Csv2sql.Schema.ColumnSpec do
   @primary_key false
   embedded_schema do
     field(:position, :integer)
+    field(:source_position, :integer)
     field(:name, :string)
     field(:original_name, :string)
     field(:type, Ecto.Enum, values: @types)
@@ -32,8 +33,15 @@ defmodule Csv2sql.Schema.ColumnSpec do
           | :date
           | :datetime
 
+  @typedoc """
+  `position` is the index into the *insert row* (ordering column
+  included, excluded columns removed); `source_position` is the 0-based
+  CSV column index (`nil` for the synthetic ordering column) — the key
+  user overrides match on.
+  """
   @type t :: %__MODULE__{
           position: non_neg_integer() | nil,
+          source_position: non_neg_integer() | nil,
           name: String.t() | nil,
           original_name: String.t() | nil,
           type: atom() | nil,

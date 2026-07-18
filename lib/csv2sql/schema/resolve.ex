@@ -12,6 +12,7 @@ defmodule Csv2sql.Schema.Resolve do
   prepended, preserving CSV row order in the table.
   """
 
+  alias Csv2sql.Config.FileOverride
   alias Csv2sql.Schema.ColumnSpec
   alias Csv2sql.Schema.Inference
   alias Csv2sql.Schema.TypeCheck
@@ -23,30 +24,67 @@ defmodule Csv2sql.Schema.Resolve do
   @spec ordering_column() :: String.t()
   def ordering_column, do: @ordering_column
 
-  @doc "Builds final column specs from headers and the merged accumulator."
-  @spec columns([String.t()], Inference.acc(), Csv2sql.Config.t()) :: [ColumnSpec.t()]
-  def columns(headers, %{columns: column_accs}, config) do
-    specs =
-      headers
-      |> repair_headers()
-      |> Enum.zip(column_accs)
-      |> Enum.map(fn {{name, original}, acc} ->
-        {type, length} = resolve_type(acc, config)
+  @doc """
+  Builds final column specs from headers, the merged accumulator, and
+  the file's user overrides (rename / re-type / resize / exclude).
 
-        %ColumnSpec{
-          name: name,
-          original_name: original,
-          type: type,
-          length: length,
-          max_length: acc.max_length
-        }
-      end)
-      |> maybe_prepend_ordering(config)
-
-    specs
+  `position` indexes into the insert row (ordering column included,
+  before exclusion filtering — excluded columns leave gaps, and the
+  encoder picks values by position); `source_position` is the CSV index
+  overrides match on.
+  """
+  @spec columns([String.t()], Inference.acc(), Csv2sql.Config.t(), FileOverride.t() | nil) ::
+          [ColumnSpec.t()]
+  def columns(headers, %{columns: column_accs}, config, override \\ nil) do
+    headers
+    |> repair_headers()
+    |> Enum.zip(column_accs)
     |> Enum.with_index()
-    |> Enum.map(fn {spec, position} -> %{spec | position: position} end)
+    |> Enum.map(fn {{{name, original}, acc}, source_position} ->
+      {type, length} = resolve_type(acc, config)
+
+      spec = %ColumnSpec{
+        source_position: source_position,
+        name: name,
+        original_name: original,
+        type: type,
+        length: length,
+        max_length: acc.max_length
+      }
+
+      apply_override(spec, FileOverride.column(override, source_position))
+    end)
+    |> maybe_prepend_ordering(config)
+    |> Enum.with_index()
+    |> Enum.flat_map(fn
+      # Positions are assigned BEFORE exclusion filtering — excluded
+      # columns leave gaps the encoder skips by picking positions.
+      {{spec, true = _included?}, position} -> [%{spec | position: position}]
+      {{_spec, false}, _position} -> []
+    end)
   end
+
+  defp apply_override(spec, nil), do: {spec, true}
+
+  defp apply_override(spec, column_override) do
+    spec =
+      spec
+      |> maybe_rename(column_override.name)
+      |> maybe_retype(column_override.type, column_override.length)
+
+    {spec, column_override.include}
+  end
+
+  defp maybe_rename(spec, nil), do: spec
+  defp maybe_rename(spec, ""), do: spec
+  defp maybe_rename(spec, name), do: %{spec | name: name}
+
+  defp maybe_retype(spec, nil, _length), do: spec
+
+  defp maybe_retype(spec, :varchar, length),
+    do: %{spec | type: :varchar, length: length || max(spec.max_length, 1)}
+
+  defp maybe_retype(spec, type, _length), do: %{spec | type: type, length: nil}
 
   @doc """
   Repairs raw header names: trims whitespace, names blank headers, and
@@ -84,7 +122,7 @@ defmodule Csv2sql.Schema.Resolve do
       type: :bigint
     }
 
-    [ordering | specs]
+    [{ordering, true} | specs]
   end
 
   defp maybe_prepend_ordering(specs, _config), do: specs

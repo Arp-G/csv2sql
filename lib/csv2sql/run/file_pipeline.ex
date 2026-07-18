@@ -122,10 +122,18 @@ defmodule Csv2sql.Run.FilePipeline do
             Inference.merge(acc, chunk_acc)
           end)
 
-        columns = Resolve.columns(headers, acc, ctx.config)
+        override = Config.override_for(ctx.config, file.name)
+        columns = Resolve.columns(headers, acc, ctx.config, override)
+        sample_rows = file.path |> Reader.data_stream(source) |> Enum.take(10)
 
         file =
-          %{file | row_count: acc.row_count, columns: columns}
+          %{
+            file
+            | row_count: acc.row_count,
+              columns: columns,
+              source_headers: headers,
+              sample_rows: sample_rows
+          }
           |> CsvFile.put_timing(:analyze_ms, System.monotonic_time(:millisecond) - started)
 
         update(ctx, file)
@@ -371,13 +379,10 @@ defmodule Csv2sql.Run.FilePipeline do
       ledger.rows_rejected * 100 > ledger.rows_read * policy.row_error_threshold_pct
   end
 
-  # The original CSV headers (ordering column excluded) — errors.csv rows
-  # mirror the source file so they can be fixed and re-imported.
-  defp csv_headers(file) do
-    file.columns
-    |> Enum.reject(&(&1.name == Resolve.ordering_column()))
-    |> Enum.map(& &1.original_name)
-  end
+  # The original CSV headers — errors.csv rows mirror the source file
+  # (all columns, excluded ones included) so they can be fixed and
+  # re-imported.
+  defp csv_headers(file), do: file.source_headers
 
   defp update(ctx, file), do: Server.file_update(ctx.run_id, file)
 end
