@@ -42,3 +42,6 @@ npm-debug.log
 
 # Dialyzer PLTs
 /priv/plts/
+
+# Burrito release binaries
+/burrito_out/

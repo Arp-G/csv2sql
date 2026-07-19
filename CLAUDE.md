@@ -87,10 +87,18 @@ ARCHITECTURE.md. 180 tests. Awaiting Arpan's review before merge.
 - `mix release csv2sql` runs Burrito as a release step — it needs Zig
   0.15.2 **exactly** (`asdf install zig 0.15.2`, select via
   `ASDF_ZIG_VERSION`) and xz. On macOS 26 (Tahoe) Zig 0.15.2 cannot link
-  against the SDK (TBD-v5 stubs) — build binaries via CI
-  (`release.yml`) or test the plain assembled release under
-  `_build/prod/rel/csv2sql/bin/csv2sql` instead (that path works
-  locally and is how the GUI + headless import were smoke-tested).
+  against the host SDK (TBD-v5 stubs), so **native** Burrito builds fail
+  here. Local alternatives, both verified working:
+  - `scripts/docker-release.sh [target …]` builds any/all targets
+    (including macOS — cross-linked from zig's bundled stubs, ERTS
+    downloaded precompiled) inside a Linux container; binaries land in
+    `burrito_out/`. Build state lives in the `csv2sql_release_build`
+    volume, never the host `_build`/`deps`.
+  - `CSV2SQL_PLAIN_RELEASE=1 MIX_ENV=prod mix release csv2sql` skips the
+    Burrito wrap and assembles the standard OTP release under
+    `_build/prod/rel/csv2sql/bin/csv2sql`.
+  CI (`release.yml`, tag `v5*` or manual dispatch) builds all four
+  targets natively.
 - Prod assets: `MIX_ENV=prod mix compile && MIX_ENV=prod mix
   assets.deploy` (compile first — Tailwind reads the colocated-CSS
   artifact from `_build/prod`). Digested copies land in `priv/static`

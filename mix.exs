@@ -26,7 +26,7 @@ defmodule Csv2sql.MixProject do
   defp releases do
     [
       csv2sql: [
-        steps: [:assemble, &Burrito.wrap/1],
+        steps: release_steps(),
         burrito: [
           targets: [
             macos_arm: [os: :darwin, cpu: :aarch64],
@@ -37,6 +37,19 @@ defmodule Csv2sql.MixProject do
         ]
       ]
     ]
+  end
+
+  # Machines where Burrito's pinned zig cannot link (macOS 26 SDK needs
+  # zig >= 0.16) can still build the standard OTP release:
+  #
+  #     CSV2SQL_PLAIN_RELEASE=1 MIX_ENV=prod mix release csv2sql
+  #
+  # Same app, same entry dispatch — a directory + bin script under
+  # _build/prod/rel/csv2sql instead of one wrapped binary.
+  defp release_steps do
+    if System.get_env("CSV2SQL_PLAIN_RELEASE"),
+      do: [:assemble],
+      else: [:assemble, &Burrito.wrap/1]
   end
 
   # Configuration for the OTP application.

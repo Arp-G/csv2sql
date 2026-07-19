@@ -1,0 +1,29 @@
+# Build environment for Burrito releases on machines whose native
+# toolchain can't run Burrito (e.g. macOS 26, where Burrito's pinned
+# zig 0.15.2 cannot link against the host SDK). All four targets can be
+# cross-built from this Linux container: the zig build runner links
+# against the container's glibc, target wrappers use zig's bundled libc
+# stubs, and target ERTS payloads are downloaded precompiled.
+#
+# Used by scripts/docker-release.sh — see that script for usage.
+FROM elixir:1.20-otp-28
+
+# xz compresses Burrito payloads; 7z is needed for the windows target;
+# git fetches git-based deps (heroicons, daisyui).
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends xz-utils p7zip-full git curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Burrito 1.5 requires zig 0.15.2 exactly.
+RUN ARCH="$(uname -m)" && \
+    curl -fsSL "https://ziglang.org/download/0.15.2/zig-${ARCH}-linux-0.15.2.tar.xz" \
+      | tar -xJ -C /opt && \
+    ln -s /opt/zig-*/zig /usr/local/bin/zig && \
+    zig version
+
+ENV LANG=C.UTF-8 MIX_ENV=prod \
+    MIX_BUILD_ROOT=/build/_build MIX_DEPS_PATH=/build/deps
+
+RUN mix local.hex --force && mix local.rebar --force
+
+WORKDIR /src
