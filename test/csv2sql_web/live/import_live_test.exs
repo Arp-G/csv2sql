@@ -26,6 +26,40 @@ defmodule Csv2sqlWeb.ImportLiveTest do
     assert invalid =~ "must start with postgres:// or mysql://"
   end
 
+  test "a valid source directory shows its CSV file count", %{conn: conn, tmp_dir: dir} do
+    csv!(dir, "a.csv", [~w(x), ["1"]])
+    csv!(dir, "b.csv", [~w(x), ["2"]])
+    File.write!(Path.join(dir, "notes.txt"), "not a csv")
+
+    {:ok, view, _html} = live(conn, ~p"/")
+
+    html =
+      view
+      |> form("#config-form", config: %{source_dir: dir})
+      |> render_change()
+
+    assert html =~ "2 CSV files found"
+
+    empty = Path.join(dir, "empty")
+    File.mkdir!(empty)
+
+    html =
+      view
+      |> form("#config-form", config: %{source_dir: empty})
+      |> render_change()
+
+    assert html =~ "No CSV files in this directory"
+  end
+
+  test "the footer credits the author with project links", %{conn: conn} do
+    {:ok, _view, html} = live(conn, ~p"/")
+
+    assert html =~ ~s(data-role="app-footer")
+    assert html =~ "https://github.com/Arp-G"
+    assert html =~ "Report a bug"
+    assert html =~ "MIT license"
+  end
+
   # The drawer is server-driven: a native <details> loses its client-side
   # open state on every form-change patch (it collapsed while typing).
   test "advanced drawer stays open across form changes", %{conn: conn} do

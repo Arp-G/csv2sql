@@ -13,6 +13,8 @@ defmodule Csv2sqlWeb.ImportLive do
   alias Csv2sql.Config
   alias Csv2sql.Config.Store
   alias Csv2sql.Events
+  alias Csv2sql.Source.Discovery
+  alias Csv2sql.TimeParse
   alias Csv2sqlWeb.UI
 
   @impl true
@@ -27,14 +29,29 @@ defmodule Csv2sqlWeb.ImportLive do
      |> assign(:pending_params, params)
      |> assign(:probe, nil)
      |> assign(:advanced_open, false)
+     |> assign(:pattern_trial, nil)
+     |> assign(:pattern_match, nil)
+     |> assign(:csv_count, csv_count(params["source_dir"]))
      |> assign(:runs, Csv2sql.list_runs())}
   end
 
   @impl true
-  def handle_event("validate", %{"config" => params}, socket) do
-    params = normalize_params(params)
+  def handle_event("validate", %{"config" => params} = payload, socket) do
+    {:noreply,
+     socket
+     |> assign(form: config_form(params), pending_params: params, probe: nil)
+     |> assign(:csv_count, csv_count(params["source_dir"]))
+     |> assign_trial(payload["pattern_trial"])}
+  end
 
-    {:noreply, assign(socket, form: config_form(params), pending_params: params, probe: nil)}
+  def handle_event("add_pattern", %{"kind" => kind}, socket)
+      when kind in ["date_patterns", "datetime_patterns"] do
+    update_patterns(socket, kind, &(&1 ++ [""]))
+  end
+
+  def handle_event("remove_pattern", %{"kind" => kind, "index" => index}, socket)
+      when kind in ["date_patterns", "datetime_patterns"] do
+    update_patterns(socket, kind, &List.delete_at(&1, String.to_integer(index)))
   end
 
   def handle_event("start", %{"config" => params}, socket) do
@@ -79,7 +96,7 @@ defmodule Csv2sqlWeb.ImportLive do
   end
 
   def handle_event("save_defaults", _params, socket) do
-    case Store.save(socket.assigns.pending_params) do
+    case Store.save(normalize_params(socket.assigns.pending_params)) do
       :ok ->
         {:noreply,
          put_flash(socket, :info, "Saved as defaults (database password is never stored)")}
@@ -121,7 +138,7 @@ defmodule Csv2sqlWeb.ImportLive do
 
   defp config_form(params) do
     %Config{}
-    |> Config.changeset(params)
+    |> Config.changeset(normalize_params(params))
     |> Map.put(:action, :validate)
     |> to_form(as: :config)
   end
@@ -137,35 +154,122 @@ defmodule Csv2sqlWeb.ImportLive do
     }
   end
 
-  # Pattern lists arrive from the form as one semicolon-separated string.
+  # Pattern editor rows live raw in pending_params (blank rows included,
+  # so a just-added row survives re-renders); anything feeding a
+  # changeset or the store goes through here to drop blanks. Legacy
+  # semicolon-joined strings (old persisted defaults) still split.
   defp normalize_params(params) do
     Enum.reduce(["date_patterns", "datetime_patterns"], params, fn key, params ->
       case params[key] do
-        value when is_binary(value) ->
-          Map.put(
-            params,
-            key,
-            value |> String.split(";") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
-          )
-
-        _list_or_missing ->
+        nil ->
           params
+
+        value ->
+          cleaned =
+            value |> pattern_rows() |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+
+          Map.put(params, key, cleaned)
       end
     end)
   end
+
+  defp pattern_rows(value) when is_binary(value), do: String.split(value, ";")
+  defp pattern_rows(value) when is_list(value), do: value
+  defp pattern_rows(_other), do: []
+
+  # The rendered rows for one pattern kind: raw pending rows, the
+  # Config defaults when untouched, and always at least one row (so the
+  # form always submits the key — an emptied list must not resurrect
+  # the defaults on the next change).
+  defp patterns_of(params, key) do
+    case params[key] do
+      nil -> default_patterns(key)
+      value -> with [] <- pattern_rows(value), do: [""]
+    end
+  end
+
+  defp default_patterns("date_patterns"), do: %Config{}.date_patterns
+  defp default_patterns("datetime_patterns"), do: %Config{}.datetime_patterns
+
+  defp pattern_sections(params) do
+    [
+      {"date_patterns", :date_patterns, "Date patterns", patterns_of(params, "date_patterns")},
+      {"datetime_patterns", :datetime_patterns, "Datetime patterns",
+       patterns_of(params, "datetime_patterns")}
+    ]
+  end
+
+  defp update_patterns(socket, kind, transform) do
+    params = socket.assigns.pending_params
+    params = Map.put(params, kind, transform.(patterns_of(params, kind)))
+
+    {:noreply,
+     socket
+     |> assign(pending_params: params, form: config_form(params))
+     |> assign_trial(socket.assigns.pattern_trial)}
+  end
+
+  defp assign_trial(socket, trial) do
+    trial = String.trim(trial || "")
+
+    match =
+      if trial == "" do
+        nil
+      else
+        params = socket.assigns.pending_params
+
+        find_pattern_match("date_patterns", trial, params) ||
+          find_pattern_match("datetime_patterns", trial, params) || :none
+      end
+
+    assign(socket, pattern_trial: trial, pattern_match: match)
+  end
+
+  defp find_pattern_match(kind, trial, params) do
+    params
+    |> patterns_of(kind)
+    |> Enum.with_index()
+    |> Enum.find_value(fn {pattern, index} ->
+      with {:ok, compiled} <- TimeParse.compile_all([String.trim(pattern)]),
+           result when result != :error <- parse_trial(kind, trial, compiled) do
+        {kind, index, result}
+      else
+        _no_match -> nil
+      end
+    end)
+  end
+
+  defp parse_trial("date_patterns", trial, compiled), do: TimeParse.date(trial, compiled)
+  defp parse_trial("datetime_patterns", trial, compiled), do: TimeParse.datetime(trial, compiled)
+
+  defp pattern_matched?({kind, index, _result}, kind, index), do: true
+  defp pattern_matched?(_match, _kind, _index), do: false
+
+  defp trial_result(:none), do: "no pattern matches"
+
+  defp trial_result({kind, index, result}) do
+    label = if kind == "date_patterns", do: "date pattern", else: "datetime pattern"
+
+    case result do
+      {:ok, parsed} -> "matches #{label} ##{index + 1} → #{parsed}"
+      :zero -> "matches #{label} ##{index + 1} → zero date (imported as NULL)"
+    end
+  end
+
+  defp csv_count(dir) when is_binary(dir) and dir != "" do
+    if File.dir?(dir) do
+      length(Discovery.discover(dir))
+    end
+  rescue
+    _unreadable -> nil
+  end
+
+  defp csv_count(_blank), do: nil
 
   defp deep_merge(base, override) when is_map(base) and is_map(override) do
     Map.merge(base, override, fn _key, a, b ->
       if is_map(a) and is_map(b), do: deep_merge(a, b), else: b
     end)
-  end
-
-  defp patterns_value(field) do
-    case field.value do
-      list when is_list(list) -> Enum.join(list, ";")
-      value when is_binary(value) -> value
-      _nil -> ""
-    end
   end
 
   @impl true
@@ -190,6 +294,16 @@ defmodule Csv2sqlWeb.ImportLive do
                 phx-debounce="300"
                 data-role="source-dir-input"
               />
+              <p :if={@csv_count} class="-mt-3 text-xs text-base-content/60" data-role="csv-count">
+                {@csv_count} CSV {if @csv_count == 1, do: "file", else: "files"} found
+              </p>
+              <p
+                :if={@csv_count == 0}
+                class="-mt-3 text-xs text-warning"
+                data-role="csv-count"
+              >
+                No CSV files in this directory
+              </p>
 
               <.inputs_for :let={db} field={@form[:db]}>
                 <.input
@@ -288,39 +402,85 @@ defmodule Csv2sqlWeb.ImportLive do
                     />
                   </div>
 
-                  <div class="grid gap-3 sm:grid-cols-2">
+                  <div class="space-y-3" data-role="pattern-editor">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                      <div
+                        :for={{kind, field, label, rows} <- pattern_sections(@pending_params)}
+                        class="space-y-2"
+                      >
+                        <span class="label text-xs">{label}</span>
+                        <div
+                          :for={{pattern, index} <- Enum.with_index(rows)}
+                          class="flex items-center gap-1"
+                        >
+                          <input
+                            type="text"
+                            name={"config[#{kind}][]"}
+                            value={pattern}
+                            placeholder="{YYYY}-{0M}-{0D}"
+                            class={[
+                              "input input-sm input-bordered font-mono w-full",
+                              pattern_matched?(@pattern_match, kind, index) && "input-success"
+                            ]}
+                            data-role={"#{kind}-input"}
+                          />
+                          <button
+                            :if={length(rows) > 1}
+                            type="button"
+                            phx-click="remove_pattern"
+                            phx-value-kind={kind}
+                            phx-value-index={index}
+                            class="btn btn-ghost btn-xs px-1"
+                            aria-label={"remove #{label} #{index + 1}"}
+                            data-role={"remove-#{kind}"}
+                          >
+                            <.icon name="hero-x-mark" class="size-3.5" />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          phx-click="add_pattern"
+                          phx-value-kind={kind}
+                          class="btn btn-ghost btn-xs"
+                          data-role={"add-#{kind}"}
+                        >
+                          <.icon name="hero-plus" class="size-3.5" /> Add pattern
+                        </button>
+                        <p :for={{message, _opts} <- @form[field].errors} class="text-error text-sm">
+                          {message}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p class="text-xs text-base-content/60">
+                      Tokens:
+                      <span class="font-mono">
+                        {"{YYYY} {YY} year · {0M} {M} month · {0D} {D} day · {0h24} {h24} {0h12} {h12} hour · {0m} {m} min · {0s} {s} sec · {AM} {am} meridiem (0-prefix = zero-padded)"}
+                      </span>
+                    </p>
+
                     <label class="form-control">
-                      <span class="label-text text-xs">Date patterns (separate with ;)</span>
+                      <span class="label-text text-xs">Try a sample date or datetime</span>
                       <input
                         type="text"
-                        name="config[date_patterns]"
-                        value={patterns_value(@form[:date_patterns])}
+                        name="pattern_trial"
+                        value={@pattern_trial}
+                        placeholder="31/12/2023 or 2023-12-31 18:05:00"
                         class="input input-sm input-bordered font-mono"
-                        data-role="date-patterns"
+                        phx-debounce="200"
+                        data-role="pattern-trial"
                       />
-                      <p
-                        :for={{message, _opts} <- @form[:date_patterns].errors}
-                        class="text-error text-sm mt-1"
-                      >
-                        {message}
-                      </p>
                     </label>
-                    <label class="form-control">
-                      <span class="label-text text-xs">Datetime patterns (separate with ;)</span>
-                      <input
-                        type="text"
-                        name="config[datetime_patterns]"
-                        value={patterns_value(@form[:datetime_patterns])}
-                        class="input input-sm input-bordered font-mono"
-                        data-role="datetime-patterns"
-                      />
-                      <p
-                        :for={{message, _opts} <- @form[:datetime_patterns].errors}
-                        class="text-error text-sm mt-1"
-                      >
-                        {message}
-                      </p>
-                    </label>
+                    <p
+                      :if={@pattern_match}
+                      class={[
+                        "text-sm",
+                        (@pattern_match == :none && "text-warning") || "text-success"
+                      ]}
+                      data-role="pattern-trial-result"
+                    >
+                      {trial_result(@pattern_match)}
+                    </p>
                   </div>
 
                   <.inputs_for :let={policy} field={@form[:error_policy]}>

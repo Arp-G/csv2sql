@@ -60,6 +60,54 @@ defmodule Csv2sqlWeb.Layouts do
       </div>
     </main>
 
+    <footer
+      class="mt-8 border-t border-base-300 px-4 py-4 text-center text-xs text-base-content/60"
+      data-role="app-footer"
+    >
+      <p class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        <span>csv2sql v{Application.spec(:csv2sql, :vsn)}</span>
+        <span aria-hidden="true">·</span>
+        <span>
+          made by
+          <a
+            href="https://github.com/Arp-G"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link link-hover font-medium"
+          >
+            Arpan Ghoshal
+          </a>
+        </span>
+        <span aria-hidden="true">·</span>
+        <a
+          href="https://github.com/Arp-G/csv2sql"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link link-hover"
+        >
+          GitHub
+        </a>
+        <span aria-hidden="true">·</span>
+        <a
+          href="https://github.com/Arp-G/csv2sql/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link link-hover"
+        >
+          Report a bug
+        </a>
+        <span aria-hidden="true">·</span>
+        <a
+          href="https://github.com/Arp-G/csv2sql/blob/master/LICENSE.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link link-hover"
+        >
+          MIT license
+        </a>
+      </p>
+    </footer>
+
     <.flash_group flash={@flash} />
     """
   end
